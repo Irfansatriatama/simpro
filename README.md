@@ -30,9 +30,9 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | 0.5.0 |
-| **Fase Saat Ini** | FASE 5 — Task Management: CRUD & Task Detail ✅ |
-| **Fase Berikutnya** | FASE 6 — Kanban Board |
+| **Versi App** | 0.6.0 |
+| **Fase Saat Ini** | FASE 6 — Kanban Board ✅ |
+| **Fase Berikutnya** | FASE 7 — Sprint Planning & Backlog |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
 | **PWA** | Aktif sejak Fase 1 (manifest.json + sw.js) |
@@ -1298,16 +1298,38 @@ Log ini diupdate **setiap akhir fase** oleh Claude. Mencatat apa yang sudah dike
 ---
 
 #### FASE 6 — Kanban Board
-**Versi:** v0.6.0 | **Tanggal:** — | **Status:** Belum dikerjakan
+**Versi:** v0.6.0 | **Tanggal:** 2026-02-27 | **Status:** ✅ Selesai
 
 **File Ditambahkan:**
-*(diisi setelah fase selesai)*
+- `assets/css/kanban.css` — Styling board: kolom, task card, drag ghost, drop indicator, swimlane, filter dropdown, quick-add form, responsive
+- `assets/js/modules/kanban.js` — getTasksByStatus (dengan multi-filter), moveTask (role-guarded, activity log), reorderInColumn, getColumnStats, konstanta STATUSES
+- `assets/js/pages/board.js` — Halaman board lengkap: render kolom, drag & drop native, filter bar, swimlane, quick-add
 
 **File Diubah:**
-*(diisi setelah fase selesai)*
+- `pages/board.html` — Implementasi penuh: load kanban.css + semua modul yang dibutuhkan, main-content tanpa padding/overflow hidden untuk full-height board
+- `sw.js` — Versi cache → v0.6.0, tambah kanban.css + kanban.js + board.js ke SHELL_FILES
+- `README_SIMPRO.md` — Update status versi, log fase
+
+**Fitur yang Diimplementasikan:**
+- 4 kolom: To Do / In Progress / In Review / Done dengan warna status dot masing-masing
+- Header kolom: nama + jumlah task + total story points
+- Task card: key (monospace), type badge, priority dot, label color strips, judul, assignee avatars (overlap), due date (merah jika overdue, kuning jika hari ini), story points badge
+- Drag & drop native via Pointer Events: pointerdown → ghost semi-transparan + card source disamarkan → pointermove update posisi ghost + drop indicator garis biru → pointerup commit moveTask
+- Drop indicator (garis biru) muncul di antara kartu saat drag
+- Role guard: Viewer tidak bisa drag; Developer hanya bisa pindahkan task yang diassign ke dirinya
+- Filter bar: Assignee / Priority / Type / Label — multi-select via dropdown checkbox, badge angka aktif per filter, Clear filters button
+- Tombol "Group by Assignee" → swimlane view: satu baris per member dengan 4 kolom status
+- Quick-add: klik "+ Add task" di footer kolom → inline form judul, Enter = submit, Escape = cancel
+- Project & Sprint selector: ganti project/sprint akan re-render board, default ke sprint aktif
+- Tombol "+ Task" di toolbar → TaskModal global
+- Empty state informatif di kolom kosong
 
 **Catatan Teknis:**
-*(diisi setelah fase selesai)*
+- Drag & drop menggunakan `setPointerCapture` agar pointer events tetap di card saat keluar area
+- `Kanban.moveTask()` menghitung ulang `order` index semua task di kolom tujuan (splice + map)
+- Activity log otomatis dibuat saat `status_changed` via `Comment.addActivity()`
+- Board me-listen `App.events.on('task:updated')` untuk re-render kolom saat ada perubahan dari luar
+- `board-page` menggunakan flexbox column dengan `overflow:hidden` agar kolom bisa scroll independen
 
 ---
 
