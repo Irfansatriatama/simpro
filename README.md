@@ -2,7 +2,7 @@
 
 > **Dokumen Tunggal & Tersentralisasi** — Ini adalah satu-satunya README yang perlu dibaca.  
 > Menggabungkan semua informasi dari `README_SIMPRO.md` dan `README_BUG_SIMPRO.md`.  
-> Update terakhir: **2026-02-27** | Versi saat ini: **v1.0.4** (Bug Fix Release — BUG-10 SELESAI)
+> Update terakhir: **2026-02-27** | Versi saat ini: **v1.0.5** (Bug Fix Release — BUG-10 SELESAI)
 
 Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint planning, kanban board, gantt chart, dan laporan progress untuk Project Manager, Developer, Client, dan Manager.
 
@@ -34,9 +34,9 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | v1.0.4 (Bug Fix Release — BUG-10) |
+| **Versi App** | v1.0.5 (Bug Fix Release — BUG-11) |
 | **Fase Pembangunan Selesai** | FASE 16 — Polish, PWA Penuh & Audit Final ✅ |
-| **Fase Bug Fix Saat Ini** | BUG-10 ✅ — Navbar Dropdown Fix + Dashboard My Tasks Overhaul (SELESAI) |
+| **Fase Bug Fix Saat Ini** | BUG-11 ✅ — Backlog Module Overhaul: Filter, Status Badge, Drag Reorder Fix (SELESAI) |
 | **Fase Bug Fix Berikutnya** | — (Ongoing bug fix, upload zip terbaru jika ada bug baru) |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
@@ -57,6 +57,7 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 | BUG-8 | Navbar Dropdown, Notifikasi & Dashboard My Tasks | ✅ Selesai | 2026-02-27 |
 | BUG-9 | Route Fix: Absolute Path → Relative Path (index.html, 404.html, manifest.json, sw.js) | ✅ Selesai | 2026-02-27 |
 | BUG-10 | Navbar Dropdown Fix (position:fixed) + Dashboard My Tasks Overhaul | ✅ Selesai | 2026-02-27 |
+| BUG-11 | Backlog: Filter Bar, Status Badge, Due Date, Drag Reorder Fix, Order on Add | ✅ Selesai | 2026-02-27 |
 
 ---
 
@@ -1140,5 +1141,58 @@ Widget My Tasks hanya menampilkan project dot (bukan label), badge type, dan due
 
 ---
 
-*SIMPRO v1.0.4 — Offline-first. Zero server. Pure localStorage.*  
+
+---
+
+### BUG-11 — Backlog Module Overhaul
+**2026-02-27** | ✅
+
+**Bug yang Diperbaiki:**
+
+**1. Filter Bar baru di Backlog:**
+- Sebelum: tidak ada cara untuk filter task di backlog/sprint view — semua task tampil sekaligus
+- Sesudah: ditambah filter bar dengan 4 filter: Status, Tipe Task, Prioritas, Assignee
+- Filter bersifat kumulatif (kombinasi semua aktif)
+- Tombol "Reset" muncul otomatis saat ada filter aktif
+- Counter "(N dari M ditampilkan)" tampil di header sprint/backlog saat filter aktif
+- Filter state disimpan di `_filters` object, reset saat ganti project
+
+**2. Status Badge di setiap Task Row:**
+- Sebelum: task row tidak menampilkan status — user tidak bisa lihat apakah task todo/in-progress/review/done dari view backlog
+- Sesudah: ditambah `.backlog-status-badge` dengan dot berwarna + label status untuk setiap task row
+- Warna: abu-abu (todo), biru (in-progress), oranye (review), hijau (done)
+
+**3. Due Date di Task Row:**
+- Sebelum: due date tidak tampil di backlog view sama sekali
+- Sesudah: due date tampil di task row dengan format pendek (e.g. "27 Feb")
+- Task overdue (due date < hari ini) ditampilkan merah + bold
+
+**4. Drag & Drop Reorder dalam Sprint (FIX KRITIS):**
+- Sebelum: drag & drop HANYA memindahkan task antar sprint/backlog — reorder dalam sprint yang sama tidak berfungsi (kode `if (sourceSprintId !== targetSprintId)` selalu skip jika sama sprint)
+- Sesudah: ditambah branch `else` yang memanggil `Task.reorder()` untuk reorder dalam sprint/backlog yang sama
+- `Task.reorder()` sudah ada di `task.js` tapi tidak pernah dipanggil dari backlog.js
+
+**5. Order saat Sprint.addTask (FIX):**
+- Sebelum: `Sprint.addTask()` tidak mengatur order task yang baru ditambahkan → task selalu muncul di urutan acak atau awal list
+- Sesudah: saat menambah task via modal "Tambah Task dari Backlog", dihitung `nextOrder` berdasarkan task terakhir di sprint, lalu di-set via `Storage.update` setelah `Sprint.addTask()`
+
+**6. Drag & Drop Pointer Event Cleanup (FIX BUG MEMORY LEAK):**
+- Sebelum: `handle.addEventListener('pointermove', _onMove)` tidak pernah di-remove setelah pointerup — event listener terakumulasi setiap kali user drag
+- Sesudah: `_drag._handle` dan `_drag._moveHandler` disimpan, lalu `removeEventListener` dipanggil di `_onUp()`
+
+**7. Error Handling Sprint.removeTask dan Sprint.remove:**
+- Sebelum: hasil return dari `Sprint.removeTask()` dan `Sprint.remove()` tidak dicek — error permission denied diam-diam
+- Sesudah: cek `result.error` dan tampilkan toast yang sesuai
+
+**8. CSS Baru di `sprint.css`:**
+- `.backlog-filter-bar` — filter bar di bawah toolbar
+- `.backlog-filter-select` — select filter compact
+- `.backlog-filter-clear` — tombol reset filter
+- `.backlog-filter-note` — counter task terfilter
+- `.backlog-status-badge` + `.backlog-status-dot` — status indicator per task row
+- `.backlog-due` + `.backlog-due.overdue` — due date styling
+
+---
+
+*SIMPRO v1.0.5 — Offline-first. Zero server. Pure localStorage.*  
 *README ini adalah sumber kebenaran tunggal. Tidak ada file dokumentasi lain yang diperlukan.*

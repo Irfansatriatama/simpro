@@ -1,12 +1,14 @@
-/* SIMPRO Page: backlog — Sprint Planning & Backlog v0.7.0 */
+/* SIMPRO Page: backlog — Sprint Planning & Backlog v0.8.0 */
 const Page = (() => {
   let _session = null;
   let _project = null;
+  let _filters = { status: '', type: '', priority: '', assignee: '' };
 
   // Drag state
   let _drag = {
     active: false, taskId: null, ghost: null,
     sourceSprintId: null, targetRow: null, dropBefore: false,
+    _handle: null, _moveHandler: null,
   };
 
   // ── Helpers ──────────────────────────────────────────────────────────────
@@ -35,6 +37,19 @@ const Page = (() => {
     return map[type] || map.task;
   }
 
+  function _statusBadge(status) {
+    const map = {
+      'todo':        { label: 'To Do',       dot: '#8c93a3' },
+      'in-progress': { label: 'In Progress', dot: 'var(--color-info)' },
+      'review':      { label: 'Review',      dot: 'var(--color-warning)' },
+      'done':        { label: 'Done',        dot: 'var(--color-success)' },
+    };
+    const s = map[status] || map['todo'];
+    return `<span class="backlog-status-badge" style="--dot:${s.dot};" title="${s.label}">
+      <span class="backlog-status-dot"></span>${s.label}
+    </span>`;
+  }
+
   function _avatarHtml(userId) {
     const user = _getUserById(userId);
     if (!user) return '';
@@ -51,11 +66,30 @@ const Page = (() => {
     return `${start ? Utils.formatDateShort(start) : '?'} – ${end ? Utils.formatDateShort(end) : '?'}`;
   }
 
+  function _formatDueDate(dueDate) {
+    if (!dueDate) return '';
+    const today = Utils.todayISO();
+    const isOverdue = dueDate < today;
+    const cls = isOverdue ? 'backlog-due overdue' : 'backlog-due';
+    return `<span class="${cls}" title="Due date">${Utils.formatDateShort(dueDate)}</span>`;
+  }
+
+  function _applyFilters(tasks) {
+    return tasks.filter(t => {
+      if (_filters.status && t.status !== _filters.status) return false;
+      if (_filters.type && t.type !== _filters.type) return false;
+      if (_filters.priority && t.priority !== _filters.priority) return false;
+      if (_filters.assignee && !(t.assigneeIds || []).includes(_filters.assignee)) return false;
+      return true;
+    });
+  }
+
   // ── Render Task Row ───────────────────────────────────────────────────────
   function _renderTaskRow(task, inSprint) {
     const assigneeHtml = (task.assigneeIds || []).map(_avatarHtml).join('');
     const sp = task.storyPoints != null && task.storyPoints !== '' ? task.storyPoints : '—';
     const canDrag = _canManage();
+    const dueHtml = _formatDueDate(task.dueDate);
     return `
       <li class="task-row" data-task-id="${task.id}" data-sprint-id="${task.sprintId || ''}">
         ${canDrag ? `<span class="drag-handle" title="Drag"><i data-lucide="grip-vertical" style="width:14px;height:14px;"></i></span>` : ''}
@@ -63,6 +97,8 @@ const Page = (() => {
         <span class="task-type-icon">${_typeIcon(task.type)}</span>
         <span class="task-row-title" data-nav-task="${task.id}">${Utils.escapeHtml(task.title)}</span>
         <span class="task-row-meta">
+          ${_statusBadge(task.status)}
+          ${dueHtml}
           <span class="task-priority-dot priority-${task.priority}" title="${task.priority}"></span>
           <span class="task-row-assignees">${assigneeHtml}</span>
           <span class="task-sp">${sp}</span>
@@ -74,8 +110,9 @@ const Page = (() => {
 
   // ── Render Sprint Section ─────────────────────────────────────────────────
   function _renderSprintSection(sprint) {
-    const tasks = Storage.query('sp_tasks', t => t.sprintId === sprint.id && !t.parentId)
+    const allTasks = Storage.query('sp_tasks', t => t.sprintId === sprint.id && !t.parentId)
       .sort((a, b) => (a.order || 0) - (b.order || 0));
+    const tasks = _applyFilters(allTasks);
     const stats = Sprint.getSprintStats(sprint.id);
     const canManage = _canManage();
     const isActive = sprint.status === 'active';
@@ -103,9 +140,12 @@ const Page = (() => {
       }
     }
 
+    const filteredCount = tasks.length !== allTasks.length
+      ? `<span class="backlog-filter-note">(${tasks.length} dari ${allTasks.length} ditampilkan)</span>` : '';
+
     const taskRows = tasks.length
       ? tasks.map(t => _renderTaskRow(t, true)).join('')
-      : `<li class="sprint-empty-state"><i data-lucide="inbox" style="width:16px;height:16px;"></i> Belum ada task — drag dari backlog atau klik tambah</li>`;
+      : `<li class="sprint-empty-state"><i data-lucide="inbox" style="width:16px;height:16px;"></i> ${allTasks.length ? 'Tidak ada task yang cocok filter' : 'Belum ada task — drag dari backlog atau klik tambah'}</li>`;
 
     const addBtn = canManage
       ? `<button class="sprint-add-task-btn" data-sprint-action="add-task" data-sprint-id="${sprint.id}"><i data-lucide="plus" style="width:14px;height:14px;"></i> Tambah Task dari Backlog</button>`
@@ -121,6 +161,7 @@ const Page = (() => {
             ${sprint.goal ? `<span class="sprint-dates" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${Utils.escapeHtml(sprint.goal)}">${Utils.escapeHtml(sprint.goal)}</span>` : ''}
             <span class="sprint-dates">${_formatDateRange(sprint.startDate, sprint.endDate)}</span>
             <span class="sprint-points">${stats.donePoints}/${stats.totalPoints} SP · ${stats.done}/${stats.total}</span>
+            ${filteredCount}
             <div class="sprint-actions" onclick="event.stopPropagation()">
               ${actionBtns}
             </div>
@@ -138,20 +179,25 @@ const Page = (() => {
 
   // ── Render Backlog Section ────────────────────────────────────────────────
   function _renderBacklogSection() {
-    const tasks = Storage.query('sp_tasks', t => t.projectId === _project.id && !t.sprintId && !t.parentId)
+    const allTasks = Storage.query('sp_tasks', t => t.projectId === _project.id && !t.sprintId && !t.parentId)
       .sort((a, b) => (a.order || 0) - (b.order || 0));
+    const tasks = _applyFilters(allTasks);
     const canManage = _canManage();
+
+    const filteredCount = tasks.length !== allTasks.length
+      ? `<span class="backlog-filter-note">(${tasks.length} dari ${allTasks.length} ditampilkan)</span>` : '';
 
     const taskRows = tasks.length
       ? tasks.map(t => _renderTaskRow(t, false)).join('')
-      : `<li class="sprint-empty-state"><i data-lucide="check-circle" style="width:16px;height:16px;"></i> Backlog kosong</li>`;
+      : `<li class="sprint-empty-state"><i data-lucide="${allTasks.length ? 'filter-x' : 'check-circle'}" style="width:16px;height:16px;"></i> ${allTasks.length ? 'Tidak ada task yang cocok filter' : 'Backlog kosong'}</li>`;
 
     return `
       <div class="backlog-section" id="backlog-section">
         <div class="backlog-section-header" data-collapse-backlog="1">
           <i class="sprint-collapse-icon" data-lucide="chevron-down" style="width:16px;height:16px;"></i>
           <span class="backlog-section-title">Backlog</span>
-          <span class="backlog-count">${tasks.length} task</span>
+          <span class="backlog-count">${allTasks.length} task</span>
+          ${filteredCount}
         </div>
         <div class="sprint-body">
           <ul class="sprint-task-list" data-list-sprint="">
@@ -159,6 +205,47 @@ const Page = (() => {
           </ul>
           ${canManage ? `<button class="sprint-add-task-btn" id="backlog-new-task-btn"><i data-lucide="plus" style="width:14px;height:14px;"></i> Buat Task Baru</button>` : ''}
         </div>
+      </div>
+    `;
+  }
+
+  // ── Render Filter Bar ─────────────────────────────────────────────────────
+  function _renderFilterBar() {
+    const users = _getUsers().filter(u => {
+      const proj = _project;
+      return proj && proj.memberIds && proj.memberIds.includes(u.id);
+    });
+    const hasFilter = _filters.status || _filters.type || _filters.priority || _filters.assignee;
+    return `
+      <div class="backlog-filter-bar">
+        <select class="backlog-filter-select" id="filter-status">
+          <option value="">Semua Status</option>
+          <option value="todo" ${_filters.status==='todo'?'selected':''}>To Do</option>
+          <option value="in-progress" ${_filters.status==='in-progress'?'selected':''}>In Progress</option>
+          <option value="review" ${_filters.status==='review'?'selected':''}>Review</option>
+          <option value="done" ${_filters.status==='done'?'selected':''}>Done</option>
+        </select>
+        <select class="backlog-filter-select" id="filter-type">
+          <option value="">Semua Tipe</option>
+          <option value="task" ${_filters.type==='task'?'selected':''}>Task</option>
+          <option value="story" ${_filters.type==='story'?'selected':''}>Story</option>
+          <option value="bug" ${_filters.type==='bug'?'selected':''}>Bug</option>
+          <option value="epic" ${_filters.type==='epic'?'selected':''}>Epic</option>
+        </select>
+        <select class="backlog-filter-select" id="filter-priority">
+          <option value="">Semua Prioritas</option>
+          <option value="critical" ${_filters.priority==='critical'?'selected':''}>Critical</option>
+          <option value="high" ${_filters.priority==='high'?'selected':''}>High</option>
+          <option value="medium" ${_filters.priority==='medium'?'selected':''}>Medium</option>
+          <option value="low" ${_filters.priority==='low'?'selected':''}>Low</option>
+        </select>
+        <select class="backlog-filter-select" id="filter-assignee">
+          <option value="">Semua Assignee</option>
+          ${users.map(u => `<option value="${u.id}" ${_filters.assignee===u.id?'selected':''}>${Utils.escapeHtml(u.name)}</option>`).join('')}
+        </select>
+        ${hasFilter ? `<button class="backlog-filter-clear" id="filter-clear-btn" title="Reset filter">
+          <i data-lucide="x" style="width:12px;height:12px;"></i> Reset
+        </button>` : ''}
       </div>
     `;
   }
@@ -192,6 +279,7 @@ const Page = (() => {
             ${canManage ? `<button class="btn btn-sm btn-primary" id="toolbar-task-btn"><i data-lucide="plus" style="width:14px;height:14px;"></i> Task</button>` : ''}
           </div>
         </div>
+        ${_renderFilterBar()}
         <div class="backlog-body" id="backlog-body">
           ${sprints.map(_renderSprintSection).join('')}
           ${_renderBacklogSection()}
@@ -215,12 +303,23 @@ const Page = (() => {
     document.getElementById('project-select')?.addEventListener('change', e => {
       const projects = _getVisibleProjects();
       _project = projects.find(p => p.id === e.target.value) || _project;
+      _filters = { status: '', type: '', priority: '', assignee: '' };
       _render();
     });
 
     document.getElementById('create-sprint-btn')?.addEventListener('click', _showCreateSprintModal);
     document.getElementById('toolbar-task-btn')?.addEventListener('click', () => _openTaskModal({ projectId: _project.id }));
     document.getElementById('backlog-new-task-btn')?.addEventListener('click', () => _openTaskModal({ projectId: _project.id }));
+
+    // Filter controls
+    document.getElementById('filter-status')?.addEventListener('change', e => { _filters.status = e.target.value; _render(); });
+    document.getElementById('filter-type')?.addEventListener('change', e => { _filters.type = e.target.value; _render(); });
+    document.getElementById('filter-priority')?.addEventListener('change', e => { _filters.priority = e.target.value; _render(); });
+    document.getElementById('filter-assignee')?.addEventListener('change', e => { _filters.assignee = e.target.value; _render(); });
+    document.getElementById('filter-clear-btn')?.addEventListener('click', () => {
+      _filters = { status: '', type: '', priority: '', assignee: '' };
+      _render();
+    });
 
     document.getElementById('backlog-body')?.addEventListener('click', e => {
       // Sprint actions
@@ -241,7 +340,11 @@ const Page = (() => {
       const removeBtn = e.target.closest('[data-remove-task]');
       if (removeBtn) {
         e.stopPropagation();
-        Sprint.removeTask(removeBtn.dataset.removeTask);
+        const result = Sprint.removeTask(removeBtn.dataset.removeTask);
+        if (result && result.error === 'permission_denied') {
+          App.Toast.error('Tidak ada izin untuk memindahkan task');
+          return;
+        }
         _render();
         return;
       }
@@ -392,7 +495,7 @@ const Page = (() => {
           <select id="next-sprint-sel" style="margin-left:var(--sp-2);">${nextOptions}</select>
         </label>` : ''}
       </div>
-    ` : `<p style="font-size:var(--text-sm);color:var(--color-success);margin-top:var(--sp-4);">🎉 Semua task selesai!</p>`;
+    ` : `<p style="font-size:var(--text-sm);color:var(--color-success);margin-top:var(--sp-4);">Semua task selesai!</p>`;
 
     const { overlay, close } = App.createModal({
       title: `Selesaikan "${sprint.name}"`,
@@ -425,10 +528,12 @@ const Page = (() => {
       if (result.ok) {
         close();
         App.Toast.success(
-          `Sprint selesai!`,
+          'Sprint selesai!',
           `${result.summary.doneTasks}/${result.summary.totalTasks} task done · ${result.summary.velocity} SP velocity`
         );
         _render();
+      } else if (result.error) {
+        App.Toast.error('Gagal menyelesaikan sprint', result.error);
       }
     });
     if (window.lucide) lucide.createIcons();
@@ -451,6 +556,8 @@ const Page = (() => {
         _render();
       } else if (result.error === 'cannot_delete_active') {
         App.Toast.error('Sprint aktif tidak bisa dihapus. Selesaikan sprint terlebih dahulu.');
+      } else if (result.error === 'permission_denied') {
+        App.Toast.error('Tidak ada izin untuk menghapus sprint');
       }
       close();
     });
@@ -486,7 +593,18 @@ const Page = (() => {
     overlay.querySelector('#m-add').addEventListener('click', () => {
       const checked = [...overlay.querySelectorAll('input[type=checkbox]:checked')];
       if (!checked.length) { App.Toast.error('Pilih minimal satu task'); return; }
-      checked.forEach(cb => Sprint.addTask(sprintId, cb.value));
+      // Add tasks with proper order
+      const sprintTasks = Storage.query('sp_tasks', t => t.sprintId === sprintId && !t.parentId);
+      let nextOrder = sprintTasks.length > 0
+        ? Math.max(...sprintTasks.map(t => t.order || 0)) + 1
+        : 0;
+      checked.forEach(cb => {
+        Sprint.addTask(sprintId, cb.value);
+        // Update order after adding
+        Storage.update('sp_tasks', arr => arr.map(t =>
+          t.id === cb.value ? { ...t, order: nextOrder++ } : t
+        ));
+      });
       close();
       App.Toast.success(`${checked.length} task ditambahkan ke sprint`);
       _render();
@@ -522,8 +640,11 @@ const Page = (() => {
       row.classList.add('dragging');
       handle.setPointerCapture(e.pointerId);
 
-      handle.addEventListener('pointermove', _onMove);
+      // Store handlers for proper cleanup
+      _drag._moveHandler = _onMove;
+      handle.addEventListener('pointermove', _drag._moveHandler);
       handle.addEventListener('pointerup', _onUp, { once: true });
+      _drag._handle = handle;
     });
   }
 
@@ -555,21 +676,49 @@ const Page = (() => {
     if (!_drag.active) return;
     _drag.active = false;
     _drag.ghost?.remove(); _drag.ghost = null;
+
+    // Cleanup pointermove listener
+    if (_drag._handle && _drag._moveHandler) {
+      _drag._handle.removeEventListener('pointermove', _drag._moveHandler);
+    }
+
     document.querySelectorAll('.task-row.dragging').forEach(el => el.classList.remove('dragging'));
     _clearIndicators();
 
     if (_drag.targetRow) {
       const targetSprintId = _drag.targetRow.dataset.sprintId || null;
+      const targetTaskId = _drag.targetRow.dataset.taskId;
+
       if (_drag.sourceSprintId !== targetSprintId) {
+        // Moving BETWEEN sprints (or sprint ↔ backlog)
         if (targetSprintId) {
-          Sprint.addTask(targetSprintId, _drag.taskId);
+          // Compute order position at drop target
+          const siblings = Storage.query('sp_tasks', t => t.sprintId === targetSprintId && !t.parentId)
+            .sort((a, b) => (a.order || 0) - (b.order || 0));
+          const targetIdx = siblings.findIndex(t => t.id === targetTaskId);
+          const insertIdx = _drag.dropBefore ? targetIdx : targetIdx + 1;
+          Task.reorder(_drag.taskId, Math.max(0, insertIdx), targetSprintId, null);
         } else {
+          // Move to backlog
           Sprint.removeTask(_drag.taskId);
         }
         _render();
+      } else {
+        // Reorder WITHIN same sprint or within backlog
+        const sameSprintTasks = Storage.query('sp_tasks', t =>
+          (targetSprintId ? t.sprintId === targetSprintId : !t.sprintId) &&
+          t.projectId === _project.id && !t.parentId
+        ).sort((a, b) => (a.order || 0) - (b.order || 0));
+        const targetIdx = sameSprintTasks.findIndex(t => t.id === targetTaskId);
+        const insertIdx = _drag.dropBefore ? targetIdx : targetIdx + 1;
+        if (targetIdx !== -1) {
+          Task.reorder(_drag.taskId, Math.max(0, insertIdx), targetSprintId, null);
+          _render();
+        }
       }
     }
-    _drag = { active: false, taskId: null, ghost: null, sourceSprintId: null, targetRow: null, dropBefore: false };
+
+    _drag = { active: false, taskId: null, ghost: null, sourceSprintId: null, targetRow: null, dropBefore: false, _handle: null, _moveHandler: null };
   }
 
   // ── Init ──────────────────────────────────────────────────────────────────
