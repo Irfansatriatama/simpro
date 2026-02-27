@@ -1,9 +1,10 @@
-/* SIMPRO Page: members — v0.14.1 (BUG-14) */
+/* SIMPRO Page: members — v0.14.2 (BUG-15) */
 const MembersPage = (() => {
   let _session = null;
   let _isAdmin = false;
   let _isPM = false;
   let _allUsers = [];
+  let _totalVisible = 0;
   let _searchQ = '';
   let _filterRole = '';
   let _filterStatus = '';
@@ -74,10 +75,18 @@ const MembersPage = (() => {
 
   function _loadAndRender() {
     const visible = _getVisibleUsers();
+    _totalVisible = visible.length;
     _allUsers = _applyFilters(visible);
 
     const countEl = document.getElementById('member-count');
-    if (countEl) countEl.textContent = _allUsers.length + ' user';
+    if (countEl) {
+      const hasFilter = _searchQ || _filterRole || _filterStatus;
+      countEl.textContent = hasFilter
+        ? _allUsers.length + ' dari ' + _totalVisible + ' user'
+        : _allUsers.length + ' user';
+    }
+
+    _updateFilterIndicators();
 
     const tbody = document.getElementById('members-tbody');
     if (!tbody) return;
@@ -107,7 +116,56 @@ const MembersPage = (() => {
     if (window.lucide) lucide.createIcons();
   }
 
-  function _renderRow(u) {
+  function _updateFilterIndicators() {
+    var hasFilter = _searchQ || _filterRole || _filterStatus;
+    var clearBtn = document.getElementById('btn-clear-filters');
+    if (clearBtn) clearBtn.style.display = hasFilter ? '' : 'none';
+
+    // Update select visual state — add active class if filter is set
+    var filterRole = document.getElementById('filter-role');
+    var filterStatus = document.getElementById('filter-status');
+    if (filterRole) filterRole.classList.toggle('filter-active', !!_filterRole);
+    if (filterStatus) filterStatus.classList.toggle('filter-active', !!_filterStatus);
+
+    // Update active filter pills
+    var pillsEl = document.getElementById('filter-active-pills');
+    if (!pillsEl) return;
+    var pills = [];
+    if (_filterRole) {
+      var roleLabels = { admin: 'Admin', pm: 'Project Manager', developer: 'Developer', viewer: 'Viewer' };
+      pills.push('<span class="filter-pill" data-clear="role">Role: ' + (roleLabels[_filterRole] || _filterRole) + ' <button class="filter-pill-clear" data-clear="role" aria-label="Hapus filter role">&#x2715;</button></span>');
+    }
+    if (_filterStatus) {
+      pills.push('<span class="filter-pill" data-clear="status">Status: ' + (_filterStatus === 'active' ? 'Aktif' : 'Nonaktif') + ' <button class="filter-pill-clear" data-clear="status" aria-label="Hapus filter status">&#x2715;</button></span>');
+    }
+    if (_searchQ) {
+      pills.push('<span class="filter-pill" data-clear="search">Cari: &ldquo;' + Utils.escapeHtml(_searchQ) + '&rdquo; <button class="filter-pill-clear" data-clear="search" aria-label="Hapus pencarian">&#x2715;</button></span>');
+    }
+    pillsEl.innerHTML = pills.join('');
+
+    // Bind pill clear buttons
+    pillsEl.querySelectorAll('.filter-pill-clear').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var type = btn.dataset.clear;
+        if (type === 'role') {
+          _filterRole = '';
+          var fr = document.getElementById('filter-role');
+          if (fr) fr.value = '';
+        } else if (type === 'status') {
+          _filterStatus = '';
+          var fs = document.getElementById('filter-status');
+          if (fs) fs.value = '';
+        } else if (type === 'search') {
+          _searchQ = '';
+          var si = document.getElementById('search-input');
+          if (si) si.value = '';
+        }
+        _loadAndRender();
+      });
+    });
+  }
+
+
     var colors = Utils.getAvatarColor(u.id);
     var fg = colors[0], bg = colors[1];
     var initials = Utils.getInitials(u.name || '');
@@ -159,6 +217,18 @@ const MembersPage = (() => {
 
     var filterStatus = document.getElementById('filter-status');
     if (filterStatus) filterStatus.addEventListener('change', function(e) { _filterStatus = e.target.value; _loadAndRender(); });
+
+    var clearFiltersBtn = document.getElementById('btn-clear-filters');
+    if (clearFiltersBtn) clearFiltersBtn.addEventListener('click', function() {
+      _searchQ = ''; _filterRole = ''; _filterStatus = '';
+      var si = document.getElementById('search-input');
+      var fr = document.getElementById('filter-role');
+      var fs = document.getElementById('filter-status');
+      if (si) si.value = '';
+      if (fr) fr.value = '';
+      if (fs) fs.value = '';
+      _loadAndRender();
+    });
 
     var addBtn = document.getElementById('btn-add-user');
     if (addBtn) addBtn.addEventListener('click', function() { _openModal(null); });
@@ -217,18 +287,28 @@ const MembersPage = (() => {
     var activeEl = document.getElementById('input-user-active');
     var pwReq    = document.getElementById('pw-required');
     var activeRow = document.getElementById('active-toggle-row');
+    var passHint  = document.getElementById('pw-hint');
+    var saveBtn  = document.getElementById('btn-user-save');
 
-    if (titleEl)  titleEl.textContent  = userId ? 'Edit User' : 'Tambah User';
+    // Full reset setiap kali modal dibuka
     if (nameEl)   nameEl.value   = '';
     if (emailEl)  emailEl.value  = '';
     if (roleEl)   roleEl.value   = 'developer';
     if (passEl)   passEl.value   = '';
     if (bioEl)    bioEl.value    = '';
     if (activeEl) activeEl.checked = true;
+    if (saveBtn)  saveBtn.disabled = false;
+
+    // Hapus error state
+    [nameEl, emailEl, passEl].forEach(function(el) {
+      if (el) el.classList.remove('input-error');
+    });
 
     if (userId) {
+      if (titleEl)   titleEl.textContent  = 'Edit User';
       if (passEl)    passEl.placeholder = 'Kosongkan jika tidak diubah';
       if (pwReq)     pwReq.style.display = 'none';
+      if (passHint)  passHint.textContent = 'Kosongkan jika tidak ingin mengubah password';
       if (activeRow) activeRow.style.display = '';
 
       var u = (Storage.get('sp_users') || []).find(function(x) { return x.id === userId; });
@@ -240,8 +320,10 @@ const MembersPage = (() => {
         if (activeEl) activeEl.checked = u.isActive !== false;
       }
     } else {
+      if (titleEl)   titleEl.textContent  = 'Tambah User';
       if (passEl)    passEl.placeholder = 'Min. 6 karakter';
       if (pwReq)     pwReq.style.display = '';
+      if (passHint)  passHint.textContent = 'Wajib diisi, minimal 6 karakter';
       if (activeRow) activeRow.style.display = 'none';
     }
 

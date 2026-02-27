@@ -57,21 +57,31 @@
           <input type="text" id="search-input" class="input" placeholder="Cari nama atau email…">
         </div>
         <div class="members-filters">
-          <select id="filter-role" class="input">
-            <option value="">Semua Role</option>
-            <option value="admin">Admin</option>
-            <option value="pm">Project Manager</option>
-            <option value="developer">Developer</option>
-            <option value="viewer">Viewer</option>
-          </select>
-          <select id="filter-status" class="input">
-            <option value="">Semua Status</option>
-            <option value="active">Aktif</option>
-            <option value="inactive">Nonaktif</option>
-          </select>
+          <div class="filter-select-wrap">
+            <label class="filter-label" for="filter-role">Role</label>
+            <select id="filter-role" class="input filter-select">
+              <option value="">Semua</option>
+              <option value="admin">Admin</option>
+              <option value="pm">Project Manager</option>
+              <option value="developer">Developer</option>
+              <option value="viewer">Viewer</option>
+            </select>
+          </div>
+          <div class="filter-select-wrap">
+            <label class="filter-label" for="filter-status">Status</label>
+            <select id="filter-status" class="input filter-select">
+              <option value="">Semua</option>
+              <option value="active">Aktif</option>
+              <option value="inactive">Nonaktif</option>
+            </select>
+          </div>
+          <button id="btn-clear-filters" class="btn btn-ghost btn-sm" style="display:none;">
+            <i data-lucide="x" style="width:13px;height:13px;"></i> Reset Filter
+          </button>
         </div>
-        <span id="member-count" style="font-size:var(--text-sm);color:var(--color-text-3);margin-left:auto;"></span>
+        <span id="member-count" class="member-count-badge"></span>
       </div>
+      <div id="filter-active-pills" class="filter-active-pills"></div>
 
       <div class="members-table-wrap">
         <table class="members-table">
@@ -130,6 +140,7 @@
         <div class="form-group" id="password-group">
           <label class="form-label" for="input-user-password">Password <span class="required" id="pw-required">*</span></label>
           <input type="password" id="input-user-password" class="input" placeholder="Min. 6 karakter">
+          <span id="pw-hint" class="form-hint">Wajib diisi, minimal 6 karakter</span>
         </div>
       </div>
       <div class="form-group" style="margin-bottom:var(--sp-4);">

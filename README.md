@@ -34,9 +34,9 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | v1.0.8 (Bug Fix Release — BUG-14) |
+| **Versi App** | v1.0.9 (Bug Fix Release — BUG-15) |
 | **Fase Pembangunan Selesai** | FASE 16 — Polish, PWA Penuh & Audit Final ✅ |
-| **Fase Bug Fix Saat Ini** | BUG-14 ✅ — Members: async Storage.update fix, null guard, error handling (SELESAI) |
+| **Fase Bug Fix Saat Ini** | BUG-15 ✅ — Members: filter bar redesign (pills, label, clear), _openModal full reset, pw-hint (SELESAI) |
 | **Fase Bug Fix Berikutnya** | — (Ongoing bug fix, upload zip terbaru jika ada bug baru) |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
@@ -61,6 +61,7 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 | BUG-12 | Backlog Deep Fix: Collapse State, Drag→Backlog Reorder, Task.reorder() Status Bug, _nextOrder Fix, addTask Batch | ✅ Selesai | 2026-02-27 |
 | BUG-13 | Projects: Create Project Fix (null check, try-catch, memberIds guard), Card Dropdown Menu Fix (position:fixed, no duplicate listener) | ✅ Selesai | 2026-02-27 |
 | BUG-14 | Members: async Storage.update fix (hash password dulu, lalu sync callback), null/undefined guard, try-catch, TimeLog guard | ✅ Selesai | 2026-02-27 |
+| BUG-15 | Members: Filter bar redesign (label, pill, clear button), _openModal full reset, input-error state, pw-hint | ✅ Selesai | 2026-02-27 |
 
 ---
 
@@ -1282,8 +1283,43 @@ Widget My Tasks hanya menampilkan project dot (bukan label), badge type, dan due
 
 ---
 
-*SIMPRO v1.0.8 — Offline-first. Zero server. Pure localStorage.*  
+*SIMPRO v1.0.9 — Offline-first. Zero server. Pure localStorage.*  
 *README ini adalah sumber kebenaran tunggal. Tidak ada file dokumentasi lain yang diperlukan.*
+
+---
+
+### BUG-15 — Members: Filter Bar Redesign & Add User Fix
+
+**2026-02-27** | ✅
+
+**Bug yang Diperbaiki:**
+
+**1. Filter bar terlalu sederhana dan tidak informatif (BUG UX):**
+- Sebelum: hanya 2 `<select>` polos tanpa label, tanpa indikator filter aktif, tanpa clear button — user tidak tahu filter apa yang aktif dan tidak bisa mereset dengan cepat
+- Sesudah: Redesign penuh filter toolbar:
+  - Setiap select memiliki label (`Role` / `Status`) di atas dengan font uppercase kecil
+  - Select yang aktif berubah warna (border biru, background accent-light) untuk visual feedback
+  - Muncul **active filter pills** di bawah toolbar saat filter aktif — menampilkan nilai filter yang dipilih + tombol X per-pill untuk hapus filter individual
+  - Tombol **"Reset Filter"** muncul otomatis saat ada filter aktif, dengan hover danger-color
+  - **Member count badge** berganti menjadi "N dari M user" saat filter aktif (sebelumnya hanya "N user")
+  - Semua pill menggunakan warna accent (biru) dengan border, konsisten dengan design system
+
+**2. `_openModal` tidak reset state form secara penuh (BUG):**
+- Sebelum: jika admin edit user lalu buka modal tambah user baru, beberapa state bisa bocor (misal `saveBtn.disabled` jika ada error sebelumnya tidak ter-reset)
+- Sesudah: reset eksplisit `saveBtn.disabled = false` + hapus `input-error` class dari semua field saat modal dibuka
+
+**3. Password hint tidak ada (UX):**
+- Sebelum: tidak ada hint teks di bawah password field — user tidak tahu apakah password opsional saat edit
+- Sesudah: ditambah elemen `<span id="pw-hint" class="form-hint">` yang berubah teks:
+  - Mode tambah: "Wajib diisi, minimal 6 karakter"
+  - Mode edit: "Kosongkan jika tidak ingin mengubah password"
+
+**File yang Dimodifikasi:**
+- `assets/js/pages/members.js` (v0.14.2)
+- `assets/css/members.css` (v0.15.1)
+- `pages/members.html` (v0.14.2)
+- `README.md` (v1.0.9)
+
 
 ---
 
