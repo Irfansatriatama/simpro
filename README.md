@@ -30,9 +30,9 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | 0.2.0 |
-| **Fase Saat Ini** | FASE 2 — Auth: Login, Register & Session ✅ |
-| **Fase Berikutnya** | FASE 3 — Dashboard Utama |
+| **Versi App** | 0.3.0 |
+| **Fase Saat Ini** | FASE 3 — Dashboard Utama ✅ |
+| **Fase Berikutnya** | FASE 4 — Project Management |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
 | **PWA** | Aktif sejak Fase 1 (manifest.json + sw.js) |
@@ -1094,7 +1094,7 @@ Log ini diupdate **setiap akhir fase** oleh Claude. Mencatat apa yang sudah dike
 |-------|------|---------|--------|-----------|
 | 0.1.0 | FASE 1 | 2026-02-27 | ✅ Selesai | Core Infrastructure & Design System |
 | 0.2.0 | FASE 2 | — | Belum dikerjakan | Auth: Login, Register & Session |
-| 0.3.0 | FASE 3 | — | Belum dikerjakan | Dashboard Utama |
+| 0.3.0 | FASE 3 | 2026-02-27 | ✅ Selesai | Dashboard Utama |
 | 0.4.0 | FASE 4 | — | Belum dikerjakan | Project Management |
 | 0.5.0 | FASE 5 | — | Belum dikerjakan | Task Management: CRUD & Task Detail |
 | 0.6.0 | FASE 6 | — | Belum dikerjakan | Kanban Board |
@@ -1198,16 +1198,32 @@ Log ini diupdate **setiap akhir fase** oleh Claude. Mencatat apa yang sudah dike
 ---
 
 #### FASE 3 — Dashboard Utama
-**Versi:** v0.3.0 | **Tanggal:** — | **Status:** Belum dikerjakan
+**Versi:** v0.3.0 | **Tanggal:** 2026-02-27 | **Status:** ✅ Selesai
 
 **File Ditambahkan:**
-*(diisi setelah fase selesai)*
+- `assets/css/dashboard.css` — Semua style dashboard: stat bar, widget shell, task rows, project cards, sprint cards, activity list, responsive grid
+- `assets/js/pages/dashboard.js` — Logic lengkap: 4 widget (My Tasks, Active Projects, Recent Activity, Sprint Overview), stat bar, greeting, welcome state
 
 **File Diubah:**
-*(diisi setelah fase selesai)*
+- `pages/dashboard.html` — Link ke dashboard.css, shell sudah terpasang
+- `assets/js/core/utils.js` — Tambah `getProjectStatusLabel()` + export
+- `sw.js` — Versi cache → v0.3.0, tambah dashboard.css ke SHELL_FILES
+
+**Fitur yang Diimplementasikan:**
+- Widget My Tasks: grouping Overdue / Hari Ini / Upcoming, klik → task detail
+- Widget Active Projects: card grid dengan progress bar, sprint aktif, avatar stack member
+- Widget Recent Activity: timeline 20 aktivitas terbaru dari semua project yang diikuti
+- Widget Sprint Overview: card tiap sprint aktif dengan progress, breakdown status, sisa hari
+- Stat bar: Project Aktif / Task Saya / Terlambat / Sprint Aktif
+- Role-aware: Viewer tidak melihat widget My Tasks
+- Welcome state: tampil saat belum ada project
+- Greeting dinamis (selamat pagi/siang/malam) + tanggal hari ini
+- Responsive: 2 kolom di desktop, 1 kolom di mobile
 
 **Catatan Teknis:**
-*(diisi setelah fase selesai)*
+- Widget dirender secara terpisah setelah DOM tersedia, icons di-refresh dengan `lucide.createIcons()`
+- Semua data dibaca via `Storage.get()` / `Storage.query()` — tidak ada akses `localStorage` langsung
+- `getProjectStatusLabel()` ditambahkan ke utils.js untuk konsistensi label multi-bahasa
 
 ---
 

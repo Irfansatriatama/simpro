@@ -153,6 +153,11 @@ const Utils = (() => {
     return map[type] || type;
   }
 
+  function getProjectStatusLabel(status) {
+    const map = { active: 'Aktif', 'on-hold': 'On Hold', completed: 'Selesai', archived: 'Arsip' };
+    return map[status] || status;
+  }
+
   function getProjectStatusColor(status) {
     const map = {
       active: 'badge-active',
@@ -256,6 +261,7 @@ const Utils = (() => {
     getStatusLabel,
     getTypeColor,
     getTypeLabel,
+    getProjectStatusLabel,
     getProjectStatusColor,
     isOverdue,
     isDueToday,
