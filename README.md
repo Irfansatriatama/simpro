@@ -30,9 +30,9 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | 0.3.0 |
-| **Fase Saat Ini** | FASE 3 — Dashboard Utama ✅ |
-| **Fase Berikutnya** | FASE 4 — Project Management |
+| **Versi App** | 0.4.0 |
+| **Fase Saat Ini** | FASE 4 — Project Management ✅ |
+| **Fase Berikutnya** | FASE 5 — Task Management: CRUD & Task Detail |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
 | **PWA** | Aktif sejak Fase 1 (manifest.json + sw.js) |
@@ -1095,7 +1095,7 @@ Log ini diupdate **setiap akhir fase** oleh Claude. Mencatat apa yang sudah dike
 | 0.1.0 | FASE 1 | 2026-02-27 | ✅ Selesai | Core Infrastructure & Design System |
 | 0.2.0 | FASE 2 | — | Belum dikerjakan | Auth: Login, Register & Session |
 | 0.3.0 | FASE 3 | 2026-02-27 | ✅ Selesai | Dashboard Utama |
-| 0.4.0 | FASE 4 | — | Belum dikerjakan | Project Management |
+| 0.4.0 | FASE 4 | 2026-02-27 | ✅ Selesai | Project Management |
 | 0.5.0 | FASE 5 | — | Belum dikerjakan | Task Management: CRUD & Task Detail |
 | 0.6.0 | FASE 6 | — | Belum dikerjakan | Kanban Board |
 | 0.7.0 | FASE 7 | — | Belum dikerjakan | Sprint Planning & Backlog |
@@ -1228,16 +1228,38 @@ Log ini diupdate **setiap akhir fase** oleh Claude. Mencatat apa yang sudah dike
 ---
 
 #### FASE 4 — Project Management
-**Versi:** v0.4.0 | **Tanggal:** — | **Status:** Belum dikerjakan
+**Versi:** v0.4.0 | **Tanggal:** 2026-02-27 | **Status:** ✅ Selesai
 
 **File Ditambahkan:**
-*(diisi setelah fase selesai)*
+- `assets/css/projects.css` — Style projects grid/list, project card, color picker, stats, tabs, breadcrumb, danger zone
+- `assets/js/modules/project.js` — create, getAll, getById, getForUser, update, archive, unarchive, remove, addMember, removeMember, getMemberRole, getStats, nextTaskKey
+- `assets/js/pages/projects.js` — Halaman daftar project: grid/list toggle, filter aktif/arsip/semua, modal create/edit, inline menu per card
+- `assets/js/pages/project-detail.js` — Halaman detail: 3 tab (Overview/Members/Settings), breadcrumb, stats, sprint aktif, milestones, invite member, danger zone
 
 **File Diubah:**
-*(diisi setelah fase selesai)*
+- `pages/projects.html` — Halaman projects lengkap dengan grid, filter, view toggle, modal project
+- `pages/project-detail.html` — Halaman detail dengan 3 tab
+- `sw.js` — Versi cache → v0.4.0, tambah projects.css + modul project ke SHELL_FILES
+- `README_SIMPRO.md` — Update status versi, log fase
+
+**Fitur yang Diimplementasikan:**
+- CRUD project penuh: buat, edit, arsip/unarsip, hapus (dengan cascade delete ke tasks/sprints/labels/milestones)
+- Auto-generate key dari nama project
+- Validasi key unik (2–5 huruf kapital A-Z) dan nama unik
+- Color picker (8 preset + custom input)
+- Grid view (cards dengan color bar, progress, sprint aktif, avatar stack) & list view (tabel)
+- Filter: aktif / semua / arsip
+- Project card: color bar, nama, key badge, priority dot, progress bar, sprint aktif, member avatars, dropdown menu
+- Tab Overview: 6 stat card, sprint aktif dengan progress, milestone list
+- Tab Members: tabel member (avatar, nama, email, role, last login), undang dari user yang ada, hapus member (dengan role guard)
+- Tab Settings (PM/Admin): edit semua field, color picker, danger zone (arsip/hapus)
+- Role guard: Viewer tidak bisa buat/edit project; Settings tab disembunyikan untuk non-PM/Admin
 
 **Catatan Teknis:**
-*(diisi setelah fase selesai)*
+- `Project.nextTaskKey()` increment taskCounter atomic dan return key format "WR-N"
+- Cascade delete di `Project.remove()` menghapus tasks, sprints, labels, milestones terkait
+- `getForUser()` filter by memberIds untuk role developer/viewer; admin/pm lihat semua
+- Color picker custom: input[type=color] terintegrasi, unset swatch active saat custom dipilih
 
 ---
 
