@@ -163,10 +163,10 @@
 .badge-viewer    { background: var(--color-surface-2);  color: var(--color-text-2); }
 
 /* Project status */
-.badge-active    { background: var(--color-success-bg); color: var(--color-success); }
-.badge-on-hold   { background: var(--color-warning-bg); color: var(--color-warning); }
-.badge-completed { background: var(--color-surface-2);  color: var(--color-text-2); }
-.badge-archived  { background: var(--color-surface-2);  color: var(--color-text-3); }
+.badge-active    { background: var(--color-success-bg); color: var(--color-success); border: 1px solid rgba(47,158,68,0.25); font-weight: 600; }
+.badge-on-hold   { background: var(--color-warning-bg); color: var(--color-warning); border: 1px solid rgba(230,119,0,0.25); font-weight: 600; }
+.badge-completed { background: var(--color-info-bg);    color: var(--color-info);    border: 1px solid rgba(25,113,194,0.25); font-weight: 600; }
+.badge-archived  { background: #F1F3F5; color: #5C6070; border: 1px solid #CED4DA; font-weight: 500; }
 
 /* Priority dot */
 .priority-dot {

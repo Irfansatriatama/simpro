@@ -201,8 +201,8 @@ const ProjectDetailPage = (() => {
     const members = memberIds.map(id => users.find(u => u.id === id)).filter(Boolean);
 
     const inviteBtn = document.getElementById('btn-invite-member');
-    if (_canManage) inviteBtn.style.display = '';
-    else inviteBtn.style.display = 'none';
+    if (_canManage) inviteBtn.classList.remove('hidden');
+    else inviteBtn.classList.add('hidden');
 
     // Bind onclick sebelum early return agar tombol selalu berfungsi
     inviteBtn.onclick = _openInviteModal;

@@ -93,13 +93,14 @@ const Project = (() => {
   function addMember(projectId, userId, role) {
     const project = getById(projectId);
     if (!project) return null;
-    if (project.memberIds.includes(userId)) return project;
+    const existingIds = Array.isArray(project.memberIds) ? project.memberIds : [];
+    if (existingIds.includes(userId)) return project;
 
     Storage.update('sp_projects', (arr) =>
       arr.map(p => {
         if (p.id !== projectId) return p;
-        const memberIds = [...p.memberIds, userId];
-        const memberRoles = { ...p.memberRoles };
+        const memberIds = [...(Array.isArray(p.memberIds) ? p.memberIds : []), userId];
+        const memberRoles = { ...(p.memberRoles || {}) };
         if (role && role !== 'pm') memberRoles[userId] = role;
         return { ...p, memberIds, memberRoles, updatedAt: Utils.nowISO() };
       })

@@ -34,9 +34,9 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | v1.1.6 (Bug Fix Release — BUG-22) |
+| **Versi App** | v1.1.7 (Bug Fix Release — BUG-23) |
 | **Fase Pembangunan Selesai** | FASE 16 — Polish, PWA Penuh & Audit Final ✅ |
-| **Fase Bug Fix Saat Ini** | BUG-22 ✅ — Project Detail: (1) Fix CSS class mismatch — `.input/.select/.textarea` alias tidak ada di CSS, form fields tidak ter-styled; (2) Fix invite member — `Array.isArray(memberIds)` guard + enhanced modal dengan role label & sort; (3) Enhance Settings UI/UX — redesign premium: section icon header, card body layout system, color swatch btn, hex display, duration calculator, save status bar, danger zone card |
+| **Fase Bug Fix Saat Ini** | BUG-23 ✅ — Project Detail: (1) Fix button Undang Member — guard `memberIds` undefined di `project.js addMember()` + Storage.update callback + ganti inline style ke classList.hidden pattern; (2) Redesign status badge project (Aktif/Arsip/On Hold/Selesai) — tambah border, font-weight lebih tebal, warna lebih kontras dan berbeda tiap status |
 | **Fase Bug Fix Berikutnya** | — (Ongoing bug fix, upload zip terbaru jika ada bug baru) |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
@@ -69,6 +69,7 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 | BUG-20 | Project Detail: (1) Tab Members & Settings tidak tampil (CSS active vs hidden pattern mismatch); (2) Placeholder judul task terlalu besar; (3) Tombol close modal task tidak di pojok kanan | ✅ Selesai | 2026-02-27 |
 | BUG-21 | Project Detail: Fix Undang Member + Enhance Settings UI (cards + centering) | ✅ Selesai | 2026-02-27 |
 | BUG-22 | Project Detail: Fix CSS .input alias + Fix Invite memberIds guard + Settings UI Premium Redesign | ✅ Selesai | 2026-02-27 |
+| BUG-23 | Project Detail: Fix Undang Member (memberIds guard di project.js + classList pattern) + Redesign Status Badge Project (warna kontras, border, font-weight) | ✅ Selesai | 2026-02-27 |
 
 ---
 
@@ -1561,5 +1562,36 @@ Widget My Tasks hanya menampilkan project dot (bukan label), badge type, dan due
 
 ---
 
-*SIMPRO v1.1.6 — Offline-first. Zero server. Pure localStorage.*
+---
+
+### BUG-23 — Project Detail: Fix Undang Member + Redesign Status Badge Project
+
+**2026-02-27** | ✅
+
+**Bug yang Diperbaiki:**
+
+**1. Button "Undang Member" tidak berfungsi — BUG KRITIS:**
+- Root cause utama: `addMember()` di `project.js` memanggil `project.memberIds.includes(userId)` tanpa guard — jika `memberIds` undefined (project lama / edge case schema), crash `TypeError: Cannot read properties of undefined (reading 'includes')` terjadi diam-diam, mengakibatkan modal tidak tertutup dan member tidak berhasil diundang.
+- Fix 1 — `project.js addMember()`: tambah guard `const existingIds = Array.isArray(project.memberIds) ? project.memberIds : []` sebelum `.includes()` check.
+- Fix 2 — `project.js Storage.update callback`: spread `[...(Array.isArray(p.memberIds) ? p.memberIds : []), userId]` dan `{ ...(p.memberRoles || {}) }` — guard dalam callback Storage.update agar tidak crash pada data lama.
+- Fix 3 — Visibility pattern: ganti `inviteBtn.style.display = '' / 'none'` → `inviteBtn.classList.remove('hidden') / classList.add('hidden')`. Konsisten dengan pattern `.hidden { display: none !important }` yang digunakan seluruh app. Inline style `style="display:none"` di HTML diubah ke class `hidden`.
+
+**2. Flag status Aktif/Arsip di sebelah nama project tidak ada warna yang jelas — BUG UX:**
+- Sebelum: `badge-active` = hijau polos tanpa border; `badge-on-hold` = orange polos; `badge-completed` = abu-abu muda (hampir tidak terlihat); `badge-archived` = abu-abu sangat pudar — tidak ada perbedaan visual yang signifikan antar status.
+- Sesudah: Setiap status badge mendapat **border berwarna sesuai status** + **font-weight lebih tebal**:
+  - `badge-active` — hijau (success), border `rgba(47,158,68,0.25)`, font-weight 600
+  - `badge-on-hold` — orange (warning), border `rgba(230,119,0,0.25)`, font-weight 600
+  - `badge-completed` — biru (info) — warna sebelumnya abu-abu diganti biru agar lebih distinctive, border `rgba(25,113,194,0.25)`, font-weight 600
+  - `badge-archived` — abu-abu medium `#5C6070`, background `#F1F3F5`, border `#CED4DA`, font-weight 500 — cukup terlihat tapi tidak mencolok karena status tidak aktif
+
+**File yang Dimodifikasi:**
+- `assets/js/modules/project.js` — fix `addMember`: memberIds guard di cek awal + guard dalam Storage.update callback + memberRoles fallback `|| {}`
+- `assets/js/pages/project-detail.js` — ganti `style.display` → `classList` untuk `inviteBtn`
+- `pages/project-detail.html` — ganti `style="display:none"` → `class="hidden"` di `btn-invite-member`
+- `assets/css/components.css` — redesign 4 badge project status: border + font-weight + warna `badge-completed` dari grey ke info-blue
+- `README.md` (v1.1.7)
+
+---
+
+*SIMPRO v1.1.7 — Offline-first. Zero server. Pure localStorage.*
 *README ini adalah sumber kebenaran tunggal. Tidak ada file dokumentasi lain yang diperlukan.*
