@@ -165,7 +165,7 @@ const Page = (() => {
             <span class="sprint-dates">${_formatDateRange(sprint.startDate, sprint.endDate)}</span>
             <span class="sprint-points">${stats.donePoints}/${stats.totalPoints} SP · ${stats.done}/${stats.total}</span>
             ${filteredCount}
-            <div class="sprint-actions" onclick="event.stopPropagation()">
+            <div class="sprint-actions">
               ${actionBtns}
             </div>
           </div>

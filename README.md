@@ -2,7 +2,7 @@
 
 > **Dokumen Tunggal & Tersentralisasi** — Ini adalah satu-satunya README yang perlu dibaca.  
 > Menggabungkan semua informasi dari `README_SIMPRO.md` dan `README_BUG_SIMPRO.md`.  
-> Update terakhir: **2026-02-27** | Versi saat ini: **v1.1.1** (Bug Fix Release — BUG-17 SELESAI)
+> Update terakhir: **2026-02-27** | Versi saat ini: **v1.1.3** (Bug Fix Release — BUG-19 SELESAI)
 
 Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint planning, kanban board, gantt chart, dan laporan progress untuk Project Manager, Developer, Client, dan Manager.
 
@@ -34,9 +34,9 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | v1.1.2 (Bug Fix Release — BUG-18) |
+| **Versi App** | v1.1.3 (Bug Fix Release — BUG-19) |
 | **Fase Pembangunan Selesai** | FASE 16 — Polish, PWA Penuh & Audit Final ✅ |
-| **Fase Bug Fix Saat Ini** | BUG-18 ✅ — Backlog: (1) Enhanced modal tambah task — layout grid rapi, divider section, title input besar; (2) Assignee diganti jadi custom dropdown multi-select dengan search, avatar, checklist; (3) Fix scrollbar halaman backlog dan per-sprint — remove `overflow:hidden` dari `main-content`, fix `.backlog-page` layout |
+| **Fase Bug Fix Saat Ini** | BUG-19 ✅ — Backlog: (1) Fix button "Mulai Sprint" & "Selesaikan" tidak merespons — hapus `onclick="event.stopPropagation()"` pada `.sprint-actions` yang memblokir event delegation; (2) Fix assignee dropdown hanya tampilkan project members — sekarang tampilkan semua user aktif, non-member diberi label visual, project members muncul di atas |
 | **Fase Bug Fix Berikutnya** | — (Ongoing bug fix, upload zip terbaru jika ada bug baru) |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
@@ -65,6 +65,7 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 | BUG-16 | Members: Fix _renderRow missing function def (data tidak tampil), toolbar UI overhaul (card container, divider, search label, alignment fix) | ✅ Selesai | 2026-02-27 |
 | BUG-17 | Members: Fix modal tambah/edit user tidak muncul — struktur HTML modal salah (`.modal` sebagai container outer), diganti ke `.modal-overlay.hidden` pattern konsisten dengan modul lain | ✅ Selesai | 2026-02-27 |
 | BUG-18 | Backlog: (1) Enhanced modal tambah task — layout & styling diperbaiki; (2) Assignee field diganti jadi custom dropdown multi-select; (3) Fix scrollbar backlog page dan per-sprint section | ✅ Selesai | 2026-02-27 |
+| BUG-19 | Backlog: (1) Fix button Mulai Sprint & Selesaikan tidak merespons (stopPropagation bug); (2) Fix assignee dropdown hanya tampilkan project members — tampilkan semua user aktif | ✅ Selesai | 2026-02-27 |
 
 ---
 
@@ -1439,5 +1440,27 @@ Widget My Tasks hanya menampilkan project dot (bukan label), badge type, dan due
 
 ---
 
-*SIMPRO v1.1.2 — Offline-first. Zero server. Pure localStorage.*
+### BUG-19 — Backlog: Fix Button Sprint Tidak Merespons + Assignee Tampilkan Semua User
+
+**2026-02-27** | ✅
+
+**Bug yang Diperbaiki:**
+
+**1. Button "Mulai Sprint" dan "Selesaikan" tidak merespons saat diklik (BUG KRITIS):**
+- Root cause: Elemen `.sprint-actions` memiliki `onclick="event.stopPropagation()"` — ini memblokir event click dari button di dalamnya agar tidak bubbling ke parent `#backlog-body` yang memiliki event delegation handler
+- Karena `backlog.js` menggunakan event delegation (`document.getElementById('backlog-body').addEventListener('click', ...)`) untuk menangkap `data-sprint-action`, saat `event.stopPropagation()` dipanggil lebih dulu, event tidak pernah sampai ke handler — semua button sprint (Mulai, Selesaikan, Edit, Hapus, Tambah Task) menjadi tidak berfungsi sama sekali
+- Fix: Hapus `onclick="event.stopPropagation()"` dari `.sprint-actions` container — event delegation di `_bindEvents()` sudah benar menangani semua kasus termasuk `return` early setelah aksi diproses, sehingga collapse sprint tidak ikut terpicu
+
+**2. Assignee dropdown hanya menampilkan project members (BUG):**
+- Sebelum: `_onProjectChange()` di `task-modal.js` memfilter users berdasarkan `project.memberIds` — user yang baru dibuat via halaman Members tetapi belum ditambahkan ke project tidak akan muncul di dropdown assignee, meskipun mereka adalah user aktif di sistem
+- Sesudah: Dropdown assignee sekarang menampilkan **semua user aktif** di sistem, bukan hanya project members. User yang merupakan project member muncul di urutan atas. User yang bukan member diberi label visual "non-member" berwarna abu-abu di samping role label mereka, sehingga PM tetap bisa membedakan member vs non-member saat assign
+
+**File yang Dimodifikasi:**
+- `assets/js/pages/backlog.js` (v0.8.2) — hapus `onclick="event.stopPropagation()"` dari `.sprint-actions`
+- `assets/js/modules/task-modal.js` (v1.2.0) — `_onProjectChange`: tampilkan semua user aktif, sort member dulu, tambah label non-member; `_renderAssigneeList`: render badge non-member
+- `README.md` (v1.1.3)
+
+---
+
+*SIMPRO v1.1.3 — Offline-first. Zero server. Pure localStorage.*
 *README ini adalah sumber kebenaran tunggal. Tidak ada file dokumentasi lain yang diperlukan.*

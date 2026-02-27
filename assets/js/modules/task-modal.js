@@ -238,7 +238,7 @@ const TaskModal = (() => {
         <div class="assignee-item${checked ? ' selected' : ''}" data-user-id="${u.id}" data-name="${Utils.escapeHtml(u.name)}" role="option" aria-selected="${checked}">
           <div class="assignee-item-avatar">${avatarHtml}</div>
           <span class="assignee-item-name">${Utils.escapeHtml(u.name)}</span>
-          <span class="assignee-item-role">${u.role}</span>
+          <span class="assignee-item-role">${u.role}${u._isMember === false ? ' <span style=\"font-size:9px;color:var(--color-text-3);background:var(--color-bg-3);padding:1px 4px;border-radius:3px;margin-left:3px;\">non-member</span>' : ''}</span>
           <span class="assignee-item-check${checked ? ' visible' : ''}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px;"><polyline points="20 6 9 17 4 12"/></svg>
           </span>
@@ -291,8 +291,16 @@ const TaskModal = (() => {
 
     const project = (Storage.get('sp_projects') || []).find(p => p.id === projectId);
     if (project) {
-      const users = Storage.get('sp_users') || [];
-      const members = users.filter(u => Array.isArray(project.memberIds) && project.memberIds.includes(u.id));
+      const allUsers = (Storage.get('sp_users') || []).filter(u => u.isActive !== false);
+      const projectMemberIds = Array.isArray(project.memberIds) ? project.memberIds : [];
+      // Sort: project members first, then other active users
+      const members = allUsers
+        .map(u => ({ ...u, _isMember: projectMemberIds.includes(u.id) }))
+        .sort((a, b) => {
+          if (a._isMember && !b._isMember) return -1;
+          if (!a._isMember && b._isMember) return 1;
+          return a.name.localeCompare(b.name);
+        });
       _selectedAssignees = [];
       _updateAssigneeLabel();
       _renderAssigneeList(members);
