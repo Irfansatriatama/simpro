@@ -30,9 +30,9 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | 0.9.0 |
-| **Fase Saat Ini** | FASE 9 — Gantt Chart & Milestone ✅ |
-| **Fase Berikutnya** | FASE 10 — Time Tracking |
+| **Versi App** | 0.10.0 |
+| **Fase Saat Ini** | FASE 10 — Time Tracking ✅ |
+| **Fase Berikutnya** | FASE 11 — Notifikasi In-App |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
 | **PWA** | Aktif sejak Fase 1 (manifest.json + sw.js) |
@@ -1100,8 +1100,8 @@ Log ini diupdate **setiap akhir fase** oleh Claude. Mencatat apa yang sudah dike
 | 0.6.0 | FASE 6 | — | Belum dikerjakan | Kanban Board |
 | 0.7.0 | FASE 7 | — | Belum dikerjakan | Sprint Planning & Backlog |
 | 0.8.0 | FASE 8 | 2026-02-27 | ✅ Selesai | Sprint Active View |
-| 0.9.0 | FASE 9 | — | Belum dikerjakan | Gantt Chart & Milestone |
-| 0.10.0 | FASE 10 | — | Belum dikerjakan | Time Tracking |
+| 0.9.0 | FASE 9 | 2026-02-27 | ✅ Selesai | Gantt Chart & Milestone |
+| 0.10.0 | FASE 10 | 2026-02-27 | ✅ Selesai | Time Tracking |
 | 0.11.0 | FASE 11 | — | Belum dikerjakan | Notifikasi In-App |
 | 0.12.0 | FASE 12 | — | Belum dikerjakan | Laporan & Statistik |
 | 0.13.0 | FASE 13 | — | Belum dikerjakan | Import / Export |
@@ -1442,16 +1442,38 @@ Log ini diupdate **setiap akhir fase** oleh Claude. Mencatat apa yang sudah dike
 ---
 
 #### FASE 10 — Time Tracking
-**Versi:** v0.10.0 | **Tanggal:** — | **Status:** Belum dikerjakan
+**Versi:** v0.10.0 | **Tanggal:** 2026-02-27 | **Status:** ✅ Selesai
 
 **File Ditambahkan:**
-*(diisi setelah fase selesai)*
+- (tidak ada file halaman baru)
 
 **File Diubah:**
-*(diisi setelah fase selesai)*
+- `assets/js/modules/timelog.js` — Implementasi penuh: add, getByTask, getByUser, getByProject, getTotalByTask, getTotalByUser, remove, getSummaryByMember
+- `assets/js/pages/task-detail.js` — Tambah komponen time tracker: progress bar logged vs estimated, form log time, daftar log, delete log
+- `assets/css/task.css` — Tambah style time tracker, timelog item, log form, progress bar
+- `pages/task-detail.html` — Tambah `<script src="/assets/js/modules/timelog.js">`
+- `assets/js/pages/project-detail.js` — Tambah render timelog summary widget di tab Overview
+- `pages/project-detail.html` — Tambah container `#time-summary-body`, load timelog.js
+- `assets/css/projects.css` — Tambah `.overview-col-full` untuk widget full-width
+- `sw.js` — Cache versi → v0.10.0, tambah timelog.js
+- `README_SIMPRO.md` — Update status versi, log fase
+
+**Fitur yang Diimplementasikan:**
+- `TimeLog.add()` menerima taskId, userId, hours, description, date — validasi penuh, auto-update `loggedHours` di task
+- `TimeLog.remove()` dengan role guard: user hapus milik sendiri, PM/Admin hapus semua
+- Progress bar di task detail: logged vs estimated, warna merah jika over-estimate
+- Form log time: jam (desimal), tanggal, deskripsi. PM/Admin dapat pilih user lain untuk dilog
+- Daftar log waktu: avatar, nama, jam (monospace highlight), tanggal, deskripsi, tombol hapus
+- Widget summary di project-detail Overview: tabel per member (estimasi, dicatat, persentase)
+- Role guard: Developer hanya bisa log untuk diri sendiri; PM dan Admin bisa log untuk siapapun
+- `getSummaryByMember()` menghitung estimasi per member berdasarkan pembagian merata dari `estimatedHours` task
 
 **Catatan Teknis:**
-*(diisi setelah fase selesai)*
+- `TimeLog.add()` secara atomik meng-update `loggedHours` di task setelah insert log baru
+- `TimeLog.remove()` juga recalculate `loggedHours` agar task selalu sinkron
+- Widget di task-detail di-render ke `#time-tracker-section` yang berada di antara subtask dan activity thread
+- Log form toggle via `_toggleLogForm(show)` — tidak membuat modal baru, form inline di section
+- Estimasi per member di summary widget: dibagi rata jika ada multiple assignee di satu task
 
 ---
 

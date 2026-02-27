@@ -162,6 +162,37 @@ const ProjectDetailPage = (() => {
           <div class="text-xs text-muted">${Utils.formatDate(m.dueDate)}</div>
         </div>`).join('');
     }
+
+    // Time tracking summary
+    const timeBody = document.getElementById('time-summary-body');
+    if (timeBody && typeof TimeLog !== 'undefined') {
+      const summary = TimeLog.getSummaryByMember(_project.id);
+      if (summary.length === 0) {
+        timeBody.innerHTML = '<p class="text-sm text-muted">Belum ada log waktu.</p>';
+      } else {
+        timeBody.innerHTML = `
+          <table class="data-table" style="font-size:var(--text-sm)">
+            <thead><tr>
+              <th>Member</th>
+              <th style="text-align:right">Estimasi</th>
+              <th style="text-align:right">Dicatat</th>
+              <th style="text-align:right">%</th>
+            </tr></thead>
+            <tbody>
+              ${summary.map(m => {
+                const pct = m.estimatedHours > 0 ? Math.round((m.loggedHours / m.estimatedHours) * 100) : null;
+                const isOver = pct !== null && pct > 100;
+                return `<tr>
+                  <td>${Utils.escapeHtml(m.name)}</td>
+                  <td style="text-align:right;color:var(--color-text-2)">${m.estimatedHours > 0 ? Utils.formatHours(m.estimatedHours) : '—'}</td>
+                  <td style="text-align:right;font-weight:500;font-family:var(--font-mono);color:${isOver ? 'var(--color-danger)' : 'var(--color-text)'}">${Utils.formatHours(m.loggedHours)}</td>
+                  <td style="text-align:right;color:${isOver ? 'var(--color-danger)' : 'var(--color-text-2)'}">${pct !== null ? pct + '%' : '—'}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>`;
+      }
+    }
   }
 
   function _renderMembers() {

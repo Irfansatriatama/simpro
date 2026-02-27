@@ -85,6 +85,9 @@ const Page = (() => {
           <!-- Subtasks (hanya untuk task non-subtask) -->
           ${!_task.parentId ? _buildSubtaskSection() : ''}
 
+          <!-- Time Tracking -->
+          <div id="time-tracker-section"></div>
+
           <!-- Activity & Comment Thread -->
           <div>
             <div class="task-section-label">Aktivitas</div>
@@ -148,6 +151,7 @@ const Page = (() => {
     `;
 
     _renderThread();
+    _renderTimeTracker();
     _autoResizeTextarea(document.getElementById('task-title-input'));
     _autoResizeTextarea(document.getElementById('task-desc-input'));
 
@@ -386,6 +390,154 @@ const Page = (() => {
     return `<div class="avatar avatar-${size}" style="background:${bg};color:${fg}">${Utils.getInitials(user.name)}</div>`;
   }
 
+  function _renderTimeTracker() {
+    const section = document.getElementById('time-tracker-section');
+    if (!section) return;
+
+    const logs = typeof TimeLog !== 'undefined' ? TimeLog.getByTask(_task.id) : [];
+    const logged = logs.reduce((s, l) => s + l.hours, 0);
+    const estimated = _task.estimatedHours || 0;
+    const pct = estimated > 0 ? Math.min(Math.round((logged / estimated) * 100), 100) : 0;
+    const isOver = estimated > 0 && logged > estimated;
+    const users = Storage.get('sp_users') || [];
+    const canLog = _session && _session.role !== 'viewer';
+    const isPM = _session && (_session.role === 'admin' || _session.role === 'pm');
+
+    section.innerHTML = `
+      <div class="time-tracker">
+        <div class="time-tracker-header">
+          <div class="task-section-label">Time Tracking</div>
+          ${canLog ? `<button class="btn btn-ghost btn-sm" id="btn-log-time">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Log Time
+          </button>` : ''}
+        </div>
+
+        <div class="time-progress-wrap">
+          <div class="time-progress-bar">
+            <div class="time-progress-fill ${isOver ? 'over-estimate' : ''}" style="width:${estimated > 0 ? pct : 0}%"></div>
+          </div>
+          <div class="time-progress-labels">
+            <span class="time-logged ${isOver ? 'text-danger' : ''}">${Utils.formatHours(logged)} dicatat</span>
+            <span class="time-estimated text-muted">${estimated > 0 ? `/ ${Utils.formatHours(estimated)} estimasi` : 'Belum ada estimasi'}</span>
+          </div>
+        </div>
+
+        <div id="log-time-form" class="log-time-form" style="display:none">
+          <div class="log-time-form-grid">
+            <div class="form-group">
+              <label class="form-label required">Jam</label>
+              <input type="number" id="inp-log-hours" class="form-input" min="0.25" step="0.25" placeholder="mis: 2.5">
+            </div>
+            <div class="form-group">
+              <label class="form-label required">Tanggal</label>
+              <input type="date" id="inp-log-date" class="form-input" value="${Utils.todayISO()}">
+            </div>
+            ${isPM ? `
+            <div class="form-group log-form-user">
+              <label class="form-label">Log untuk</label>
+              <select id="sel-log-user" class="form-select">
+                ${(Storage.query('sp_users', u => (_project?.memberIds || []).includes(u.id))).map(u =>
+                  `<option value="${u.id}" ${u.id === _session.userId ? 'selected' : ''}>${Utils.escapeHtml(u.name)}</option>`
+                ).join('')}
+              </select>
+            </div>` : ''}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Deskripsi</label>
+            <input type="text" id="inp-log-desc" class="form-input" placeholder="Apa yang dikerjakan?">
+          </div>
+          <div class="log-form-actions">
+            <button class="btn btn-ghost btn-sm" id="btn-log-cancel">Batal</button>
+            <button class="btn btn-primary btn-sm" id="btn-log-submit">Simpan</button>
+          </div>
+        </div>
+
+        <div class="timelog-list" id="timelog-list">
+          ${logs.length === 0
+            ? `<p class="text-sm text-muted" style="padding:var(--sp-2) 0;">Belum ada log waktu.</p>`
+            : logs.map(log => {
+                const u = users.find(u => u.id === log.userId);
+                const canDelete = isPM || log.userId === _session?.userId;
+                const [fg, bg] = Utils.getAvatarColor(log.userId);
+                const initials = u ? Utils.getInitials(u.name) : '?';
+                const avatarHtml = u?.avatar
+                  ? `<img src="${u.avatar}" alt="${Utils.escapeHtml(u.name)}">`
+                  : initials;
+                return `
+                  <div class="timelog-item" data-log-id="${log.id}">
+                    <div class="timelog-avatar" style="background:${bg};color:${fg}">${avatarHtml}</div>
+                    <div class="timelog-body">
+                      <div class="timelog-meta">
+                        <span class="timelog-user">${u ? Utils.escapeHtml(u.name) : 'Unknown'}</span>
+                        <span class="timelog-hours">${Utils.formatHours(log.hours)}</span>
+                        <span class="timelog-date text-muted">${Utils.formatDate(log.date)}</span>
+                      </div>
+                      ${log.description ? `<div class="timelog-desc text-sm text-muted">${Utils.escapeHtml(log.description)}</div>` : ''}
+                    </div>
+                    ${canDelete ? `<button class="timelog-delete btn-icon" data-delete-log="${log.id}" title="Hapus log">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                    </button>` : ''}
+                  </div>`;
+              }).join('')}
+        </div>
+      </div>`;
+
+    if (window.lucide) lucide.createIcons({ scopeElement: section });
+  }
+
+  function _toggleLogForm(show) {
+    const form = document.getElementById('log-time-form');
+    if (!form) return;
+    form.style.display = show ? 'block' : 'none';
+    if (show) {
+      const inp = document.getElementById('inp-log-hours');
+      if (inp) inp.focus();
+    }
+  }
+
+  function _submitLogTime() {
+    const hours = document.getElementById('inp-log-hours')?.value;
+    const date = document.getElementById('inp-log-date')?.value;
+    const desc = document.getElementById('inp-log-desc')?.value || '';
+    const isPM = _session && (_session.role === 'admin' || _session.role === 'pm');
+    const userId = isPM
+      ? (document.getElementById('sel-log-user')?.value || _session.userId)
+      : _session.userId;
+
+    if (!hours || parseFloat(hours) <= 0) {
+      App.Toast.warning('Masukkan jumlah jam yang valid');
+      return;
+    }
+    if (!date) {
+      App.Toast.warning('Tanggal wajib diisi');
+      return;
+    }
+
+    const result = TimeLog.add({ taskId: _task.id, userId, hours: parseFloat(hours), description: desc, date });
+    if (result?.error) {
+      App.Toast.error('Gagal log waktu', result.error);
+      return;
+    }
+
+    // Refresh task data
+    _task = Task.getById(_task.id) || _task;
+    App.Toast.success('Waktu berhasil dicatat');
+    _toggleLogForm(false);
+    _renderTimeTracker();
+  }
+
+  function _deleteTimelog(logId) {
+    if (!confirm('Hapus log waktu ini?')) return;
+    const result = TimeLog.remove(logId, _session);
+    if (result?.error) {
+      App.Toast.error('Gagal menghapus', result.error);
+      return;
+    }
+    _task = Task.getById(_task.id) || _task;
+    _renderTimeTracker();
+  }
+
   function _renderThread() {
     const container = document.getElementById('thread-container');
     if (!container) return;
@@ -517,6 +669,13 @@ const Page = (() => {
   }
 
   function _handleClick(e) {
+    // Time log buttons
+    if (e.target.id === 'btn-log-time') { _toggleLogForm(true); return; }
+    if (e.target.id === 'btn-log-cancel') { _toggleLogForm(false); return; }
+    if (e.target.id === 'btn-log-submit') { _submitLogTime(); return; }
+    const deleteLog = e.target.closest('[data-delete-log]');
+    if (deleteLog) { _deleteTimelog(deleteLog.dataset.deleteLog); return; }
+
     // Comment submit
     if (e.target.id === 'btn-comment-submit') {
       _submitComment();

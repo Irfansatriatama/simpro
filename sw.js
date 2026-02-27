@@ -1,4 +1,4 @@
-const CACHE_NAME = 'simpro-v0.9.0';
+const CACHE_NAME = 'simpro-v0.10.0';
 const SHELL_FILES = [
   '/index.html',
   '/404.html',
@@ -29,6 +29,7 @@ const SHELL_FILES = [
   '/assets/js/pages/backlog.js',
   '/assets/js/pages/sprint.js',
   '/assets/js/modules/gantt.js',
+  '/assets/js/modules/timelog.js',
   '/assets/js/modules/milestone.js',
   '/assets/js/pages/gantt.js',
   '/assets/css/gantt.css',
