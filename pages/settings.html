@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="/assets/css/reset.css">
   <link rel="stylesheet" href="/assets/css/layout.css">
   <link rel="stylesheet" href="/assets/css/components.css">
+  <link rel="stylesheet" href="/assets/css/profile.css">
 </head>
 <body data-page="settings">
 
@@ -28,12 +29,6 @@
   <div class="main-area">
     <header class="topbar"></header>
     <main class="main-content" id="main-content">
-      <div class="page-header">
-        <div class="page-header-left">
-          <h1 class="page-title">Settings</h1>
-        </div>
-      </div>
-      <p style="color:var(--color-text-2);font-size:var(--text-sm);">Halaman ini akan tersedia di fase berikutnya.</p>
     </main>
   </div>
 </div>
@@ -46,6 +41,7 @@
 <script src="/assets/js/core/app.js"></script>
 <script src="/assets/js/core/router.js"></script>
 <script src="/assets/js/modules/notification.js"></script>
+<script src="/assets/js/modules/label.js"></script>
 <script src="/assets/js/core/shell.js"></script>
 <script src="/assets/js/pages/settings.js"></script>
 <script>
@@ -54,6 +50,15 @@
   App.init('settings').then(() => {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
     if (window.lucide) lucide.createIcons();
+    // Apply saved font size
+    const fs = localStorage.getItem('sp_font_size');
+    if (fs === 'large') {
+      const r = document.documentElement;
+      r.style.setProperty('--text-base','16px');
+      r.style.setProperty('--text-sm','14px');
+      r.style.setProperty('--text-md','17px');
+      r.style.setProperty('--text-lg','19px');
+    }
     if (typeof Page !== 'undefined' && Page.init) Page.init();
   });
 </script>

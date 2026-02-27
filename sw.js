@@ -1,4 +1,4 @@
-const CACHE_NAME = 'simpro-v0.14.0';
+const CACHE_NAME = 'simpro-v0.15.0';
 const SHELL_FILES = [
   '/index.html',
   '/404.html',
@@ -36,6 +36,11 @@ const SHELL_FILES = [
   '/assets/css/members.css',
   '/assets/js/pages/members.js',
   '/pages/members.html',
+  '/assets/css/profile.css',
+  '/assets/js/pages/profile.js',
+  '/assets/js/pages/settings.js',
+  '/pages/profile.html',
+  '/pages/settings.html',
   '/assets/js/modules/io.js',
   '/assets/js/pages/io.js',
   '/pages/io.html',
