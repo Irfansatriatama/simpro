@@ -6,6 +6,7 @@ const ProjectsPage = (() => {
   let _session = null;
   let _selectedColor = '#3B5BDB';
   let _cardClickListenerAttached = false;
+  let _activeDropdownPortal = null;
 
   function init() {
     _session = Storage.get('sp_session');
@@ -265,60 +266,106 @@ const ProjectsPage = (() => {
     }
   }
 
+  // Active floating dropdown portal (moved to body to escape overflow:hidden)
+  function _closeAllDropdowns() {
+    if (_activeDropdownPortal) {
+      _activeDropdownPortal.remove();
+      _activeDropdownPortal = null;
+    }
+  }
+
   function _bindCardEvents() {
-    // Menu toggle — use fixed positioning to escape overflow:hidden on card
+    // Menu toggle — build a portal dropdown appended to body
     document.querySelectorAll('.card-menu-btn').forEach(btn => {
       btn.addEventListener('click', e => {
         e.stopPropagation();
         const id = btn.dataset.id;
-        const dropdown = document.querySelector(`.card-menu-dropdown[data-id="${id}"]`);
-        if (!dropdown) return;
 
-        const isHidden = dropdown.classList.contains('hidden');
+        // If the current dropdown belongs to this button, close it (toggle)
+        if (_activeDropdownPortal && _activeDropdownPortal.dataset.forId === id) {
+          _closeAllDropdowns();
+          return;
+        }
 
-        // Close all dropdowns first
-        document.querySelectorAll('.card-menu-dropdown').forEach(d => {
-          d.classList.add('hidden');
-          d.style.top = '';
-          d.style.left = '';
-          d.style.right = '';
+        // Close existing
+        _closeAllDropdowns();
+
+        // Find the template dropdown in the card (still hidden)
+        const templateDropdown = document.querySelector(`.card-menu-dropdown[data-id="${id}"]`);
+        if (!templateDropdown) return;
+
+        // Build portal clone
+        const portal = document.createElement('div');
+        portal.className = 'card-menu-dropdown-portal';
+        portal.dataset.forId = id;
+        portal.innerHTML = templateDropdown.innerHTML;
+        portal.style.cssText = `
+          position: fixed;
+          z-index: 9999;
+          min-width: 160px;
+          background: var(--color-surface);
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius-md);
+          box-shadow: var(--shadow-lg);
+          padding: 4px;
+        `;
+
+        // Position
+        const rect = btn.getBoundingClientRect();
+        portal.style.top = (rect.bottom + 4) + 'px';
+        portal.style.right = (window.innerWidth - rect.right) + 'px';
+
+        document.body.appendChild(portal);
+        _activeDropdownPortal = portal;
+
+        // Create lucide icons in portal
+        if (window.lucide) lucide.createIcons({ nodes: [portal] });
+
+        // Bind actions inside portal
+        const editBtn = portal.querySelector('.btn-edit-project');
+        if (editBtn) editBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          _closeAllDropdowns();
+          _openModal(id);
         });
 
-        if (!isHidden) return; // toggle off
+        const archiveBtn = portal.querySelector('.btn-archive-project');
+        if (archiveBtn) archiveBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          _closeAllDropdowns();
+          Project.archive(id);
+          App.Toast.success('Project diarsipkan');
+          _render();
+        });
 
-        // Position dropdown using fixed coords from button
-        const rect = btn.getBoundingClientRect();
-        dropdown.style.position = 'fixed';
-        dropdown.style.top = (rect.bottom + 4) + 'px';
-        dropdown.style.right = (window.innerWidth - rect.right) + 'px';
-        dropdown.style.left = 'auto';
-        dropdown.style.zIndex = '1600';
-        dropdown.classList.remove('hidden');
+        const unarchiveBtn = portal.querySelector('.btn-unarchive-project');
+        if (unarchiveBtn) unarchiveBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          _closeAllDropdowns();
+          Project.unarchive(id);
+          App.Toast.success('Project diaktifkan kembali');
+          _render();
+        });
+
+        const deleteBtn = portal.querySelector('.btn-delete-project');
+        if (deleteBtn) deleteBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          _closeAllDropdowns();
+          const project = Project.getById(id);
+          if (!project) return;
+          if (!confirm(`Hapus project "${project.name}"? Semua task, sprint, dan data terkait akan dihapus permanen.`)) return;
+          Project.remove(id);
+          App.Toast.success('Project dihapus');
+          _render();
+        });
       });
     });
 
+    // List view edit/delete buttons (outside card menu)
     document.querySelectorAll('.btn-edit-project').forEach(btn => {
       btn.addEventListener('click', e => {
         e.stopPropagation();
         _openModal(btn.dataset.id);
-      });
-    });
-
-    document.querySelectorAll('.btn-archive-project').forEach(btn => {
-      btn.addEventListener('click', e => {
-        e.stopPropagation();
-        Project.archive(btn.dataset.id);
-        App.Toast.success('Project diarsipkan');
-        _render();
-      });
-    });
-
-    document.querySelectorAll('.btn-unarchive-project').forEach(btn => {
-      btn.addEventListener('click', e => {
-        e.stopPropagation();
-        Project.unarchive(btn.dataset.id);
-        App.Toast.success('Project diaktifkan kembali');
-        _render();
       });
     });
 
@@ -334,16 +381,11 @@ const ProjectsPage = (() => {
       });
     });
 
-    // Close menu on outside click — use once-registered global handler via flag
+    // Close portal dropdown on outside click
     if (!_cardClickListenerAttached) {
       _cardClickListenerAttached = true;
       document.addEventListener('click', () => {
-        document.querySelectorAll('.card-menu-dropdown').forEach(d => {
-          d.classList.add('hidden');
-          d.style.top = '';
-          d.style.left = '';
-          d.style.right = '';
-        });
+        _closeAllDropdowns();
       }, false);
     }
   }
@@ -387,17 +429,23 @@ const ProjectsPage = (() => {
     }
 
     modal.classList.remove('hidden');
+    modal.removeAttribute('aria-hidden');
     setTimeout(() => document.getElementById('input-project-name').focus(), 50);
     if (window.lucide) lucide.createIcons();
   }
 
   function _closeModal() {
-    document.getElementById('modal-project').classList.add('hidden');
+    const modal = document.getElementById('modal-project');
+    modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden', 'true');
     _editingId = null;
   }
 
   function _save() {
     try {
+    // Re-read session in case it was set after init
+    if (!_session) _session = Storage.get('sp_session');
+
     const name = document.getElementById('input-project-name').value.trim();
     const key = document.getElementById('input-project-key').value.trim().toUpperCase();
     const desc = document.getElementById('input-project-desc').value.trim();
@@ -408,6 +456,7 @@ const ProjectsPage = (() => {
 
     errEl.classList.add('hidden');
 
+    if (!_session) { _showError('Sesi tidak ditemukan. Silakan login ulang.'); return; }
     if (!name) { _showError('Nama project wajib diisi.'); return; }
     if (!key || key.length < 2 || key.length > 5) { _showError('Key harus 2–5 huruf kapital.'); return; }
     if (!/^[A-Z]+$/.test(key)) { _showError('Key hanya boleh mengandung huruf A–Z.'); return; }
