@@ -115,7 +115,7 @@ const Project = (() => {
     Storage.update('sp_projects', (arr) =>
       arr.map(p => {
         if (p.id !== projectId) return p;
-        const memberIds = p.memberIds.filter(id => id !== userId);
+        const memberIds = (Array.isArray(p.memberIds) ? p.memberIds : []).filter(id => id !== userId);
         const memberRoles = { ...p.memberRoles };
         delete memberRoles[userId];
         return { ...p, memberIds, memberRoles, updatedAt: Utils.nowISO() };

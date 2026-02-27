@@ -160,12 +160,12 @@ const Utils = (() => {
 
   function getProjectStatusColor(status) {
     const map = {
-      active: 'badge-active',
-      'on-hold': 'badge-on-hold',
-      completed: 'badge-completed',
-      archived: 'badge-archived',
+      active: 'active',
+      'on-hold': 'on-hold',
+      completed: 'completed',
+      archived: 'archived',
     };
-    return map[status] || 'badge-active';
+    return map[status] || 'active';
   }
 
   function isOverdue(dueDateStr) {

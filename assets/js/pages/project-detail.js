@@ -201,11 +201,12 @@ const ProjectDetailPage = (() => {
     const members = memberIds.map(id => users.find(u => u.id === id)).filter(Boolean);
 
     const inviteBtn = document.getElementById('btn-invite-member');
-    if (_canManage) inviteBtn.classList.remove('hidden');
-    else inviteBtn.classList.add('hidden');
-
-    // Bind onclick sebelum early return agar tombol selalu berfungsi
-    inviteBtn.onclick = _openInviteModal;
+    if (inviteBtn) {
+      if (_canManage) inviteBtn.classList.remove('hidden');
+      else inviteBtn.classList.add('hidden');
+      // Bind onclick sebelum early return agar tombol selalu berfungsi
+      inviteBtn.onclick = _openInviteModal;
+    }
 
     const tbody = document.getElementById('members-table-body');
 
@@ -314,12 +315,22 @@ const ProjectDetailPage = (() => {
 
     if (!userId) { errEl.textContent = 'Pilih user yang ingin diundang.'; errEl.classList.remove('hidden'); return; }
 
-    Project.addMember(_project.id, userId, role);
-    _project = Project.getById(_project.id);
-    _closeInviteModal();
-    _renderMembers();
-    App.Toast.success('Member berhasil diundang');
-    if (window.lucide) lucide.createIcons();
+    try {
+      const result = Project.addMember(_project.id, userId, role);
+      if (!result) {
+        errEl.textContent = 'Gagal menambahkan member. Silakan coba lagi.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      _project = Project.getById(_project.id);
+      _closeInviteModal();
+      _renderMembers();
+      App.Toast.success('Member berhasil diundang');
+      if (window.lucide) lucide.createIcons();
+    } catch (e) {
+      errEl.textContent = 'Terjadi kesalahan: ' + e.message;
+      errEl.classList.remove('hidden');
+    }
   }
 
   function _renderSettings() {
