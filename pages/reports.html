@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laporan — SIMPRO</title>
+  <script>
+    (function() {
+      const t = localStorage.getItem('sp_theme');
+      if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <link rel="manifest" href="../manifest.json">
+  <meta name="theme-color" content="#3B5BDB" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#4C6EF5" media="(prefers-color-scheme: dark)">
+  <link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+  <link rel="stylesheet" href="../assets/css/tokens.css">
+  <link rel="stylesheet" href="../assets/css/reset.css">
+  <link rel="stylesheet" href="../assets/css/layout.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <link rel="stylesheet" href="../assets/css/reports.css">
+  <link rel="stylesheet" href="../assets/css/print.css">
+  <link rel="stylesheet" href="../assets/css/polish.css">
+</head>
+<body data-page="reports">
+
+<a href="#main-content" class="skip-to-main">Langsung ke konten</a>
+<div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+<div class="app-shell">
+  <aside id="sidebar" class="sidebar" role="navigation" aria-label="Navigasi utama"></aside>
+  <div class="main-area">
+    <header class="topbar" role="banner"></header>
+    <main class="main-content" id="main-content" role="main" tabindex="-1">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1 class="page-title">Laporan &amp; Statistik</h1>
+        </div>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="reports-filter-bar" id="reports-filter-bar">
+        <span class="filter-label">Project:</span>
+        <select id="filter-project">
+          <option value="">Pilih project...</option>
+        </select>
+        <div class="filter-sep"></div>
+        <span class="filter-label">Sprint:</span>
+        <select id="filter-sprint" disabled>
+          <option value="">Semua sprint</option>
+        </select>
+      </div>
+
+      <!-- Content Area -->
+      <div id="reports-content">
+        <div class="report-empty" style="padding: 80px 24px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+          <p>Pilih project untuk melihat laporan</p>
+          <span>Data burndown, velocity, distribusi task, dan time tracking akan tampil di sini</span>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div id="toast-container" aria-live="polite" aria-atomic="false" role="status"></div>
+
+<script src="../assets/js/core/utils.js"></script>
+<script src="../assets/js/core/storage.js"></script>
+<script src="../assets/js/core/auth.js"></script>
+<script src="../assets/js/core/app.js"></script>
+<script src="../assets/js/core/router.js"></script>
+<script src="../assets/js/modules/notification.js"></script>
+<script src="../assets/js/modules/report.js"></script>
+<script src="../assets/js/core/shell.js"></script>
+<script src="../assets/js/pages/reports.js"></script>
+<script>
+  Auth.requireAuth();
+  Shell.applyTo('reports', 'Laporan');
+  App.init('reports').then(() => {
+    if (typeof Page !== 'undefined' && Page.init) Page.init();
+    if (window.lucide) lucide.createIcons();
+  });
+</script>
+</body>
+</html>

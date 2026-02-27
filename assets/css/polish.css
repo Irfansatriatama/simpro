@@ -1,0 +1,397 @@
+/* SIMPRO Polish — v1.0.0
+ * Skeleton screens, improved empty states, PWA install banner,
+ * focus management, accessibility, and miscellaneous final polish.
+ */
+
+/* ── Skeleton Loading ───────────────────────────────────────────────────── */
+@keyframes skeleton-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-2) 25%,
+    var(--color-border) 37%,
+    var(--color-surface-2) 63%
+  );
+  background-size: 800px 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+  border-radius: var(--radius-sm);
+  display: block;
+}
+
+.skeleton-line {
+  height: 13px;
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Empty States ─────────────────────────────────────────────────────────
+ * Shared empty state used across all pages
+ */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-10) var(--sp-6);
+  text-align: center;
+  color: var(--color-text-3);
+  gap: var(--sp-3);
+}
+
+.empty-state-icon {
+  width: 56px;
+  height: 56px;
+  color: var(--color-border-strong);
+  margin-bottom: var(--sp-2);
+}
+
+.empty-state-title {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--color-text-2);
+  margin: 0;
+}
+
+.empty-state-desc {
+  font-size: var(--text-sm);
+  color: var(--color-text-3);
+  max-width: 320px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ── Focus Visible Styles ───────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Remove default outline only when using mouse, keep for keyboard */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ── Skip to main link for screen readers ───────────────────────────────── */
+.skip-to-main {
+  position: absolute;
+  top: -100%;
+  left: var(--sp-4);
+  background: var(--color-accent);
+  color: #fff;
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  z-index: 9999;
+  text-decoration: none;
+  transition: top 0.1s;
+}
+.skip-to-main:focus {
+  top: var(--sp-3);
+}
+
+/* ── PWA Install Banner ─────────────────────────────────────────────────── */
+#pwa-install-banner {
+  position: fixed;
+  bottom: var(--sp-4);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  z-index: 800;
+  max-width: 420px;
+  width: calc(100% - var(--sp-8));
+  animation: slide-up 0.3s ease;
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.pwa-banner-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--color-accent-light);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--color-accent);
+  font-weight: 700;
+  font-size: var(--text-lg);
+}
+
+.pwa-banner-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.pwa-banner-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.pwa-banner-desc {
+  font-size: var(--text-xs);
+  color: var(--color-text-3);
+  margin-top: 2px;
+}
+
+.pwa-banner-actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-shrink: 0;
+}
+
+/* ── Keyboard Navigation Indicator ─────────────────────────────────────── */
+.using-keyboard *:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ── Modal Accessibility ────────────────────────────────────────────────── */
+.modal-overlay[aria-hidden="true"] {
+  display: none;
+}
+
+/* ── Improve Button Touch Target ────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .btn {
+    min-height: 36px;
+  }
+
+  .topbar-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* Better mobile sidebar transition */
+  .sidebar {
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 100dvh;
+    overflow-y: auto;
+  }
+
+  .sidebar-overlay {
+    transition: opacity 0.25s ease;
+    opacity: 0;
+  }
+
+  .sidebar-overlay.visible {
+    opacity: 1;
+    display: block;
+  }
+
+  /* Board scroll horizontal on mobile */
+  .board-columns {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+  }
+
+  .board-col {
+    scroll-snap-align: start;
+    min-width: 280px;
+  }
+
+  /* Stack page header on very small screens */
+  .page-header-actions {
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+  }
+}
+
+@media (max-width: 375px) {
+  .sidebar {
+    width: 100vw;
+  }
+
+  .topbar-actions .topbar-btn:not(#theme-toggle):not(#notif-btn) {
+    display: none;
+  }
+
+  .modal {
+    width: 100vw;
+    max-width: 100vw;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    position: fixed;
+    bottom: 0;
+    top: auto;
+    max-height: 90dvh;
+    overflow-y: auto;
+  }
+
+  .modal-overlay {
+    align-items: flex-end;
+  }
+}
+
+/* ── Performance: hardware-accelerated animations ────────────────────────── */
+.toast {
+  will-change: transform, opacity;
+}
+
+.sidebar {
+  will-change: transform;
+}
+
+.modal-overlay {
+  will-change: opacity;
+}
+
+.dropdown-menu {
+  will-change: opacity, transform;
+}
+
+/* ── Improved Contrast for WCAG AA ──────────────────────────────────────── */
+.badge {
+  /* Ensure minimum contrast ratio */
+  font-weight: 500;
+}
+
+.task-row-key {
+  color: var(--color-text-2);
+}
+
+/* ── Offline Banner ──────────────────────────────────────────────────────── */
+#offline-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--color-warning);
+  color: #fff;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  text-align: center;
+  padding: var(--sp-2) var(--sp-4);
+  z-index: 9999;
+  display: none;
+}
+
+#offline-banner.visible {
+  display: block;
+}
+
+/* ── Enhanced Topbar for offline indicator ───────────────────────────────── */
+body.offline .topbar {
+  border-bottom-color: var(--color-warning);
+}
+
+/* ── Smooth page transitions ─────────────────────────────────────────────── */
+.main-content {
+  animation: fade-in 0.15s ease;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Better scrollbar ────────────────────────────────────────────────────── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-3);
+}
+
+/* ── Improved table accessibility ─────────────────────────────────────────── */
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th {
+  text-align: left;
+}
+
+/* ── Debounce-safe search inputs ─────────────────────────────────────────── */
+.search-input[data-debounce] {
+  transition: border-color var(--transition);
+}
+
+/* ── Tooltip ─────────────────────────────────────────────────────────────── */
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-text);
+  color: var(--color-bg);
+  font-size: var(--text-xs);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 1000;
+}
+
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+  opacity: 1;
+}
+
+/* ── Error state for form fields ─────────────────────────────────────────── */
+.field-error {
+  border-color: var(--color-danger) !important;
+}
+
+.field-error-msg {
+  font-size: var(--text-xs);
+  color: var(--color-danger);
+  margin-top: var(--sp-1);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── Print improvements ──────────────────────────────────────────────────── */
+@media print {
+  #offline-banner,
+  #pwa-install-banner {
+    display: none !important;
+  }
+}

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Import / Export — SIMPRO</title>
+  <script>
+    (function() {
+      const t = localStorage.getItem('sp_theme');
+      if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <link rel="manifest" href="../manifest.json">
+  <meta name="theme-color" content="#3B5BDB" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#4C6EF5" media="(prefers-color-scheme: dark)">
+  <link rel="apple-touch-icon" href="../assets/icons/icon-192.png">
+  <link rel="stylesheet" href="../assets/css/tokens.css">
+  <link rel="stylesheet" href="../assets/css/reset.css">
+  <link rel="stylesheet" href="../assets/css/layout.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <link rel="stylesheet" href="../assets/css/io.css">
+  <link rel="stylesheet" href="../assets/css/polish.css">
+</head>
+<body data-page="io">
+
+<a href="#main-content" class="skip-to-main">Langsung ke konten</a>
+<div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+<div class="app-shell">
+  <aside id="sidebar" class="sidebar" role="navigation" aria-label="Navigasi utama"></aside>
+  <div class="main-area">
+    <header class="topbar" role="banner"></header>
+    <main class="main-content" id="main-content" role="main" tabindex="-1">
+
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1 class="page-title">Import / Export</h1>
+          <p class="page-subtitle">Backup data, restore, dan migrasi dari Trello atau Jira.</p>
+        </div>
+      </div>
+
+      <!-- ───────── EXPORT section ───────── -->
+      <div class="io-group-label">
+        <i data-lucide="upload"></i> Export
+      </div>
+
+      <div class="io-cards">
+
+        <!-- Export SIMPRO JSON -->
+        <div class="io-card">
+          <div class="io-card-head">
+            <div class="io-card-icon io-icon-blue"><i data-lucide="database"></i></div>
+            <div>
+              <div class="io-card-title">Export SIMPRO JSON</div>
+              <div class="io-card-desc">Backup semua data (project, task, user, sprint, dll) ke satu file JSON.</div>
+            </div>
+          </div>
+          <div class="io-card-body">
+            <button id="btn-export-json" class="btn btn-primary btn-sm">
+              <i data-lucide="download"></i> Download Backup
+            </button>
+            <span id="export-summary" class="io-inline-info"></span>
+          </div>
+        </div>
+
+        <!-- Export Task CSV -->
+        <div class="io-card">
+          <div class="io-card-head">
+            <div class="io-card-icon io-icon-green"><i data-lucide="table"></i></div>
+            <div>
+              <div class="io-card-title">Export Task ke CSV</div>
+              <div class="io-card-desc">Download daftar task satu project dalam format CSV (Key, Title, Status, Assignee, dll).</div>
+            </div>
+          </div>
+          <div class="io-card-body io-card-body-row">
+            <select id="export-csv-project" class="input input-sm" style="max-width:240px;"></select>
+            <button id="btn-export-csv" class="btn btn-secondary btn-sm">
+              <i data-lucide="download"></i> Export CSV
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /io-cards export -->
+
+      <!-- ───────── IMPORT section ───────── -->
+      <div class="io-group-label" style="margin-top:var(--sp-8);">
+        <i data-lucide="download-cloud"></i> Import
+      </div>
+
+      <div class="io-cards">
+
+        <!-- Import SIMPRO JSON -->
+        <div class="io-card io-card-wide">
+          <div class="io-card-head">
+            <div class="io-card-icon io-icon-blue"><i data-lucide="database"></i></div>
+            <div>
+              <div class="io-card-title">Import SIMPRO JSON</div>
+              <div class="io-card-desc">Restore backup atau gabungkan data dari file SIMPRO JSON.</div>
+            </div>
+          </div>
+          <div class="io-card-body io-card-body-col">
+
+            <label class="io-file-label">
+              <i data-lucide="file-json"></i>
+              <span>Pilih file <code>.json</code></span>
+              <input type="file" id="import-json-file" accept=".json" class="io-file-input">
+            </label>
+
+            <div id="import-json-preview" class="io-preview-box"></div>
+
+            <div class="io-mode-group">
+              <label class="io-radio"><input type="radio" name="import-mode" id="mode-merge" value="merge" checked>
+                <span><strong>Merge</strong> — gabungkan, item dengan ID yang sama dilewati</span></label>
+              <label class="io-radio"><input type="radio" name="import-mode" id="mode-replace" value="replace">
+                <span><strong>Replace</strong> — hapus semua data lama dan ganti dengan file ini</span></label>
+            </div>
+
+            <div id="confirm-replace-wrap" class="io-confirm-wrap hidden">
+              <div class="io-danger-note">
+                <i data-lucide="alert-triangle"></i>
+                Semua data yang ada akan <strong>dihapus permanen</strong>. Ketik <code>CONFIRM</code> untuk lanjut.
+              </div>
+              <input type="text" id="confirm-replace-input" class="input input-sm" placeholder="Ketik CONFIRM" autocomplete="off" spellcheck="false">
+            </div>
+
+            <button id="btn-import-json" class="btn btn-primary btn-sm" disabled>
+              <i data-lucide="upload-cloud"></i> Import Data
+            </button>
+
+          </div>
+        </div>
+
+        <!-- Import Trello JSON -->
+        <div class="io-card io-card-wide">
+          <div class="io-card-head">
+            <div class="io-card-icon io-icon-teal"><i data-lucide="trello"></i></div>
+            <div>
+              <div class="io-card-title">Import dari Trello</div>
+              <div class="io-card-desc">Import board Trello ke project SIMPRO melalui wizard 3 langkah.</div>
+            </div>
+          </div>
+          <div class="io-card-body io-card-body-col">
+            <div class="io-instruction">
+              <strong>Cara export dari Trello:</strong>
+              Buka board → Menu (···) → <em>Print, Export, and Share</em> → <em>Export as JSON</em>.
+            </div>
+            <label class="io-file-label">
+              <i data-lucide="file-json"></i>
+              <span>Pilih file Trello <code>.json</code></span>
+              <input type="file" id="trello-file" accept=".json" class="io-file-input">
+            </label>
+            <div id="trello-wizard"></div>
+          </div>
+        </div>
+
+        <!-- Import Jira CSV -->
+        <div class="io-card io-card-wide">
+          <div class="io-card-head">
+            <div class="io-card-icon io-icon-orange"><i data-lucide="file-spreadsheet"></i></div>
+            <div>
+              <div class="io-card-title">Import dari Jira CSV</div>
+              <div class="io-card-desc">Import issue Jira dari file CSV dengan mapping kolom yang bisa disesuaikan.</div>
+            </div>
+          </div>
+          <div class="io-card-body io-card-body-col">
+            <div class="io-instruction">
+              <strong>Cara export dari Jira:</strong>
+              Buka project → <em>Issues</em> → filter yang diinginkan → <em>Export</em> → <em>Export CSV (current fields)</em>.
+            </div>
+            <label class="io-file-label">
+              <i data-lucide="file-text"></i>
+              <span>Pilih file Jira <code>.csv</code></span>
+              <input type="file" id="jira-file" accept=".csv,.txt" class="io-file-input">
+            </label>
+            <div id="jira-preview" class="io-preview-box"></div>
+            <div class="io-card-body-row" style="margin-top:var(--sp-3);">
+              <select id="jira-project-select" class="input input-sm" style="max-width:260px;"></select>
+              <button id="btn-import-jira" class="btn btn-primary btn-sm" disabled>
+                <i data-lucide="upload-cloud"></i> Import ke Project
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /io-cards import -->
+
+    </main>
+  </div>
+</div>
+
+<div id="toast-container" aria-live="polite" aria-atomic="false" role="status"></div>
+
+<script src="../assets/js/core/utils.js"></script>
+<script src="../assets/js/core/storage.js"></script>
+<script src="../assets/js/core/auth.js"></script>
+<script src="../assets/js/core/app.js"></script>
+<script src="../assets/js/core/router.js"></script>
+<script src="../assets/js/modules/notification.js"></script>
+<script src="../assets/js/core/shell.js"></script>
+<script src="../assets/js/modules/io.js"></script>
+<script src="../assets/js/pages/io.js"></script>
+<script>
+  Auth.requireAuth();
+  Shell.applyTo('io', 'Import / Export');
+  App.init('io').then(() => {
+    if (typeof Page !== 'undefined' && Page.init) Page.init();
+    if (window.lucide) lucide.createIcons();
+  });
+</script>
+</body>
+</html>

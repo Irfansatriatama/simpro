@@ -1,0 +1,142 @@
+/* SIMPRO CSS: reports — v0.12.0 */
+
+/* ── Filter Bar ─────────────────────────────────────────────────────────── */
+.reports-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-6);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  flex-wrap: wrap;
+}
+.reports-filter-bar .filter-label {
+  font-size: var(--text-sm);
+  color: var(--color-text-2);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.reports-filter-bar select {
+  font-size: var(--text-sm);
+  padding: 6px var(--sp-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-text);
+  cursor: pointer;
+  min-width: 160px;
+}
+.reports-filter-bar select:focus { outline: none; border-color: var(--color-accent); }
+.reports-filter-bar .filter-sep { width: 1px; height: 20px; background: var(--color-border); }
+
+/* ── Stat Row ────────────────────────────────────────────────────────────── */
+.report-stat-row {
+  display: flex;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  padding: var(--sp-5) var(--sp-6) 0;
+}
+.report-stat-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-4) var(--sp-5);
+  flex: 1;
+  min-width: 120px;
+}
+.report-stat-card .stat-value {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+.report-stat-card .stat-label {
+  font-size: var(--text-xs);
+  color: var(--color-text-3);
+  margin-top: 2px;
+}
+
+/* ── Grid ────────────────────────────────────────────────────────────────── */
+.reports-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp-5);
+  padding: var(--sp-5) var(--sp-6) var(--sp-6);
+}
+@media (max-width: 900px) { .reports-grid { grid-template-columns: 1fr; } }
+.reports-grid .chart-card.full-width { grid-column: 1 / -1; }
+
+/* ── Chart Card ──────────────────────────────────────────────────────────── */
+.chart-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+.chart-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.chart-card-title { font-size: var(--text-base); font-weight: 600; color: var(--color-text); }
+.chart-card-meta  { font-size: var(--text-xs); color: var(--color-text-3); }
+.chart-canvas-wrap { position: relative; width: 100%; }
+.chart-canvas-wrap canvas { width: 100% !important; display: block; }
+
+/* ── Legend ──────────────────────────────────────────────────────────────── */
+.chart-legend { display: flex; gap: var(--sp-4); flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: var(--text-xs); color: var(--color-text-2); }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.legend-line { width: 20px; height: 2px; flex-shrink: 0; }
+
+/* ── Time Tables ─────────────────────────────────────────────────────────── */
+.time-table-wrap { overflow-x: auto; }
+.time-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.time-table th {
+  text-align: left;
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--text-xs);
+  color: var(--color-text-3);
+  font-weight: 500;
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+.time-table td {
+  padding: var(--sp-2) var(--sp-3);
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+.time-table tr:last-child td { border-bottom: none; }
+.time-table .task-key { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-text-2); }
+.time-table .over-estimate { color: var(--color-danger); font-weight: 500; }
+.hours-bar-wrap { display: flex; align-items: center; gap: var(--sp-2); }
+.hours-bar-bg { flex: 1; height: 6px; background: var(--color-surface-2); border-radius: 99px; overflow: hidden; min-width: 60px; }
+.hours-bar-fill { height: 100%; border-radius: 99px; background: var(--color-accent); }
+.hours-bar-fill.over { background: var(--color-danger); }
+
+/* ── Empty State ─────────────────────────────────────────────────────────── */
+.report-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-10) var(--sp-6);
+  gap: var(--sp-3);
+  text-align: center;
+  color: var(--color-text-3);
+}
+.report-empty p { font-size: var(--text-base); font-weight: 500; color: var(--color-text-2); margin: 0; }
+.report-empty span { font-size: var(--text-sm); }
+
+/* ── Actions Bar ─────────────────────────────────────────────────────────── */
+.reports-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 0 var(--sp-6) var(--sp-5);
+}
