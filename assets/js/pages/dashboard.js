@@ -139,7 +139,7 @@ const Page = (() => {
         const u = users.find(x => x.id === uid);
         if (!u) return '';
         const c = Utils.getAvatarColor(u.id);
-        return `<div class="avatar avatar-xs" style="background:${c.bg};color:${c.text};border:2px solid var(--color-surface);" title="${Utils.escapeHtml(u.name)}">${Utils.getInitials(u.name)}</div>`;
+        return `<div class="avatar avatar-xs" style="background:${c[1]};color:${c[0]};border:2px solid var(--color-surface);" title="${Utils.escapeHtml(u.name)}">${Utils.getInitials(u.name)}</div>`;
       }).join('');
       const extra = memberIds.length > 4 ? `<div class="avatar avatar-xs avatar-extra" style="border:2px solid var(--color-surface);">+${memberIds.length - 4}</div>` : '';
       const fillColor = progress >= 70 ? 'var(--color-success)' : 'var(--color-accent)';
@@ -197,7 +197,7 @@ const Page = (() => {
       const author = _getUserById(act.authorId);
       if (!task || !author) return '';
       const project = _getProjectById(task.projectId);
-      const c = Utils.getAvatarColor(author.id);
+      const [cText, cBg] = Utils.getAvatarColor(author.id);
       let desc = '';
       if (act.type === 'comment') {
         desc = `berkomentar di <strong>${Utils.escapeHtml(task.key)}</strong>: "${Utils.escapeHtml(Utils.truncate(act.content, 60))}"`;
@@ -212,7 +212,7 @@ const Page = (() => {
       }
       const projTag = project ? `<span class="activity-project" style="color:${project.color}">${project.key}</span>` : '';
       return `<div class="activity-item">
-        <div class="avatar avatar-xs" style="background:${c.bg};color:${c.text};flex-shrink:0;">${Utils.getInitials(author.name)}</div>
+        <div class="avatar avatar-xs" style="background:${cBg};color:${cText};flex-shrink:0;">${Utils.getInitials(author.name)}</div>
         <div class="activity-content">
           <div class="activity-text"><strong>${Utils.escapeHtml(author.name)}</strong> ${desc} ${projTag}</div>
           <div class="activity-time">${Utils.timeAgo(act.createdAt)}</div>
@@ -450,17 +450,13 @@ const Page = (() => {
 
       _showSkeletons();
 
-      // Render after brief simulated delay for skeleton visibility
+      // Render setiap widget secara independen agar satu gagal tidak blokir yang lain
       setTimeout(() => {
-        try {
-          _renderStatBar(user, projects);
-          if (user.role !== 'viewer') _renderMyTasks(user);
-          _renderSprintOverview(projects);
-          _renderRecentActivity(projects);
-          _renderActiveProjects(projects);
-        } catch (err) {
-          App.Toast.error('Gagal memuat dashboard', 'Coba refresh halaman');
-        }
+        try { _renderStatBar(user, projects); } catch (e) { console.error('StatBar:', e); }
+        try { if (user.role !== 'viewer') _renderMyTasks(user); } catch (e) { console.error('MyTasks:', e); }
+        try { _renderSprintOverview(projects); } catch (e) { console.error('SprintOverview:', e); }
+        try { _renderRecentActivity(projects); } catch (e) { console.error('RecentActivity:', e); }
+        try { _renderActiveProjects(projects); } catch (e) { console.error('ActiveProjects:', e); }
       }, 80);
     } catch (err) {
       App.Toast.error('Gagal memuat dashboard', 'Coba refresh halaman');

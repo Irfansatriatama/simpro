@@ -1,5 +1,9 @@
 /* SIMPRO Components */
 
+/* ── Utility ──────────────────────────────────────────────────────────── */
+/* BUG-8: .hidden class wajib untuk toggle dropdown/notif/badge di JS */
+.hidden { display: none !important; }
+
 /* ════════════════════════════════
    BUTTON
    ════════════════════════════════ */

@@ -2,7 +2,7 @@
 
 > **Dokumen Tunggal & Tersentralisasi** — Ini adalah satu-satunya README yang perlu dibaca.  
 > Menggabungkan semua informasi dari `README_SIMPRO.md` dan `README_BUG_SIMPRO.md`.  
-> Update terakhir: **2026-02-27** | Versi saat ini: **v1.0.1** (Bug Fix Release — SELESAI)
+> Update terakhir: **2026-02-27** | Versi saat ini: **v1.0.2** (Bug Fix Release — BUG-8 SELESAI)
 
 Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint planning, kanban board, gantt chart, dan laporan progress untuk Project Manager, Developer, Client, dan Manager.
 
@@ -34,10 +34,10 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | v1.0.1 (Bug Fix Release — SELESAI ✅) |
+| **Versi App** | v1.0.2 (Bug Fix Release — BUG-8) |
 | **Fase Pembangunan Selesai** | FASE 16 — Polish, PWA Penuh & Audit Final ✅ |
-| **Fase Bug Fix Saat Ini** | BUG-7 ✅ — User & Setting + README Final (SELESAI) |
-| **Fase Bug Fix Berikutnya** | — (Semua fase bug selesai, versi stabil) |
+| **Fase Bug Fix Saat Ini** | BUG-8 ✅ — Navbar Dropdown, Notifikasi & Dashboard My Tasks (SELESAI) |
+| **Fase Bug Fix Berikutnya** | — (Ongoing bug fix, upload zip terbaru jika ada bug baru) |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
 | **PWA** | Aktif sejak Fase 1 (manifest.json + sw.js) |
@@ -54,6 +54,7 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 | BUG-5 | Board & Sprint | ✅ Selesai | 2026-02-27 |
 | BUG-6 | Data & Laporan (Gantt, Reports, IO) | ✅ Selesai | 2026-02-27 |
 | BUG-7 | User & Setting + README Final | ✅ Selesai | 2026-02-27 |
+| BUG-8 | Navbar Dropdown, Notifikasi & Dashboard My Tasks | ✅ Selesai | 2026-02-27 |
 
 ---
 
@@ -708,26 +709,21 @@ URL     : https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..4
 ### Status Final
 
 ```
-✅ Semua 7 fase bug fix telah selesai.
-Versi saat ini: v1.0.1 (stabil)
+✅ 7 fase pembangunan + 8 fase bug fix selesai.
+Versi saat ini: v1.0.2
 
-Aplikasi dapat dibuka langsung via:
-  - Double klik pages/login.html (via file://)
-  - Deploy ke GitHub Pages (PWA penuh)
-
-Tidak ada fase bug tambahan yang direncanakan.
-Jika ada bug baru, catat di bagian Log Pengerjaan — Fase Bug Fix
-dan buat sesi bug fix baru dengan pola yang sama.
+Ini adalah endless bug fix mode — upload zip terbaru + README ke Claude
+jika ada bug baru, dan minta perbaikan fase berikutnya (BUG-9, dst).
 ```
 
-### Cara Melanjutkan (jika ada bug baru di masa depan)
+### Cara Melanjutkan (bug baru)
 
 ```
 Upload ke Claude:
 - README.md ← file ini
-- simpro_bugfix_fase7.zip ← versi stabil terakhir
+- simpro_bugfix_fase8.zip ← versi stabil terakhir
 
-Lalu tulis: "Ada bug di [halaman X], tolong perbaiki"
+Lalu tulis: "Ada bug di [halaman X], tolong perbaiki sebagai BUG-9"
 ```
 
 ### Prinsip Wajib
@@ -1036,5 +1032,31 @@ Seluruh halaman di `pages/` menggunakan **absolute path** (`/assets/css/...`) ya
 
 ---
 
-*SIMPRO v1.0.1 — Offline-first. Zero server. Pure localStorage. Semua bug fix selesai.*  
+### BUG-8 — Navbar Dropdown, Notifikasi & Dashboard My Tasks
+**2026-02-27** | ✅
+
+**Root Cause Utama: `.hidden` class tidak pernah didefinisikan di CSS**
+
+Seluruh JS codebase menggunakan `classList.add('hidden')` / `classList.remove('hidden')` untuk toggle visibility dropdown (avatar menu, notification panel) dan badge counter. Namun class `.hidden { display: none }` **tidak ada di satu pun file CSS**. Akibatnya:
+- Dropdown avatar menu selalu terlihat (tidak bisa disembunyikan)
+- Dropdown notification selalu terlihat
+- Badge notif counter "0" selalu tampil meski tidak ada notif
+
+**Fix 1 — `assets/css/components.css`:**
+- Tambah `.hidden { display: none !important; }` di bagian atas file
+
+**Fix 2 — `assets/js/pages/dashboard.js` — `getAvatarColor` misuse:**
+- `Utils.getAvatarColor(id)` mengembalikan array `[fg, bg]` (bukan object)
+- Dua tempat di `_renderActiveProjects` dan `_renderRecentActivity` mengakses `c.bg` / `c.text` yang `undefined`
+- Diperbaiki: `c.bg` → `c[1]`, `c.text` → `c[0]` (atau destructuring `[cText, cBg]`)
+
+**Fix 3 — `assets/js/pages/dashboard.js` — isolasi render per widget:**
+- Sebelum: semua 5 render function dalam satu try-catch — jika satu crash, semua widget stuck di skeleton
+- Sesudah: tiap widget punya try-catch mandiri — satu crash tidak memblokir widget lain
+- Ini juga memperbaiki "My Tasks bug" dimana widget bisa stuck karena error di widget lain
+
+---
+
+*SIMPRO v1.0.2 — Offline-first. Zero server. Pure localStorage.*  
+*README ini adalah sumber kebenaran tunggal. Tidak ada file dokumentasi lain yang diperlukan.*
 *README ini adalah sumber kebenaran tunggal. Tidak ada file dokumentasi lain yang diperlukan.*
