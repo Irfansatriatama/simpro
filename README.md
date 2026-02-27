@@ -34,9 +34,9 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | v1.1.5 (Bug Fix Release — BUG-21) |
+| **Versi App** | v1.1.6 (Bug Fix Release — BUG-22) |
 | **Fase Pembangunan Selesai** | FASE 16 — Polish, PWA Penuh & Audit Final ✅ |
-| **Fase Bug Fix Saat Ini** | BUG-21 ✅ — Project Detail: (1) Fix tombol "Undang Member" tidak berfungsi — `inviteBtn.onclick` ter-bind setelah early return saat `members.length === 0`, dipindahkan sebelum early return; empty state members ditambah tombol undang; (2) Enhance Settings UI/UX — layout diubah ke card berseksi (Informasi, Warna, Jadwal, Danger Zone) dengan icon header; centering via `.settings-container` dengan `max-width:640px; margin:0 auto` |
+| **Fase Bug Fix Saat Ini** | BUG-22 ✅ — Project Detail: (1) Fix CSS class mismatch — `.input/.select/.textarea` alias tidak ada di CSS, form fields tidak ter-styled; (2) Fix invite member — `Array.isArray(memberIds)` guard + enhanced modal dengan role label & sort; (3) Enhance Settings UI/UX — redesign premium: section icon header, card body layout system, color swatch btn, hex display, duration calculator, save status bar, danger zone card |
 | **Fase Bug Fix Berikutnya** | — (Ongoing bug fix, upload zip terbaru jika ada bug baru) |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
@@ -67,7 +67,8 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 | BUG-18 | Backlog: (1) Enhanced modal tambah task — layout & styling diperbaiki; (2) Assignee field diganti jadi custom dropdown multi-select; (3) Fix scrollbar backlog page dan per-sprint section | ✅ Selesai | 2026-02-27 |
 | BUG-19 | Backlog: (1) Fix button Mulai Sprint & Selesaikan tidak merespons (stopPropagation bug); (2) Fix assignee dropdown hanya tampilkan project members — tampilkan semua user aktif | ✅ Selesai | 2026-02-27 |
 | BUG-20 | Project Detail: (1) Tab Members & Settings tidak tampil (CSS active vs hidden pattern mismatch); (2) Placeholder judul task terlalu besar; (3) Tombol close modal task tidak di pojok kanan | ✅ Selesai | 2026-02-27 |
-| BUG-21 | Project Detail: (1) Fix tombol "Undang Member" tidak berfungsi (inviteBtn.onclick ter-bind setelah early return); (2) Enhance Settings UI/UX — card berseksi + centering | ✅ Selesai | 2026-02-27 |
+| BUG-21 | Project Detail: Fix Undang Member + Enhance Settings UI (cards + centering) | ✅ Selesai | 2026-02-27 |
+| BUG-22 | Project Detail: Fix CSS .input alias + Fix Invite memberIds guard + Settings UI Premium Redesign | ✅ Selesai | 2026-02-27 |
 
 ---
 
@@ -1525,7 +1526,40 @@ Widget My Tasks hanya menampilkan project dot (bukan label), badge type, dan due
 - `assets/css/projects.css` (v0.13.2) — tambah `.settings-container`, `.settings-section-header`, `.settings-card-icon`, `.card-subtitle`, `.form-hint`, `.settings-save-bar`, `.danger-divider`
 - `README.md` (v1.1.5)
 
+
 ---
 
-*SIMPRO v1.1.5 — Offline-first. Zero server. Pure localStorage.*
+### BUG-22 — Project Detail: Fix CSS .input Alias + Fix Invite Member + Settings UI Premium Redesign
+
+**2026-02-27** | ✅
+
+**Bug yang Diperbaiki:**
+
+**1. `.input`, `.select`, `.textarea` class tidak terdefinisi di CSS — BUG KRITIS (form tidak ter-styled):**
+- Root cause: Semua form HTML di `members.html`, `project-detail.html`, dan halaman lain menggunakan class `class="input"` dan `class="input select"` — tapi CSS hanya mendefinisikan `.form-input`, `.form-select`, `.form-textarea`. Class `.input`, `.select`, `.textarea` tidak pernah dideklarasikan. Akibatnya, semua field di settings, modal invite, dan form lainnya tampil tanpa border, tanpa background, tanpa focus ring — menggunakan style browser default yang sangat jelek.
+- Fix: Tambah alias `.input`, `.select`, `.textarea` di `components.css` dengan style yang sama persis dengan `.form-input`, `.form-select`, `.form-textarea`. Juga tambah `.input-mono` untuk field yang butuh monospace font (project key, dll).
+
+**2. Invite member crash jika `memberIds` undefined — BUG:**
+- Root cause: `_project.memberIds.map(...)` dan `_project.memberIds.includes(...)` dipanggil langsung tanpa guard. Jika project baru belum punya `memberIds` (schema lama atau edge case), ini crash dengan `TypeError: Cannot read properties of undefined (reading 'map')`
+- Fix: Tambah `const memberIds = Array.isArray(_project.memberIds) ? _project.memberIds : []` di `_renderMembers()` dan `_openInviteModal()`.
+- Bonus enhance: Dropdown invite sekarang menampilkan role user (`Budi Santoso · Developer`), diurutkan alphabetically, dan menampilkan pesan disabled jika semua user sudah jadi member.
+
+**3. Settings UI/UX premium redesign:**
+- Section header: layout flex dengan `.settings-section-icon` (rounded, accent bg) — lebih terasa seperti produk modern
+- Card layout: setiap card punya `.settings-card-body` dengan gap konsisten, layout sistem `.settings-field-full` dan `.settings-field-row` (2-kolom) yang proper — tidak lagi pakai `form-row` ad-hoc
+- Color picker: diganti dari `<div class="color-swatch">` ke `<button class="color-swatch-btn">` dengan CSS custom property `--swatch-color` — hover scale, active ring dengan double box-shadow, checkmark overlay. Ditambah hex code display realtime
+- Duration calculator: saat tanggal mulai dan selesai keduanya diisi, muncul info "Durasi project: 12 minggu 3 hari (87 hari)" — membantu PM merencanakan jadwal tanpa harus hitung manual
+- Save bar: ditambah `.settings-save-status` untuk feedback teks "Tersimpan" setelah save
+- Danger card: `.settings-danger-card` dengan border danger subtle + danger-bg header, `.danger-action-info/.danger-action-title/.danger-action-desc` untuk layout yang lebih jelas
+
+**File yang Dimodifikasi:**
+- `assets/css/components.css` (v1.1.2) — tambah alias `.input`, `.select`, `.textarea`, `.input-mono`
+- `assets/js/pages/project-detail.js` (v0.4.3) — fix `memberIds` guard, enhanced `_openInviteModal`, full `_renderSettings` rewrite dengan swatch-btn pattern + duration info + hex display
+- `pages/project-detail.html` (v0.4.3) — restruktur settings: `settings-card-header-text`, `settings-field-row/full`, `color-swatch-btn`, `color-hex-display`, `settings-duration-info`, `settings-danger-card`
+- `assets/css/projects.css` (v0.13.3) — full settings CSS overhaul: section icon, card body system, swatch btn, color custom row, duration info, save bar, danger card
+- `README.md` (v1.1.6)
+
+---
+
+*SIMPRO v1.1.6 — Offline-first. Zero server. Pure localStorage.*
 *README ini adalah sumber kebenaran tunggal. Tidak ada file dokumentasi lain yang diperlukan.*

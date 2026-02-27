@@ -197,7 +197,8 @@ const ProjectDetailPage = (() => {
 
   function _renderMembers() {
     const users = Storage.get('sp_users') || [];
-    const members = _project.memberIds.map(id => users.find(u => u.id === id)).filter(Boolean);
+    const memberIds = Array.isArray(_project.memberIds) ? _project.memberIds : [];
+    const members = memberIds.map(id => users.find(u => u.id === id)).filter(Boolean);
 
     const inviteBtn = document.getElementById('btn-invite-member');
     if (_canManage) inviteBtn.style.display = '';
@@ -273,10 +274,23 @@ const ProjectDetailPage = (() => {
 
   function _openInviteModal() {
     const allUsers = Storage.get('sp_users') || [];
-    const nonMembers = allUsers.filter(u => !_project.memberIds.includes(u.id) && u.isActive);
+    const memberIds = Array.isArray(_project.memberIds) ? _project.memberIds : [];
+    const nonMembers = allUsers
+      .filter(u => !memberIds.includes(u.id) && u.isActive)
+      .sort((a, b) => a.name.localeCompare(b.name));
     const select = document.getElementById('invite-user-select');
+    const roleLabel = { admin: 'Admin', pm: 'Project Manager', developer: 'Developer', viewer: 'Viewer' };
     select.innerHTML = '<option value="">— Pilih user —</option>' +
-      nonMembers.map(u => `<option value="${u.id}">${Utils.escapeHtml(u.name)} (${Utils.escapeHtml(u.email)})</option>`).join('');
+      nonMembers.map(u => `<option value="${u.id}">${Utils.escapeHtml(u.name)} · ${roleLabel[u.role] || u.role}</option>`).join('');
+
+    if (nonMembers.length === 0) {
+      select.innerHTML = '<option value="">Semua user sudah menjadi member</option>';
+      select.disabled = true;
+      document.getElementById('btn-invite-save').disabled = true;
+    } else {
+      select.disabled = false;
+      document.getElementById('btn-invite-save').disabled = false;
+    }
 
     document.getElementById('invite-form-error').classList.add('hidden');
     document.getElementById('modal-invite').classList.remove('hidden');
@@ -318,29 +332,72 @@ const ProjectDetailPage = (() => {
     _settingsColor = _project.color;
     document.getElementById('setting-color').value = _project.color;
 
-    document.querySelectorAll('#settings-color-row .color-swatch').forEach(s => {
+    // Update hex display
+    const hexDisplay = document.getElementById('setting-color-hex');
+    if (hexDisplay) hexDisplay.textContent = _project.color.toUpperCase();
+
+    // Color swatches (new .color-swatch-btn pattern)
+    document.querySelectorAll('#settings-color-row .color-swatch-btn').forEach(s => {
       s.classList.toggle('active', s.dataset.color === _project.color);
       s.onclick = () => {
-        document.querySelectorAll('#settings-color-row .color-swatch').forEach(x => x.classList.remove('active'));
+        document.querySelectorAll('#settings-color-row .color-swatch-btn').forEach(x => x.classList.remove('active'));
         s.classList.add('active');
         _settingsColor = s.dataset.color;
         document.getElementById('setting-color').value = _settingsColor;
+        if (hexDisplay) hexDisplay.textContent = _settingsColor.toUpperCase();
       };
     });
 
     document.getElementById('setting-color').addEventListener('input', e => {
       _settingsColor = e.target.value;
-      document.querySelectorAll('#settings-color-row .color-swatch').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('#settings-color-row .color-swatch-btn').forEach(s => s.classList.remove('active'));
+      if (hexDisplay) hexDisplay.textContent = _settingsColor.toUpperCase();
     });
 
     document.getElementById('setting-key').addEventListener('input', e => {
       e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
     });
 
+    // Duration info display
+    function _updateDurationInfo() {
+      const durationEl = document.getElementById('settings-duration-info');
+      if (!durationEl) return;
+      const start = document.getElementById('setting-start').value;
+      const end = document.getElementById('setting-end').value;
+      if (start && end) {
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        const diff = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24));
+        if (diff > 0) {
+          const weeks = Math.floor(diff / 7);
+          const days = diff % 7;
+          const parts = [];
+          if (weeks > 0) parts.push(`${weeks} minggu`);
+          if (days > 0) parts.push(`${days} hari`);
+          durationEl.innerHTML = `<i data-lucide="clock" width="12" height="12"></i> Durasi project: <strong>${parts.join(' ')}</strong> (${diff} hari)`;
+          durationEl.style.display = 'flex';
+          if (window.lucide) lucide.createIcons();
+        } else if (diff < 0) {
+          durationEl.innerHTML = `<i data-lucide="alert-circle" width="12" height="12"></i> Tanggal selesai lebih awal dari tanggal mulai`;
+          durationEl.style.display = 'flex';
+          durationEl.style.color = 'var(--color-danger)';
+          if (window.lucide) lucide.createIcons();
+        } else {
+          durationEl.style.display = 'none';
+        }
+      } else {
+        durationEl.style.display = 'none';
+      }
+    }
+    _updateDurationInfo();
+    document.getElementById('setting-start').addEventListener('change', _updateDurationInfo);
+    document.getElementById('setting-end').addEventListener('change', _updateDurationInfo);
+
     document.getElementById('btn-settings-save').onclick = _saveSettings;
 
-    document.getElementById('btn-settings-archive').textContent = _project.status === 'archived' ? 'Aktifkan' : 'Arsipkan';
-    document.getElementById('btn-settings-archive').onclick = () => {
+    const archiveBtn = document.getElementById('btn-settings-archive');
+    archiveBtn.textContent = _project.status === 'archived' ? 'Aktifkan' : 'Arsipkan';
+    archiveBtn.onclick = () => {
       if (_project.status === 'archived') {
         Project.unarchive(_project.id);
         App.Toast.success('Project diaktifkan');
