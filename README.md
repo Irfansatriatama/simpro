@@ -34,9 +34,9 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | v1.1.1 (Bug Fix Release — BUG-17) |
+| **Versi App** | v1.1.2 (Bug Fix Release — BUG-18) |
 | **Fase Pembangunan Selesai** | FASE 16 — Polish, PWA Penuh & Audit Final ✅ |
-| **Fase Bug Fix Saat Ini** | BUG-17 ✅ — Members: fix modal tambah/edit user tidak muncul (struktur HTML modal salah — `.modal` bukan `.modal-overlay` sebagai container luar), ganti pattern ke `classList hidden` konsisten dengan modul lain |
+| **Fase Bug Fix Saat Ini** | BUG-18 ✅ — Backlog: (1) Enhanced modal tambah task — layout grid rapi, divider section, title input besar; (2) Assignee diganti jadi custom dropdown multi-select dengan search, avatar, checklist; (3) Fix scrollbar halaman backlog dan per-sprint — remove `overflow:hidden` dari `main-content`, fix `.backlog-page` layout |
 | **Fase Bug Fix Berikutnya** | — (Ongoing bug fix, upload zip terbaru jika ada bug baru) |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
@@ -64,6 +64,7 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 | BUG-15 | Members: Filter bar redesign (label, pill, clear button), _openModal full reset, input-error state, pw-hint | ✅ Selesai | 2026-02-27 |
 | BUG-16 | Members: Fix _renderRow missing function def (data tidak tampil), toolbar UI overhaul (card container, divider, search label, alignment fix) | ✅ Selesai | 2026-02-27 |
 | BUG-17 | Members: Fix modal tambah/edit user tidak muncul — struktur HTML modal salah (`.modal` sebagai container outer), diganti ke `.modal-overlay.hidden` pattern konsisten dengan modul lain | ✅ Selesai | 2026-02-27 |
+| BUG-18 | Backlog: (1) Enhanced modal tambah task — layout & styling diperbaiki; (2) Assignee field diganti jadi custom dropdown multi-select; (3) Fix scrollbar backlog page dan per-sprint section | ✅ Selesai | 2026-02-27 |
 
 ---
 
@@ -1408,3 +1409,35 @@ Widget My Tasks hanya menampilkan project dot (bukan label), badge type, dan due
 - `assets/css/projects.css` (v0.13.1)
 - `README.md` (v1.0.7)
 
+---
+
+### BUG-18 — Backlog: Modal Tambah Task Enhanced + Assignee Dropdown + Scrollbar Fix
+
+**2026-02-27** | ✅
+
+**Bug yang Diperbaiki:**
+
+**1. Modal tambah task tampilannya kurang rapi (BUG UX):**
+- Sebelum: Form menggunakan satu grid datar dengan semua field berukuran sama — tidak ada hierarki visual, tidak ada pemisah antara field utama (judul/deskripsi) dan field metadata (tipe/prioritas/dll)
+- Sesudah: Layout diubah ke struktur berseksi: Judul full-width (font besar), deskripsi full-width, divider, lalu metadata dalam baris 2- dan 3-kolom (Project/Sprint, Tipe/Status/Prioritas, Assignee/Due Date, SP/Jam)
+- Modal header ditambah subtitle + tombol "Buat Task" dengan checkmark icon
+
+**2. Assignee field bukan dropdown (BUG):**
+- Sebelum: `<select multiple style="height:80px">` — HTML native multi-select yang jelek, UX buruk
+- Sesudah: Custom dropdown dengan search bar, avatar member, nama, role label, checkmark visual terpilih, background accent saat selected, reset saat project berganti
+
+**3. Scrollbar halaman backlog tidak muncul (BUG KRITIS):**
+- Root cause: `backlog.html` punya inline style `overflow:hidden` pada `main-content` yang mengoverride `overflow-y:auto` dari `layout.css`; dan `.backlog-page` menggunakan `height:100%; overflow:hidden` yang tidak kompatibel dengan parent chain yang tidak semua punya height eksplisit
+- Fix: Ganti ke `class="main-content no-pad"` tanpa override; `.backlog-page` pakai `min-height:100%`; `.backlog-body` tidak perlu `overflow-y:auto` sendiri — scroll halaman sudah cukup
+
+**File yang Dimodifikasi:**
+- `assets/js/modules/task-modal.js` (v1.1.0) — full rewrite layout + custom assignee dropdown
+- `assets/css/components.css` (v1.1.0) — tambah task modal styles + assignee dropdown styles
+- `pages/backlog.html` (v0.8.2) — fix inline style main-content
+- `assets/css/sprint.css` (v0.7.1) — fix .backlog-page dan .backlog-body layout
+- `README.md` (v1.1.2)
+
+---
+
+*SIMPRO v1.1.2 — Offline-first. Zero server. Pure localStorage.*
+*README ini adalah sumber kebenaran tunggal. Tidak ada file dokumentasi lain yang diperlukan.*

@@ -4,8 +4,7 @@
 .backlog-page {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  overflow: hidden;
+  min-height: 100%;
 }
 
 .backlog-toolbar {
@@ -38,8 +37,6 @@
 }
 
 .backlog-body {
-  flex: 1;
-  overflow-y: auto;
   padding: var(--sp-4) var(--sp-6);
   display: flex;
   flex-direction: column;
