@@ -394,7 +394,7 @@ BUG-7  ← User & Setting    : members, settings, profile + README final
 | BUG-2 | Auth: Login, Register & Logout | ✅ Selesai | 2026-02-27 | Fix link navigasi login↔register, fix redirect file:// aman di auth.js & login.js |
 | BUG-3 | Shell & Dashboard | ✅ Selesai | 2026-02-27 | Fix urutan init dashboard (Page.init sebelum lucide), fix manifest path di semua pages, fix sw.js register path di app.js |
 | BUG-4 | Project & Task | ✅ Selesai | 2026-02-27 | Fix init order projects.html & project-detail.html (App.init().then()), fix breadcrumb absolute path di project-detail.html, fix urutan Page.init() sebelum lucide di task-detail.html |
-| BUG-5 | Board & Sprint | ⏳ Belum dimulai | — | — |
+| BUG-5 | Board & Sprint | ✅ Selesai | 2026-02-27 | Fix getAvatarColor destructuring (board/backlog/sprint), fix init order lucide, guard lucide calls |
 | BUG-6 | Data & Laporan | ⏳ Belum dimulai | — | — |
 | BUG-7 | User & Setting + README Final | ⏳ Belum dimulai | — | — |
 

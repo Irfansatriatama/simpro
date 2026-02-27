@@ -58,8 +58,8 @@
   Auth.requireAuth();
   Shell.applyTo('backlog', 'Backlog');
   App.init('backlog').then(() => {
-    if (window.lucide) lucide.createIcons();
     if (typeof Page !== 'undefined' && Page.init) Page.init();
+    if (window.lucide) lucide.createIcons();
   });
 </script>
 </body>

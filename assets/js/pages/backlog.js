@@ -38,7 +38,7 @@ const Page = (() => {
   function _avatarHtml(userId) {
     const user = _getUserById(userId);
     if (!user) return '';
-    const [bg, fg] = Utils.getAvatarColor(userId);
+    const [fg, bg] = Utils.getAvatarColor(userId);
     const initials = Utils.getInitials(user.name);
     if (user.avatar) {
       return `<img class="mini-avatar" src="${user.avatar}" title="${user.name}" style="width:20px;height:20px;object-fit:cover;border-radius:50%;">`;
@@ -199,7 +199,7 @@ const Page = (() => {
       </div>
     `;
 
-    lucide.createIcons();
+    if (window.lucide) lucide.createIcons();
     _bindEvents();
     _bindDragDrop();
   }
@@ -250,7 +250,7 @@ const Page = (() => {
       const collapseEl = e.target.closest('[data-collapse-sprint]');
       if (collapseEl) {
         const s = collapseEl.closest('.sprint-section');
-        if (s) { s.classList.toggle('collapsed'); lucide.createIcons(); }
+        if (s) { s.classList.toggle('collapsed'); if (window.lucide) lucide.createIcons(); }
         return;
       }
 
@@ -258,7 +258,7 @@ const Page = (() => {
       const collapseBacklog = e.target.closest('[data-collapse-backlog]');
       if (collapseBacklog) {
         const sec = document.getElementById('backlog-section');
-        if (sec) { sec.classList.toggle('collapsed'); lucide.createIcons(); }
+        if (sec) { sec.classList.toggle('collapsed'); if (window.lucide) lucide.createIcons(); }
         return;
       }
 
@@ -314,7 +314,7 @@ const Page = (() => {
       if (result.error) { App.Toast.error('Gagal membuat sprint'); return; }
       close(); App.Toast.success('Sprint berhasil dibuat'); _render();
     });
-    lucide.createIcons();
+    if (window.lucide) lucide.createIcons();
   }
 
   function _showEditSprintModal(sprintId) {
@@ -338,7 +338,7 @@ const Page = (() => {
       });
       close(); App.Toast.success('Sprint diperbarui'); _render();
     });
-    lucide.createIcons();
+    if (window.lucide) lucide.createIcons();
   }
 
   function _confirmStartSprint(sprintId) {
@@ -431,7 +431,7 @@ const Page = (() => {
         _render();
       }
     });
-    lucide.createIcons();
+    if (window.lucide) lucide.createIcons();
   }
 
   function _confirmDeleteSprint(sprintId) {

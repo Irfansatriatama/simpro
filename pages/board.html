@@ -58,8 +58,8 @@
   Auth.requireAuth();
   Shell.applyTo('board', 'Kanban Board');
   App.init('board').then(() => {
-    if (window.lucide) lucide.createIcons();
     if (typeof Page !== 'undefined' && Page.init) Page.init();
+    if (window.lucide) lucide.createIcons();
   });
 </script>
 </body>

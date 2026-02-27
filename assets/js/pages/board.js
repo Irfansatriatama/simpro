@@ -287,8 +287,8 @@ const Page = (() => {
       const u = _getUserById(uid);
       if (!u) return '';
       const initials = Utils.getInitials(u.name);
-      const color = Utils.getAvatarColor(u.id);
-      return `<span class="avatar avatar-xs" style="background:${color}" title="${Utils.escapeHtml(u.name)}">${Utils.escapeHtml(initials)}</span>`;
+      const [fg, bg] = Utils.getAvatarColor(u.id);
+      return `<span class="avatar avatar-xs" style="background:${bg};color:${fg}" title="${Utils.escapeHtml(u.name)}">${Utils.escapeHtml(initials)}</span>`;
     }).join('');
 
     const spHtml = task.storyPoints != null ? `<span class="task-card-sp">${task.storyPoints}</span>` : '';
@@ -329,12 +329,12 @@ const Page = (() => {
         total += userTasks[s].length;
       });
       if (total === 0) return '';
-      const color = Utils.getAvatarColor(user.id);
+      const [fg, bg] = Utils.getAvatarColor(user.id);
       const initials = Utils.getInitials(user.name);
       return `
         <div class="swimlane" data-assignee="${user.id}">
           <div class="swimlane-header">
-            <span class="avatar avatar-sm" style="background:${color}">${Utils.escapeHtml(initials)}</span>
+            <span class="avatar avatar-sm" style="background:${bg};color:${fg}">${Utils.escapeHtml(initials)}</span>
             <span class="swimlane-label">${Utils.escapeHtml(user.name)}</span>
             <span class="swimlane-task-count">${total} task</span>
           </div>
@@ -800,10 +800,10 @@ const Page = (() => {
     const opts = members.map(u => {
       const checked = _filters.assigneeIds.includes(u.id) ? 'checked' : '';
       const initials = Utils.getInitials(u.name);
-      const color = Utils.getAvatarColor(u.id);
+      const [fg, bg] = Utils.getAvatarColor(u.id);
       return `<label class="filter-option">
         <input type="checkbox" value="${u.id}" ${checked}>
-        <span class="avatar avatar-xs" style="background:${color}">${Utils.escapeHtml(initials)}</span>
+        <span class="avatar avatar-xs" style="background:${bg};color:${fg}">${Utils.escapeHtml(initials)}</span>
         <span>${Utils.escapeHtml(u.name)}</span>
       </label>`;
     }).join('');

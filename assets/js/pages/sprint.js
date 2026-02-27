@@ -30,7 +30,7 @@ const Page = (() => {
   function _avatarHtml(userId, size = 20) {
     const user = _getUserById(userId);
     if (!user) return '';
-    const [bg, fg] = Utils.getAvatarColor(userId);
+    const [fg, bg] = Utils.getAvatarColor(userId);
     const initials = Utils.getInitials(user.name);
     if (user.avatar) {
       return `<img class="mini-avatar" src="${user.avatar}" title="${user.name}" style="width:${size}px;height:${size}px;object-fit:cover;border-radius:50%;">`;
@@ -510,21 +510,21 @@ const Page = (() => {
     const mc = document.getElementById('main-content');
     if (!_project) {
       mc.innerHTML = _renderNoSprint();
-      lucide.createIcons();
+      if (window.lucide) lucide.createIcons();
       return;
     }
 
     if (!_sprint) {
       mc.innerHTML = _renderToolbar() + _renderNoSprint();
       _bindToolbar();
-      lucide.createIcons();
+      if (window.lucide) lucide.createIcons();
       return;
     }
 
     if (_sprint.status === 'completed') {
       mc.innerHTML = _renderToolbar() + _renderHeader() + _renderCompletedState();
       _bindToolbar();
-      lucide.createIcons();
+      if (window.lucide) lucide.createIcons();
       return;
     }
 
@@ -546,7 +546,7 @@ const Page = (() => {
     _bindToolbar();
     _bindTabs();
     _bindFilters();
-    lucide.createIcons();
+    if (window.lucide) lucide.createIcons();
   }
 
   function _bindToolbar() {
