@@ -240,29 +240,29 @@ const MembersPage = (() => {
     const bio      = document.getElementById('input-user-bio').value.trim();
     const isActive = document.getElementById('input-user-active').checked;
 
-    if (!name)  { App.toast('Nama wajib diisi', 'error'); return; }
-    if (!email || !email.includes('@')) { App.toast('Email tidak valid', 'error'); return; }
+    if (!name)  { App.Toast.error('Nama wajib diisi'); return; }
+    if (!email || !email.includes('@')) { App.Toast.error('Email tidak valid'); return; }
 
     const users = Storage.get('sp_users') || [];
 
     if (_editingUserId) {
       const dup = users.find(u => u.email === email && u.id !== _editingUserId);
-      if (dup) { App.toast('Email sudah digunakan user lain', 'error'); return; }
+      if (dup) { App.Toast.error('Email sudah digunakan user lain'); return; }
 
       const updateData = { name, email, role, bio, isActive, updatedAt: Utils.nowISO() };
       if (password) {
-        if (password.length < 6) { App.toast('Password minimal 6 karakter', 'error'); return; }
+        if (password.length < 6) { App.Toast.error('Password minimal 6 karakter'); return; }
         updateData.password = await Utils.hashPassword(password);
       }
 
       Storage.update('sp_users', arr =>
         arr.map(u => u.id === _editingUserId ? { ...u, ...updateData } : u)
       );
-      App.toast('User berhasil diupdate', 'success');
+      App.Toast.success('User berhasil diupdate');
     } else {
-      if (!password) { App.toast('Password wajib diisi', 'error'); return; }
-      if (password.length < 6) { App.toast('Password minimal 6 karakter', 'error'); return; }
-      if (users.find(u => u.email === email)) { App.toast('Email sudah terdaftar', 'error'); return; }
+      if (!password) { App.Toast.error('Password wajib diisi'); return; }
+      if (password.length < 6) { App.Toast.error('Password minimal 6 karakter'); return; }
+      if (users.find(u => u.email === email)) { App.Toast.error('Email sudah terdaftar'); return; }
 
       Storage.update('sp_users', arr => [...(arr || []), {
         id: Utils.generateId('user'),
@@ -273,7 +273,7 @@ const MembersPage = (() => {
         createdAt: Utils.nowISO(),
         lastLoginAt: null
       }]);
-      App.toast('User berhasil ditambahkan', 'success');
+      App.Toast.success('User berhasil ditambahkan');
     }
 
     _closeModal();
@@ -283,7 +283,7 @@ const MembersPage = (() => {
   function _toggleActive(userId) {
     if (!_isAdmin) return;
     if (userId === _session.userId) {
-      App.toast('Tidak bisa menonaktifkan akun sendiri', 'warning');
+      App.Toast.warning('Tidak bisa menonaktifkan akun sendiri');
       return;
     }
     const u = (Storage.get('sp_users') || []).find(x => x.id === userId);
@@ -293,7 +293,7 @@ const MembersPage = (() => {
     Storage.update('sp_users', arr =>
       arr.map(x => x.id === userId ? { ...x, isActive: newActive } : x)
     );
-    App.toast(newActive ? 'Akun diaktifkan' : 'Akun dinonaktifkan', 'success');
+    App.Toast.success(newActive ? 'Akun diaktifkan' : 'Akun dinonaktifkan');
     _loadAndRender();
   }
 

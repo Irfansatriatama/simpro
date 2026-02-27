@@ -181,8 +181,8 @@
   Auth.requireAuth();
   Shell.applyTo('members', 'Member');
   App.init('members').then(() => {
-    if (window.lucide) lucide.createIcons();
     if (typeof MembersPage !== 'undefined' && MembersPage.init) MembersPage.init();
+    if (window.lucide) lucide.createIcons();
   });
 </script>
 </body>

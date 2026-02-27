@@ -53,17 +53,19 @@
   Auth.requireAuth();
   Shell.applyTo('settings', 'Settings');
   App.init('settings').then(() => {
-    if (window.lucide) lucide.createIcons();
-    // Apply saved font size
-    const fs = localStorage.getItem('sp_font_size');
-    if (fs === 'large') {
-      const r = document.documentElement;
-      r.style.setProperty('--text-base','16px');
-      r.style.setProperty('--text-sm','14px');
-      r.style.setProperty('--text-md','17px');
-      r.style.setProperty('--text-lg','19px');
-    }
     if (typeof Page !== 'undefined' && Page.init) Page.init();
+    // Apply saved font size — JSON.parse karena Storage.set pakai JSON.stringify
+    try {
+      const fs = JSON.parse(localStorage.getItem('sp_font_size'));
+      if (fs === 'large') {
+        const r = document.documentElement;
+        r.style.setProperty('--text-base','16px');
+        r.style.setProperty('--text-sm','14px');
+        r.style.setProperty('--text-md','17px');
+        r.style.setProperty('--text-lg','19px');
+      }
+    } catch(e) {}
+    if (window.lucide) lucide.createIcons();
   });
 </script>
 </body>
