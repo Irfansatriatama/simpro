@@ -18,6 +18,8 @@
   <link rel="stylesheet" href="/assets/css/reset.css">
   <link rel="stylesheet" href="/assets/css/layout.css">
   <link rel="stylesheet" href="/assets/css/components.css">
+  <link rel="stylesheet" href="/assets/css/reports.css">
+  <link rel="stylesheet" href="/assets/css/print.css">
 </head>
 <body data-page="reports">
 
@@ -30,10 +32,31 @@
     <main class="main-content" id="main-content">
       <div class="page-header">
         <div class="page-header-left">
-          <h1 class="page-title">Laporan</h1>
+          <h1 class="page-title">Laporan &amp; Statistik</h1>
         </div>
       </div>
-      <p style="color:var(--color-text-2);font-size:var(--text-sm);">Halaman ini akan tersedia di fase berikutnya.</p>
+
+      <!-- Filter Bar -->
+      <div class="reports-filter-bar" id="reports-filter-bar">
+        <span class="filter-label">Project:</span>
+        <select id="filter-project">
+          <option value="">Pilih project...</option>
+        </select>
+        <div class="filter-sep"></div>
+        <span class="filter-label">Sprint:</span>
+        <select id="filter-sprint" disabled>
+          <option value="">Semua sprint</option>
+        </select>
+      </div>
+
+      <!-- Content Area -->
+      <div id="reports-content">
+        <div class="report-empty" style="padding: 80px 24px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+          <p>Pilih project untuk melihat laporan</p>
+          <span>Data burndown, velocity, distribusi task, dan time tracking akan tampil di sini</span>
+        </div>
+      </div>
     </main>
   </div>
 </div>
@@ -46,6 +69,7 @@
 <script src="/assets/js/core/app.js"></script>
 <script src="/assets/js/core/router.js"></script>
 <script src="/assets/js/modules/notification.js"></script>
+<script src="/assets/js/modules/report.js"></script>
 <script src="/assets/js/core/shell.js"></script>
 <script src="/assets/js/pages/reports.js"></script>
 <script>

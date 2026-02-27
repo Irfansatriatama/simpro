@@ -31,8 +31,8 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
 | **Versi App** | 0.11.0 |
-| **Fase Saat Ini** | FASE 11 — Notifikasi In-App ✅ |
-| **Fase Berikutnya** | FASE 12 — Laporan & Statistik |
+| **Fase Saat Ini** | FASE 12 — Laporan & Statistik ✅ |
+| **Fase Berikutnya** | FASE 13 — Import / Export |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
 | **PWA** | Aktif sejak Fase 1 (manifest.json + sw.js) |
@@ -1103,7 +1103,7 @@ Log ini diupdate **setiap akhir fase** oleh Claude. Mencatat apa yang sudah dike
 | 0.9.0 | FASE 9 | 2026-02-27 | ✅ Selesai | Gantt Chart & Milestone |
 | 0.10.0 | FASE 10 | 2026-02-27 | ✅ Selesai | Time Tracking |
 | 0.11.0 | FASE 11 | 2026-02-27 | ✅ Selesai | Notifikasi In-App |
-| 0.12.0 | FASE 12 | — | Belum dikerjakan | Laporan & Statistik |
+| 0.12.0 | FASE 12 | 2026-02-27 | ✅ Selesai | Laporan & Statistik |
 | 0.13.0 | FASE 13 | — | Belum dikerjakan | Import / Export |
 | 0.14.0 | FASE 14 | — | Belum dikerjakan | Member Management & Admin Panel |
 | 0.15.0 | FASE 15 | — | Belum dikerjakan | Profile & Settings |
@@ -1502,16 +1502,30 @@ Log ini diupdate **setiap akhir fase** oleh Claude. Mencatat apa yang sudah dike
 ---
 
 #### FASE 12 — Laporan & Statistik
-**Versi:** v0.12.0 | **Tanggal:** — | **Status:** Belum dikerjakan
+**Versi:** v0.12.0 | **Tanggal:** 2026-02-27 | **Status:** ✅ Selesai
 
 **File Ditambahkan:**
-*(diisi setelah fase selesai)*
+- (tidak ada file baru — halaman sudah ada sebagai placeholder sejak Fase 1)
 
 **File Diubah:**
-*(diisi setelah fase selesai)*
+- `assets/js/modules/report.js` — Implementasi penuh: burndown, velocity, distribution, timeStats
+- `assets/js/pages/reports.js` — Implementasi penuh: 5 Canvas chart, time table, filter project/sprint, print
+- `assets/css/reports.css` — CSS lengkap: filter bar, stat cards, chart cards, legend, time table, empty state
+- `assets/css/print.css` — Media query print: sembunyikan sidebar/topbar/buttons, layout A4
+- `pages/reports.html` — Update: tambah link reports.css, print.css, report.js
+- `sw.js` — Versi cache ke v0.12.0, tambah reports.css, print.css, report.js ke SHELL_FILES
 
 **Catatan Teknis:**
-*(diisi setelah fase selesai)*
+- Semua chart menggunakan Canvas API native — tidak ada library Chart.js atau D3
+- canvas sizing menggunakan devicePixelRatio untuk sharp rendering di HiDPI/Retina display
+- Burndown: garis planned diagonal + area fill + actual dots, dihitung berdasarkan updatedAt task
+- Velocity: grouped bar per sprint (planned vs done), warna hijau jika tercapai, oranye jika kurang
+- Donut chart status: center text total task, inner hole menggunakan surface color
+- Assignee bar: horizontal, sorted by count, menampilkan done/total
+- Priority bar: 4 kolom warna per priority, label + persentase di bawah
+- Theme change (dark/light) otomatis trigger redraw via MutationObserver
+- Window resize trigger redraw dengan debounce 200ms
+- Print: window.print() dengan print.css yang menyembunyikan elemen non-printable
 
 ---
 
