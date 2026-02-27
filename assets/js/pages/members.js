@@ -165,7 +165,7 @@ const MembersPage = (() => {
     });
   }
 
-
+  function _renderRow(u) {
     var colors = Utils.getAvatarColor(u.id);
     var fg = colors[0], bg = colors[1];
     var initials = Utils.getInitials(u.name || '');

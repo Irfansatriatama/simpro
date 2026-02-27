@@ -2,7 +2,7 @@
 
 > **Dokumen Tunggal & Tersentralisasi** — Ini adalah satu-satunya README yang perlu dibaca.  
 > Menggabungkan semua informasi dari `README_SIMPRO.md` dan `README_BUG_SIMPRO.md`.  
-> Update terakhir: **2026-02-27** | Versi saat ini: **v1.0.6** (Bug Fix Release — BUG-12 SELESAI)
+> Update terakhir: **2026-02-27** | Versi saat ini: **v1.1.0** (Bug Fix Release — BUG-16 SELESAI)
 
 Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint planning, kanban board, gantt chart, dan laporan progress untuk Project Manager, Developer, Client, dan Manager.
 
@@ -34,9 +34,9 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | v1.0.9 (Bug Fix Release — BUG-15) |
+| **Versi App** | v1.1.0 (Bug Fix Release — BUG-16) |
 | **Fase Pembangunan Selesai** | FASE 16 — Polish, PWA Penuh & Audit Final ✅ |
-| **Fase Bug Fix Saat Ini** | BUG-15 ✅ — Members: filter bar redesign (pills, label, clear), _openModal full reset, pw-hint (SELESAI) |
+| **Fase Bug Fix Saat Ini** | BUG-16 ✅ — Members: fix _renderRow missing function definition (data tidak tampil), toolbar UI/UX overhaul (card container, label cari, divider, search alignment fix) |
 | **Fase Bug Fix Berikutnya** | — (Ongoing bug fix, upload zip terbaru jika ada bug baru) |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
@@ -62,6 +62,7 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 | BUG-13 | Projects: Create Project Fix (null check, try-catch, memberIds guard), Card Dropdown Menu Fix (position:fixed, no duplicate listener) | ✅ Selesai | 2026-02-27 |
 | BUG-14 | Members: async Storage.update fix (hash password dulu, lalu sync callback), null/undefined guard, try-catch, TimeLog guard | ✅ Selesai | 2026-02-27 |
 | BUG-15 | Members: Filter bar redesign (label, pill, clear button), _openModal full reset, input-error state, pw-hint | ✅ Selesai | 2026-02-27 |
+| BUG-16 | Members: Fix _renderRow missing function def (data tidak tampil), toolbar UI overhaul (card container, divider, search label, alignment fix) | ✅ Selesai | 2026-02-27 |
 
 ---
 
@@ -1283,7 +1284,7 @@ Widget My Tasks hanya menampilkan project dot (bukan label), badge type, dan due
 
 ---
 
-*SIMPRO v1.0.9 — Offline-first. Zero server. Pure localStorage.*  
+*SIMPRO v1.1.0 — Offline-first. Zero server. Pure localStorage.*  
 *README ini adalah sumber kebenaran tunggal. Tidak ada file dokumentasi lain yang diperlukan.*
 
 ---
@@ -1323,7 +1324,41 @@ Widget My Tasks hanya menampilkan project dot (bukan label), badge type, dan due
 
 ---
 
-### BUG-13 — Projects: Create Project Fix & Card Dropdown Menu Fix
+### BUG-16 — Members: Fix Data Tidak Tampil & Toolbar UI Overhaul
+
+**2026-02-27** | ✅
+
+**Bug yang Diperbaiki:**
+
+**1. `_renderRow` tidak terdefinisi sebagai fungsi — BUG KRITIS (data tidak tampil):**
+- Root cause: Fungsi `_renderRow(u)` dipanggil di `_loadAndRender()` (`_allUsers.map(u => _renderRow(u))`), namun **tidak pernah dideklarasikan** sebagai fungsi. Kode body `_renderRow` ada di file tapi tanpa `function _renderRow(u) {` di awalnya — orphaned code yang menyebabkan `ReferenceError: _renderRow is not defined` saat runtime. Seluruh tabel member kosong / tidak ter-render.
+- Solusi: Tambahkan deklarasi `function _renderRow(u) {` tepat sebelum kode body fungsi tersebut.
+
+**2. Toolbar search & filter tidak aligned dengan benar (BUG UX):**
+- Sebelum: Search input dan filter select tidak punya label yang konsisten — search tidak punya label tapi filter sudah punya label. Toolbar `align-items: center` menyebabkan elemen tinggi berbeda tidak aligned secara visual ke baseline yang sama.
+- Sesudah: Toolbar diubah ke `align-items: flex-end` agar semua elemen (yang sudah punya label di atas) aligned ke bagian bawah. Search juga ditambah label "Cari" agar konsisten.
+
+**3. Toolbar tidak punya container visual (UX):**
+- Sebelum: Toolbar mengambang tanpa batas — sulit membedakan area filter dari area konten
+- Sesudah: Toolbar diberi `background`, `border`, `border-radius`, dan `padding` — tampil sebagai card terpisah yang rapi
+
+**4. Tidak ada pemisah antara search dan filter (UX):**
+- Sebelum: Search dan filter berdekatan tanpa pemisah — tampak satu kelompok padahal dua area berbeda
+- Sesudah: Ditambah `.toolbar-divider` (garis vertikal tipis) antara search dan filter untuk pemisahan visual yang jelas
+
+**5. Search icon position salah setelah penambahan label (BUG):**
+- Sebelum: Search icon diposisikan `top: 50%; transform: translateY(-50%)` — ini relatif terhadap container. Setelah label ditambah, icon ikut naik dan tidak lagi aligned dengan input field.
+- Sesudah: Icon diposisikan dengan `bottom: 9px` (fixed dari bawah) — selalu aligned dengan input field terlepas dari ada/tidaknya label di atas.
+
+**File yang Dimodifikasi:**
+- `assets/js/pages/members.js` (v0.14.3) — tambah `function _renderRow(u) {`
+- `assets/css/members.css` (v0.15.2) — toolbar card, label search, divider, alignment fix
+- `pages/members.html` (v0.14.3) — tambah label "Cari" dan toolbar divider
+- `README.md` (v1.1.0)
+
+---
+
+*SIMPRO v1.1.0 — Offline-first. Zero server. Pure localStorage.*
 
 **2026-02-27** | ✅
 
