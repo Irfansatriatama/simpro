@@ -34,9 +34,9 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | v1.0.7 (Bug Fix Release — BUG-13) |
+| **Versi App** | v1.0.8 (Bug Fix Release — BUG-14) |
 | **Fase Pembangunan Selesai** | FASE 16 — Polish, PWA Penuh & Audit Final ✅ |
-| **Fase Bug Fix Saat Ini** | BUG-13 ✅ — Projects: Create Project Fix, Card Dropdown Menu Fix (position:fixed) (SELESAI) |
+| **Fase Bug Fix Saat Ini** | BUG-14 ✅ — Members: async Storage.update fix, null guard, error handling (SELESAI) |
 | **Fase Bug Fix Berikutnya** | — (Ongoing bug fix, upload zip terbaru jika ada bug baru) |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
@@ -60,6 +60,7 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 | BUG-11 | Backlog: Filter Bar, Status Badge, Due Date, Drag Reorder Fix, Order on Add | ✅ Selesai | 2026-02-27 |
 | BUG-12 | Backlog Deep Fix: Collapse State, Drag→Backlog Reorder, Task.reorder() Status Bug, _nextOrder Fix, addTask Batch | ✅ Selesai | 2026-02-27 |
 | BUG-13 | Projects: Create Project Fix (null check, try-catch, memberIds guard), Card Dropdown Menu Fix (position:fixed, no duplicate listener) | ✅ Selesai | 2026-02-27 |
+| BUG-14 | Members: async Storage.update fix (hash password dulu, lalu sync callback), null/undefined guard, try-catch, TimeLog guard | ✅ Selesai | 2026-02-27 |
 
 ---
 
@@ -1240,7 +1241,48 @@ Widget My Tasks hanya menampilkan project dot (bukan label), badge type, dan due
 
 ---
 
-*SIMPRO v1.0.7 — Offline-first. Zero server. Pure localStorage.*  
+### BUG-14 — Members Module: Full Fix
+
+**2026-02-27** | ✅
+
+**Bug yang Diperbaiki:**
+
+**1. `Storage.update` dipanggil dengan async callback — BUG KRITIS (data korup):**
+- Root cause: `Storage.update` adalah fungsi **synchronous**. Saat `_saveUser()` menggunakan `Storage.update('sp_users', async arr => [...])`, callback mengembalikan sebuah **Promise** (bukan array). `JSON.stringify(Promise)` menghasilkan `{}` — artinya localStorage menyimpan object kosong, **bukan** array users. Ini menyebabkan seluruh data user terhapus saat tambah/edit user.
+- Solusi: Hash password dilakukan dengan `await Utils.hashPassword(password)` **di luar** `Storage.update`, sebelum memanggil `Storage.update`. Callback yang dikirim ke `Storage.update` kini bersifat **synchronous murni** — tidak ada `async/await` di dalamnya.
+- Pattern yang benar: `const hash = await Utils.hashPassword(pw); Storage.update('sp_users', arr => arr.map(...));`
+
+**2. `p.memberIds.includes()` crash jika `memberIds` undefined:**
+- Sebelum: `_getVisibleUsers`, `_getUserProjectCount`, `_getUserProjects` — semua mengakses `p.memberIds.includes()` tanpa guard → crash jika project tidak punya `memberIds`
+- Sesudah: tambah `Array.isArray(p.memberIds) &&` guard di semua tiga fungsi
+
+**3. `t.assigneeIds.includes()` crash jika `assigneeIds` undefined:**
+- Sebelum: `_getUserTaskCount` dan `_openDetail` mengakses `t.assigneeIds.includes()` tanpa guard
+- Sesudah: tambah `Array.isArray(t.assigneeIds) &&` guard
+
+**4. `TimeLog.getTotalByUser` crash jika `timelog.js` belum loaded:**
+- Sebelum: `TimeLog.getTotalByUser(userId)` dipanggil langsung — jika `timelog.js` tidak ada di halaman atau belum loaded, crash dengan ReferenceError
+- Sesudah: tambah guard `typeof TimeLog !== 'undefined' && TimeLog.getTotalByUser ? TimeLog.getTotalByUser(userId) : 0`
+
+**5. `document.getElementById()` tanpa null check:**
+- Sebelum: semua akses DOM di `init()`, `_bindEvents()`, `_openModal()` dilakukan tanpa null check → jika HTML berubah, terjadi crash TypeError
+- Sesudah: setiap `getElementById()` ditambah null guard sebelum diakses
+
+**6. Tidak ada try-catch di `_saveUser()`:**
+- Sebelum: jika terjadi error runtime di `_saveUser()` (misal DOM element null, `Utils.hashPassword` gagal), error diam-diam — user tidak dapat feedback
+- Sesudah: seluruh body `_saveUser()` dibungkus try-catch-finally. Error ditampilkan via `App.Toast.error()`. `finally` memastikan save button selalu di-enable kembali.
+
+**7. Save button tidak disabled saat proses simpan:**
+- Sebelum: user bisa klik "Simpan" berkali-kali saat `hashPassword` (async) berjalan → multiple write ke localStorage
+- Sesudah: `saveBtn.disabled = true` saat proses, `saveBtn.disabled = false` di `finally`
+
+**File yang Dimodifikasi:**
+- `assets/js/pages/members.js` (v0.14.1)
+- `README.md` (v1.0.8)
+
+---
+
+*SIMPRO v1.0.8 — Offline-first. Zero server. Pure localStorage.*  
 *README ini adalah sumber kebenaran tunggal. Tidak ada file dokumentasi lain yang diperlukan.*
 
 ---
