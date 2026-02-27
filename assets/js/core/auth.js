@@ -19,7 +19,7 @@ const Auth = (() => {
   function requireAuth() {
     if (!isLoggedIn()) {
       const currentPath = window.location.pathname + window.location.search + window.location.hash;
-      window.location.href = '/pages/login.html?redirect=' + encodeURIComponent(currentPath);
+      window.location.href = './login.html?redirect=' + encodeURIComponent(currentPath);
     }
   }
 
@@ -27,7 +27,7 @@ const Auth = (() => {
     requireAuth();
     const user = getCurrentUser();
     if (!user || !roles.includes(user.role)) {
-      window.location.href = '/pages/dashboard.html';
+      window.location.href = './dashboard.html';
     }
   }
 
@@ -64,7 +64,7 @@ const Auth = (() => {
 
   function logout() {
     Storage.remove('sp_session');
-    window.location.href = '/pages/login.html';
+    window.location.href = './login.html';
   }
 
   function hasRole(...roles) {

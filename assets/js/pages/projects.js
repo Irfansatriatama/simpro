@@ -154,7 +154,7 @@ const ProjectsPage = (() => {
         <div class="project-card-header">
           <div class="project-card-title-row">
             ${priorityDot}
-            <a class="project-card-name" href="/pages/project-detail.html?id=${project.id}">${Utils.escapeHtml(project.name)}</a>
+            <a class="project-card-name" href="./project-detail.html?id=${project.id}">${Utils.escapeHtml(project.name)}</a>
             <span class="badge badge-mono">${Utils.escapeHtml(project.key)}</span>
           </div>
           ${canEdit ? `
@@ -163,7 +163,7 @@ const ProjectsPage = (() => {
               <i data-lucide="more-horizontal" width="16" height="16"></i>
             </button>
             <div class="dropdown-menu hidden card-menu-dropdown" data-id="${project.id}">
-              <a class="dropdown-item" href="/pages/project-detail.html?id=${project.id}">
+              <a class="dropdown-item" href="./project-detail.html?id=${project.id}">
                 <i data-lucide="eye" width="14" height="14"></i> Lihat Detail
               </a>
               <button class="dropdown-item btn-edit-project" data-id="${project.id}">
@@ -217,7 +217,7 @@ const ProjectsPage = (() => {
           <div style="display:flex;align-items:center;gap:8px;">
             <div style="width:4px;height:28px;border-radius:2px;background:${p.color};flex-shrink:0;"></div>
             <div>
-              <a class="text-sm fw-500" href="/pages/project-detail.html?id=${p.id}">${Utils.escapeHtml(p.name)}</a>
+              <a class="text-sm fw-500" href="./project-detail.html?id=${p.id}">${Utils.escapeHtml(p.name)}</a>
               <div class="text-xs text-muted">${Utils.escapeHtml(p.description || '—')}</div>
             </div>
           </div>

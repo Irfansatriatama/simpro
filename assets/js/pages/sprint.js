@@ -139,7 +139,7 @@ const Page = (() => {
       <div class="sa-header">
         <div class="sa-header-left">
           <div class="sa-breadcrumb">
-            <a href="/pages/backlog.html?project=${_project.id}" class="sa-breadcrumb-link">
+            <a href="./backlog.html?project=${_project.id}" class="sa-breadcrumb-link">
               <i data-lucide="layers" style="width:13px;height:13px;"></i> Backlog
             </a>
             <span class="sa-breadcrumb-sep">/</span>
@@ -189,7 +189,7 @@ const Page = (() => {
           const assignees = (t.assigneeIds || []).map(id => _avatarHtml(id, 18)).join('');
           const isOverdue = t.dueDate && Utils.isOverdue(t.dueDate) && t.status !== 'done';
           return `
-            <a href="/pages/task-detail.html?id=${t.id}" class="sa-card">
+            <a href="./task-detail.html?id=${t.id}" class="sa-card">
               <div class="sa-card-top">
                 ${_typeIcon(t.type)}
                 <span class="sa-card-key">${Utils.escapeHtml(t.key)}</span>
@@ -218,11 +218,11 @@ const Page = (() => {
     return `
       <div class="sa-board-view">
         <div class="sa-board-quicknav">
-          <a href="/pages/board.html?project=${_project.id}" class="btn btn-sm btn-secondary">
+          <a href="./board.html?project=${_project.id}" class="btn btn-sm btn-secondary">
             <i data-lucide="layout-dashboard" style="width:14px;height:14px;"></i>
             Buka Board Penuh
           </a>
-          <a href="/pages/backlog.html?project=${_project.id}" class="btn btn-sm btn-secondary">
+          <a href="./backlog.html?project=${_project.id}" class="btn btn-sm btn-secondary">
             <i data-lucide="layers" style="width:14px;height:14px;"></i>
             Kelola Backlog
           </a>
@@ -269,11 +269,11 @@ const Page = (() => {
             <td class="sa-list-key">
               <div style="display:flex;align-items:center;gap:var(--sp-2);">
                 ${_typeIcon(t.type)}
-                <a href="/pages/task-detail.html?id=${t.id}" class="sa-key-link">${Utils.escapeHtml(t.key)}</a>
+                <a href="./task-detail.html?id=${t.id}" class="sa-key-link">${Utils.escapeHtml(t.key)}</a>
               </div>
             </td>
             <td class="sa-list-title">
-              <a href="/pages/task-detail.html?id=${t.id}" class="sa-title-link">${Utils.escapeHtml(t.title)}</a>
+              <a href="./task-detail.html?id=${t.id}" class="sa-title-link">${Utils.escapeHtml(t.title)}</a>
             </td>
             <td>${_statusBadgeHtml(t.status)}</td>
             <td>
@@ -452,12 +452,12 @@ const Page = (() => {
           </div>
         </div>
         <div class="sa-completed-actions">
-          <a href="/pages/backlog.html?project=${_project.id}" class="btn btn-primary">
+          <a href="./backlog.html?project=${_project.id}" class="btn btn-primary">
             <i data-lucide="layers" style="width:14px;height:14px;"></i>
             Kembali ke Backlog
           </a>
           ${nextSprint
-            ? `<a href="/pages/sprint.html?project=${_project.id}&sprint=${nextSprint.id}" class="btn btn-secondary">
+            ? `<a href="./sprint.html?project=${_project.id}&sprint=${nextSprint.id}" class="btn btn-secondary">
                  <i data-lucide="arrow-right" style="width:14px;height:14px;"></i>
                  Sprint Berikutnya: ${Utils.escapeHtml(nextSprint.name)}
                </a>`
@@ -472,7 +472,7 @@ const Page = (() => {
         <i data-lucide="calendar-x" style="width:40px;height:40px;color:var(--color-text-3);"></i>
         <h3>Tidak ada sprint aktif</h3>
         <p>Tidak ditemukan sprint aktif untuk project ini. Mulai sprint dari halaman Backlog.</p>
-        <a href="/pages/backlog.html?project=${_project ? _project.id : ''}" class="btn btn-primary">
+        <a href="./backlog.html?project=${_project ? _project.id : ''}" class="btn btn-primary">
           <i data-lucide="layers" style="width:14px;height:14px;"></i>
           Kelola Backlog
         </a>

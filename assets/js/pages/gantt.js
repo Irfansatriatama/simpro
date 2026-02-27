@@ -93,7 +93,7 @@ const Page = (() => {
 
     // Build left panel HTML
     const taskRowsHtml = tasks.map(t => {
-      return `<a class="gantt-row" href="/pages/task-detail.html?id=${t.id}" style="height:${ROW_H}px;">
+      return `<a class="gantt-row" href="./task-detail.html?id=${t.id}" style="height:${ROW_H}px;">
         <span class="gantt-row-status ${t.status}"></span>
         <span class="gantt-row-key">${Utils.escapeHtml(t.key)}</span>
         <span class="gantt-row-title" title="${Utils.escapeHtml(t.title)}">${Utils.escapeHtml(t.title)}</span>
@@ -184,7 +184,7 @@ const Page = (() => {
         const bar = e.target.closest('.gantt-bar');
         if (bar) {
           const taskId = bar.getAttribute('data-task-id');
-          if (taskId) window.location.href = `/pages/task-detail.html?id=${taskId}`;
+          if (taskId) window.location.href = `./task-detail.html?id=${taskId}`;
         }
         const ms = e.target.closest('.gantt-milestone');
         if (ms) {

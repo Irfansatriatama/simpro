@@ -3,7 +3,7 @@
   await Storage.seed();
 
   if (Auth.isLoggedIn()) {
-    window.location.replace('/pages/dashboard.html');
+    window.location.replace('./dashboard.html');
     return;
   }
 
@@ -55,7 +55,7 @@
     if (result.ok) {
       const params   = new URLSearchParams(window.location.search);
       const redirect = params.get('redirect');
-      window.location.replace(redirect || '/pages/dashboard.html');
+      window.location.replace(redirect || './dashboard.html');
     } else {
       showError(result.error);
       loginBtn.disabled    = false;

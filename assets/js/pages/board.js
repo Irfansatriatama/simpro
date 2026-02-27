@@ -129,7 +129,7 @@ const Page = (() => {
       <div class="board-empty" style="margin-top:60px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
         <p>Belum ada project</p>
-        <a href="/pages/projects.html" class="btn btn-primary btn-sm">Buat Project</a>
+        <a href="./projects.html" class="btn btn-primary btn-sm">Buat Project</a>
       </div>`;
   }
 
@@ -420,7 +420,7 @@ const Page = (() => {
     if (e.target.closest('.kanban-quick-add-btn, .quick-add-submit, .quick-add-cancel, .kanban-quick-add-input')) return;
     const taskId = card.dataset.taskId;
     if (taskId) {
-      window.location.href = `/pages/task-detail.html?id=${taskId}`;
+      window.location.href = `./task-detail.html?id=${taskId}`;
     }
   }
 

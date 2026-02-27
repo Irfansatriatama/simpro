@@ -546,7 +546,7 @@ const Page = (() => {
         Storage.clearAll();
         await Storage.seed();
         App.Toast.success('Data berhasil direset. Memuat ulang…');
-        setTimeout(() => window.location.href = '/pages/login.html', 1500);
+        setTimeout(() => window.location.href = './login.html', 1500);
       });
     });
   }

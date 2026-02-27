@@ -5,16 +5,16 @@
  */
 const Shell = (() => {
   const NAV_ITEMS = [
-    { id: 'dashboard', label: 'Dashboard',    icon: 'layout-dashboard', href: '/pages/dashboard.html',     section: 'main' },
-    { id: 'projects',  label: 'Projects',     icon: 'folder',           href: '/pages/projects.html',      section: 'main' },
-    { id: 'board',     label: 'Board',        icon: 'kanban',           href: '/pages/board.html',         section: 'work', sectionLabel: 'Kerja' },
-    { id: 'backlog',   label: 'Backlog',      icon: 'list',             href: '/pages/backlog.html',       section: 'work' },
-    { id: 'sprint',    label: 'Sprint',       icon: 'zap',              href: '/pages/sprint.html',        section: 'work' },
-    { id: 'gantt',     label: 'Gantt',        icon: 'gantt-chart',      href: '/pages/gantt.html',         section: 'work' },
-    { id: 'reports',   label: 'Laporan',      icon: 'bar-chart-2',      href: '/pages/reports.html',       section: 'report', sectionLabel: 'Laporan' },
-    { id: 'members',   label: 'Member',       icon: 'users',            href: '/pages/members.html',       section: 'admin', sectionLabel: 'Admin' },
-    { id: 'settings',  label: 'Settings',     icon: 'settings',         href: '/pages/settings.html',      section: 'admin' },
-    { id: 'io',        label: 'Import/Export',icon: 'arrow-left-right', href: '/pages/io.html',            section: 'admin' },
+    { id: 'dashboard', label: 'Dashboard',    icon: 'layout-dashboard', href: './dashboard.html',     section: 'main' },
+    { id: 'projects',  label: 'Projects',     icon: 'folder',           href: './projects.html',      section: 'main' },
+    { id: 'board',     label: 'Board',        icon: 'kanban',           href: './board.html',         section: 'work', sectionLabel: 'Kerja' },
+    { id: 'backlog',   label: 'Backlog',      icon: 'list',             href: './backlog.html',       section: 'work' },
+    { id: 'sprint',    label: 'Sprint',       icon: 'zap',              href: './sprint.html',        section: 'work' },
+    { id: 'gantt',     label: 'Gantt',        icon: 'gantt-chart',      href: './gantt.html',         section: 'work' },
+    { id: 'reports',   label: 'Laporan',      icon: 'bar-chart-2',      href: './reports.html',       section: 'report', sectionLabel: 'Laporan' },
+    { id: 'members',   label: 'Member',       icon: 'users',            href: './members.html',       section: 'admin', sectionLabel: 'Admin' },
+    { id: 'settings',  label: 'Settings',     icon: 'settings',         href: './settings.html',      section: 'admin' },
+    { id: 'io',        label: 'Import/Export',icon: 'arrow-left-right', href: './io.html',            section: 'admin' },
   ];
 
   function _buildNavHTML(activePageId) {
@@ -103,10 +103,10 @@ const Shell = (() => {
             <div id="dropdown-user-email" class="dropdown-user-email">—</div>
           </div>
           <div class="dropdown-divider"></div>
-          <a class="dropdown-item" href="/pages/profile.html">
+          <a class="dropdown-item" href="./profile.html">
             <i data-lucide="user"></i> Profil Saya
           </a>
-          <a class="dropdown-item" href="/pages/settings.html">
+          <a class="dropdown-item" href="./settings.html">
             <i data-lucide="settings"></i> Settings
           </a>
           <div class="dropdown-divider"></div>
@@ -194,9 +194,9 @@ const Shell = (() => {
           notifDropdown.classList.add('hidden');
           App.refreshNotifBadge();
 
-          if (refType === 'task' && refId)   window.location.href = `/pages/task-detail.html?id=${refId}`;
-          if (refType === 'sprint' && refId) window.location.href = `/pages/sprint.html?id=${refId}`;
-          if (refType === 'project' && refId) window.location.href = `/pages/project-detail.html?id=${refId}`;
+          if (refType === 'task' && refId)   window.location.href = `./task-detail.html?id=${refId}`;
+          if (refType === 'sprint' && refId) window.location.href = `./sprint.html?id=${refId}`;
+          if (refType === 'project' && refId) window.location.href = `./project-detail.html?id=${refId}`;
         });
       });
     }
@@ -279,7 +279,7 @@ const Shell = (() => {
     if (sidebarUserBtn) {
       sidebarUserBtn.addEventListener('click', (e) => {
         if (!e.target.closest('#sidebar-logout')) {
-          window.location.href = '/pages/profile.html';
+          window.location.href = './profile.html';
         }
       });
     }

@@ -11,10 +11,10 @@ const ProjectDetailPage = (() => {
 
     const params = Utils.parseQueryParams(window.location.search);
     const projectId = params.id;
-    if (!projectId) { window.location.href = '/pages/projects.html'; return; }
+    if (!projectId) { window.location.href = './projects.html'; return; }
 
     _project = Project.getById(projectId);
-    if (!_project) { window.location.href = '/pages/projects.html'; return; }
+    if (!_project) { window.location.href = './projects.html'; return; }
 
     _canManage = _session.role === 'admin' || _session.role === 'pm';
 
@@ -49,9 +49,9 @@ const ProjectDetailPage = (() => {
 
     const _sess = Storage.get('sp_session');
     const links = [
-      { href: `/pages/board.html?project=${_project.id}`, icon: 'kanban', label: 'Board' },
-      { href: `/pages/backlog.html?project=${_project.id}`, icon: 'list', label: 'Backlog' },
-      { href: `/pages/gantt.html?project=${_project.id}`, icon: 'gantt-chart', label: 'Gantt' },
+      { href: `./board.html?project=${_project.id}`, icon: 'kanban', label: 'Board' },
+      { href: `./backlog.html?project=${_project.id}`, icon: 'list', label: 'Backlog' },
+      { href: `./gantt.html?project=${_project.id}`, icon: 'gantt-chart', label: 'Gantt' },
     ];
     links.forEach(l => {
       const a = document.createElement('a');
@@ -123,7 +123,7 @@ const ProjectDetailPage = (() => {
     const sprintBody = document.getElementById('sprint-active-body');
     const activeSprints = Storage.query('sp_sprints', s => s.projectId === _project.id && s.status === 'active');
     if (activeSprints.length === 0) {
-      sprintBody.innerHTML = `<div class="empty-state" style="padding:var(--sp-6);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-state-icon"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><p class="empty-state-title">Tidak ada sprint aktif</p><p class="empty-state-desc">Mulai sprint dari halaman Backlog</p><a href="/pages/backlog.html?project=${_project.id}" class="btn btn-secondary btn-sm" style="margin-top:var(--sp-3)">Buka Backlog</a></div>`;
+      sprintBody.innerHTML = `<div class="empty-state" style="padding:var(--sp-6);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-state-icon"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><p class="empty-state-title">Tidak ada sprint aktif</p><p class="empty-state-desc">Mulai sprint dari halaman Backlog</p><a href="./backlog.html?project=${_project.id}" class="btn btn-secondary btn-sm" style="margin-top:var(--sp-3)">Buka Backlog</a></div>`;
     } else {
       const sp = activeSprints[0];
       const spTasks = Storage.query('sp_tasks', t => t.sprintId === sp.id && !t.parentId);
@@ -142,7 +142,7 @@ const ProjectDetailPage = (() => {
             <div class="progress-fill" style="width:${spProgress}%;background:${_project.color};"></div>
           </div>
           <div class="text-xs text-muted" style="margin-top:4px;">${spDone}/${spTasks.length} task selesai</div>
-          <a href="/pages/sprint.html?project=${_project.id}" class="btn btn-ghost btn-sm" style="margin-top:8px;">Lihat Sprint</a>
+          <a href="./sprint.html?project=${_project.id}" class="btn btn-ghost btn-sm" style="margin-top:8px;">Lihat Sprint</a>
         </div>`;
     }
 
@@ -348,7 +348,7 @@ const ProjectDetailPage = (() => {
       if (!confirm(`Hapus project "${_project.name}"? Semua task, sprint, dan data akan dihapus permanen.`)) return;
       Project.remove(_project.id);
       App.Toast.success('Project dihapus');
-      window.location.href = '/pages/projects.html';
+      window.location.href = './projects.html';
     };
   }
 

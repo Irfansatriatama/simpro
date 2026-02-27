@@ -3,7 +3,7 @@
   await Storage.seed();
 
   if (Auth.isLoggedIn()) {
-    window.location.replace('/pages/dashboard.html');
+    window.location.replace('./dashboard.html');
     return;
   }
 
@@ -123,7 +123,7 @@
 
     const result = await Auth.login(email, password);
     if (result.ok) {
-      window.location.replace('/pages/dashboard.html');
+      window.location.replace('./dashboard.html');
     } else {
       showError('Gagal masuk setelah registrasi. Coba login manual.');
       regBtn.disabled    = false;

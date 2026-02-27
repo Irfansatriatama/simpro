@@ -104,7 +104,7 @@ const Page = (() => {
 
     container.innerHTML = html;
     container.querySelectorAll('.task-row').forEach(row => {
-      const nav = () => { window.location.href = `/pages/task-detail.html?id=${row.dataset.taskId}`; };
+      const nav = () => { window.location.href = `./task-detail.html?id=${row.dataset.taskId}`; };
       row.addEventListener('click', nav);
       row.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') nav(); });
     });
@@ -119,7 +119,7 @@ const Page = (() => {
       container.innerHTML = `<div class="widget-empty">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="widget-empty-icon"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
         <p>Belum ada project</p>
-        <a href="/pages/projects.html" class="btn btn-primary btn-sm" style="margin-top:var(--sp-3)">Buat Project</a>
+        <a href="./projects.html" class="btn btn-primary btn-sm" style="margin-top:var(--sp-3)">Buat Project</a>
       </div>`;
       return;
     }
@@ -143,7 +143,7 @@ const Page = (() => {
       }).join('');
       const extra = memberIds.length > 4 ? `<div class="avatar avatar-xs avatar-extra" style="border:2px solid var(--color-surface);">+${memberIds.length - 4}</div>` : '';
       const fillColor = progress >= 70 ? 'var(--color-success)' : 'var(--color-accent)';
-      return `<a class="project-card" href="/pages/project-detail.html?id=${project.id}">
+      return `<a class="project-card" href="./project-detail.html?id=${project.id}">
         <div class="project-card-color-bar" style="background:${project.color}"></div>
         <div class="project-card-body">
           <div class="project-card-header">
@@ -280,7 +280,7 @@ const Page = (() => {
             <span>${doneSP}/${totalSP} SP</span>
           </div>
         </div>
-        <a href="/pages/sprint.html?id=${sprint.id}" class="sprint-card-link">
+        <a href="./sprint.html?id=${sprint.id}" class="sprint-card-link">
           Lihat Sprint <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
         </a>
       </div>`;
@@ -333,7 +333,7 @@ const Page = (() => {
         <p class="welcome-desc">${canCreate
           ? 'Buat project baru untuk mulai mengelola task, sprint, dan tim Anda.'
           : 'Anda belum tergabung ke project manapun. Minta Project Manager untuk menambahkan Anda.'}</p>
-        ${canCreate ? `<a href="/pages/projects.html" class="btn btn-primary">
+        ${canCreate ? `<a href="./projects.html" class="btn btn-primary">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Buat Project Baru</a>` : ''}
       </div>`;
@@ -349,7 +349,7 @@ const Page = (() => {
           <p class="page-subtitle" id="dash-subtitle"></p>
         </div>
         ${user.role !== 'viewer' ? `<div class="page-header-actions">
-          <a href="/pages/projects.html" class="btn btn-secondary btn-sm">
+          <a href="./projects.html" class="btn btn-secondary btn-sm">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
             Semua Project</a>
         </div>` : ''}
@@ -360,7 +360,7 @@ const Page = (() => {
           <div class="widget">
             <div class="widget-header">
               <h2 class="widget-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg> My Tasks</h2>
-              <a href="/pages/board.html" class="widget-action">Lihat Board</a>
+              <a href="./board.html" class="widget-action">Lihat Board</a>
             </div>
             <div class="widget-body" id="widget-my-tasks"><div class="widget-loading">Memuat...</div></div>
           </div>
@@ -369,7 +369,7 @@ const Page = (() => {
           <div class="widget">
             <div class="widget-header">
               <h2 class="widget-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Sprint Aktif</h2>
-              <a href="/pages/backlog.html" class="widget-action">Backlog</a>
+              <a href="./backlog.html" class="widget-action">Backlog</a>
             </div>
             <div class="widget-body" id="widget-sprint-overview"><div class="widget-loading">Memuat...</div></div>
           </div>
@@ -384,7 +384,7 @@ const Page = (() => {
           <div class="widget">
             <div class="widget-header">
               <h2 class="widget-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Project Aktif</h2>
-              <a href="/pages/projects.html" class="widget-action">Lihat Semua</a>
+              <a href="./projects.html" class="widget-action">Lihat Semua</a>
             </div>
             <div class="widget-body" id="widget-active-projects"><div class="widget-loading">Memuat...</div></div>
           </div>

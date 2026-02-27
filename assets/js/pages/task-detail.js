@@ -39,7 +39,7 @@ const Page = (() => {
       <div class="task-not-found">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         <p>Task tidak ditemukan.</p>
-        <a href="/pages/projects.html" class="btn btn-secondary btn-sm" style="margin-top:var(--sp-3)">Kembali ke Projects</a>
+        <a href="./projects.html" class="btn btn-secondary btn-sm" style="margin-top:var(--sp-3)">Kembali ke Projects</a>
       </div>`;
   }
 
@@ -159,11 +159,11 @@ const Page = (() => {
   }
 
   function _buildBreadcrumb(sprint) {
-    const projectUrl = `/pages/project-detail.html?id=${_task.projectId}`;
+    const projectUrl = `./project-detail.html?id=${_task.projectId}`;
     const sprintLabel = sprint ? `Sprint: ${Utils.escapeHtml(sprint.name)}` : 'Backlog';
     const backUrl = sprint
-      ? `/pages/sprint.html?id=${sprint.id}`
-      : `/pages/backlog.html?project=${_task.projectId}`;
+      ? `./sprint.html?id=${sprint.id}`
+      : `./backlog.html?project=${_task.projectId}`;
 
     return `
       <div class="breadcrumb">
@@ -202,7 +202,7 @@ const Page = (() => {
 
   function _buildSubtaskItem(st) {
     return `
-      <a class="subtask-item ${st.status === 'done' ? 'done' : ''}" href="/pages/task-detail.html?id=${st.id}" data-subtask-id="${st.id}">
+      <a class="subtask-item ${st.status === 'done' ? 'done' : ''}" href="./task-detail.html?id=${st.id}" data-subtask-id="${st.id}">
         <div class="subtask-checkbox">
           <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
@@ -919,7 +919,7 @@ const Page = (() => {
     Task.remove(_task.id);
     App.Toast.success('Task dihapus');
     setTimeout(() => {
-      window.location.href = `/pages/project-detail.html?id=${_task.projectId}`;
+      window.location.href = `./project-detail.html?id=${_task.projectId}`;
     }, 800);
   }
 
