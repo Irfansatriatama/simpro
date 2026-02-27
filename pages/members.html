@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="/assets/css/reset.css">
   <link rel="stylesheet" href="/assets/css/layout.css">
   <link rel="stylesheet" href="/assets/css/components.css">
+  <link rel="stylesheet" href="/assets/css/members.css">
 </head>
 <body data-page="members">
 
@@ -28,17 +29,139 @@
   <div class="main-area">
     <header class="topbar"></header>
     <main class="main-content" id="main-content">
+
       <div class="page-header">
         <div class="page-header-left">
           <h1 class="page-title">Member</h1>
         </div>
+        <div class="page-header-right">
+          <button id="btn-add-user" class="btn btn-primary btn-md" style="display:none;">
+            <i data-lucide="user-plus"></i> Tambah User
+          </button>
+        </div>
       </div>
-      <p style="color:var(--color-text-2);font-size:var(--text-sm);">Halaman ini akan tersedia di fase berikutnya.</p>
+
+      <div id="pm-view-notice" class="pm-view-notice" style="display:none;">
+        <i data-lucide="info" style="width:14px;height:14px;"></i>
+        Kamu melihat member dari project yang kamu kelola
+      </div>
+
+      <div class="members-toolbar">
+        <div class="members-search">
+          <span class="search-icon"><i data-lucide="search" style="width:14px;height:14px;"></i></span>
+          <input type="text" id="search-input" class="input" placeholder="Cari nama atau email…">
+        </div>
+        <div class="members-filters">
+          <select id="filter-role" class="input">
+            <option value="">Semua Role</option>
+            <option value="admin">Admin</option>
+            <option value="pm">Project Manager</option>
+            <option value="developer">Developer</option>
+            <option value="viewer">Viewer</option>
+          </select>
+          <select id="filter-status" class="input">
+            <option value="">Semua Status</option>
+            <option value="active">Aktif</option>
+            <option value="inactive">Nonaktif</option>
+          </select>
+        </div>
+        <span id="member-count" style="font-size:var(--text-sm);color:var(--color-text-3);margin-left:auto;"></span>
+      </div>
+
+      <div class="members-table-wrap">
+        <table class="members-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Role</th>
+              <th>Project</th>
+              <th>Total Task</th>
+              <th>Last Login</th>
+              <th>Status</th>
+              <th style="width:80px;"></th>
+            </tr>
+          </thead>
+          <tbody id="members-tbody">
+            <tr><td colspan="7"><div class="members-empty"><p>Memuat data…</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
     </main>
   </div>
 </div>
 
 <div id="toast-container"></div>
+
+<!-- Modal: Add / Edit User (Admin only) -->
+<div id="modal-user" class="modal" style="display:none;" aria-modal="true" role="dialog">
+  <div class="modal-overlay"></div>
+  <div class="modal-panel" style="max-width:520px;">
+    <div class="modal-header">
+      <h2 class="modal-title" id="modal-user-title">Tambah User</h2>
+      <button class="modal-close" id="modal-user-close" aria-label="Tutup"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row" style="margin-bottom:var(--sp-4);">
+        <div class="form-group">
+          <label class="form-label" for="input-user-name">Nama <span class="required">*</span></label>
+          <input type="text" id="input-user-name" class="input" placeholder="Nama lengkap">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="input-user-email">Email <span class="required">*</span></label>
+          <input type="email" id="input-user-email" class="input" placeholder="user@example.com">
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:var(--sp-4);">
+        <div class="form-group">
+          <label class="form-label" for="input-user-role">Role <span class="required">*</span></label>
+          <select id="input-user-role" class="input">
+            <option value="developer">Developer</option>
+            <option value="pm">Project Manager</option>
+            <option value="viewer">Viewer</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div class="form-group" id="password-group">
+          <label class="form-label" for="input-user-password">Password <span class="required" id="pw-required">*</span></label>
+          <input type="password" id="input-user-password" class="input" placeholder="Min. 6 karakter">
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:var(--sp-4);">
+        <label class="form-label" for="input-user-bio">Bio</label>
+        <textarea id="input-user-bio" class="input" rows="2" placeholder="Deskripsi singkat…" style="resize:vertical;"></textarea>
+      </div>
+      <div class="toggle-row" id="active-toggle-row">
+        <span class="toggle-label">Akun Aktif</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="input-user-active" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-md" id="btn-user-cancel">Batal</button>
+      <button class="btn btn-primary btn-md" id="btn-user-save">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: User Detail -->
+<div id="modal-user-detail" class="modal" style="display:none;" aria-modal="true" role="dialog">
+  <div class="modal-overlay"></div>
+  <div class="modal-panel" style="max-width:560px;">
+    <div class="modal-header">
+      <h2 class="modal-title">Detail User</h2>
+      <button class="modal-close" id="modal-detail-close" aria-label="Tutup"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body" id="modal-detail-body">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-md" id="btn-detail-close">Tutup</button>
+      <button class="btn btn-primary btn-md" id="btn-detail-edit" style="display:none;">Edit User</button>
+    </div>
+  </div>
+</div>
 
 <script src="/assets/js/core/utils.js"></script>
 <script src="/assets/js/core/storage.js"></script>
@@ -46,6 +169,7 @@
 <script src="/assets/js/core/app.js"></script>
 <script src="/assets/js/core/router.js"></script>
 <script src="/assets/js/modules/notification.js"></script>
+<script src="/assets/js/modules/timelog.js"></script>
 <script src="/assets/js/core/shell.js"></script>
 <script src="/assets/js/pages/members.js"></script>
 <script>
@@ -54,7 +178,7 @@
   App.init('members').then(() => {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
     if (window.lucide) lucide.createIcons();
-    if (typeof Page !== 'undefined' && Page.init) Page.init();
+    if (typeof MembersPage !== 'undefined' && MembersPage.init) MembersPage.init();
   });
 </script>
 </body>

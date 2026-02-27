@@ -30,9 +30,9 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | 0.13.0 |
-| **Fase Saat Ini** | FASE 13 — Import / Export ✅ |
-| **Fase Berikutnya** | FASE 14 — Member Management & Admin Panel |
+| **Versi App** | 0.14.0 |
+| **Fase Saat Ini** | FASE 14 — Member Management & Admin Panel ✅ |
+| **Fase Berikutnya** | FASE 15 — Profile & Settings |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
 | **PWA** | Aktif sejak Fase 1 (manifest.json + sw.js) |
@@ -1561,16 +1561,25 @@ Log ini diupdate **setiap akhir fase** oleh Claude. Mencatat apa yang sudah dike
 ---
 
 #### FASE 14 — Member Management & Admin Panel
-**Versi:** v0.14.0 | **Tanggal:** — | **Status:** Belum dikerjakan
+**Versi:** v0.14.0 | **Tanggal:** 2026-02-27 | **Status:** ✅ Selesai
 
 **File Ditambahkan:**
-*(diisi setelah fase selesai)*
+- `assets/css/members.css` — Style tabel, modal add/edit user, modal detail user, status dot, toggle switch, PM notice badge
+- (halaman dan JS sudah ada sebagai placeholder sejak awal)
 
 **File Diubah:**
-*(diisi setelah fase selesai)*
+- `assets/js/pages/members.js` — Implementasi penuh: tabel user, filter, search, modal tambah/edit, modal detail, toggle aktif/nonaktif
+- `pages/members.html` — Implementasi penuh: toolbar filter, tabel 7 kolom, 2 modal (add/edit + detail)
+- `sw.js` — Versi cache → v0.14.0, tambah members.css, members.js, members.html
 
 **Catatan Teknis:**
-*(diisi setelah fase selesai)*
+- Admin: akses penuh — lihat semua user, tambah user baru, edit user, toggle aktif/nonaktif
+- PM: lihat member dari project yang dikelola, tidak bisa ubah role global, tidak bisa tambah user
+- Developer/Viewer: lihat member dari project yang mereka ikuti, hanya bisa klik detail (read-only)
+- Modal detail user: avatar, info lengkap, 3 stat cards (project count, task count, jam log), project list dengan task count per project
+- Toggle aktif/nonaktif: user tidak bisa menonaktifkan dirinya sendiri
+- Password saat edit: opsional — kosongkan jika tidak ingin diubah
+- `Page` alias diekspor untuk kompatibilitas dengan pola init shell di members.html
 
 ---
 
