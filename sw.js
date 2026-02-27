@@ -1,4 +1,4 @@
-const CACHE_NAME = 'simpro-v0.15.0';
+const CACHE_NAME = 'simpro-v1.0.0';
 const SHELL_FILES = [
   '/index.html',
   '/404.html',
@@ -12,8 +12,13 @@ const SHELL_FILES = [
   '/assets/css/task.css',
   '/assets/css/kanban.css',
   '/assets/css/sprint.css',
+  '/assets/css/polish.css',
+  '/assets/css/gantt.css',
   '/assets/css/reports.css',
   '/assets/css/print.css',
+  '/assets/css/io.css',
+  '/assets/css/members.css',
+  '/assets/css/profile.css',
   '/assets/js/core/utils.js',
   '/assets/js/core/storage.js',
   '/assets/js/core/app.js',
@@ -28,31 +33,26 @@ const SHELL_FILES = [
   '/assets/js/modules/kanban.js',
   '/assets/js/modules/sprint.js',
   '/assets/js/modules/report.js',
-  '/assets/js/pages/board.js',
-  '/assets/js/pages/backlog.js',
-  '/assets/js/pages/sprint.js',
-  '/assets/js/pages/reports.js',
-  '/assets/css/io.css',
-  '/assets/css/members.css',
-  '/assets/js/pages/members.js',
-  '/pages/members.html',
-  '/assets/css/profile.css',
-  '/assets/js/pages/profile.js',
-  '/assets/js/pages/settings.js',
-  '/pages/profile.html',
-  '/pages/settings.html',
-  '/assets/js/modules/io.js',
-  '/assets/js/pages/io.js',
-  '/pages/io.html',
   '/assets/js/modules/gantt.js',
   '/assets/js/modules/timelog.js',
   '/assets/js/modules/milestone.js',
-  '/assets/js/pages/gantt.js',
-  '/assets/css/gantt.css',
-  '/pages/backlog.html',
+  '/assets/js/modules/notification.js',
+  '/assets/js/modules/io.js',
+  '/assets/js/pages/login.js',
+  '/assets/js/pages/register.js',
+  '/assets/js/pages/dashboard.js',
   '/assets/js/pages/projects.js',
   '/assets/js/pages/project-detail.js',
+  '/assets/js/pages/board.js',
+  '/assets/js/pages/backlog.js',
+  '/assets/js/pages/sprint.js',
   '/assets/js/pages/task-detail.js',
+  '/assets/js/pages/gantt.js',
+  '/assets/js/pages/reports.js',
+  '/assets/js/pages/members.js',
+  '/assets/js/pages/settings.js',
+  '/assets/js/pages/profile.js',
+  '/assets/js/pages/io.js',
   '/pages/login.html',
   '/pages/register.html',
   '/pages/dashboard.html',
@@ -68,13 +68,22 @@ const SHELL_FILES = [
   '/pages/settings.html',
   '/pages/profile.html',
   '/pages/io.html',
+  '/assets/icons/icon-192.png',
+  '/assets/icons/icon-512.png',
+];
+
+// External CDN resources to cache on first fetch
+const CDN_PATTERNS = [
+  'fonts.googleapis.com',
+  'fonts.gstatic.com',
+  'unpkg.com/lucide',
 ];
 
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(SHELL_FILES.map(url => new Request(url, { cache: 'reload' }))))
-      .catch(() => {}) // Dont fail install if some files are missing yet
+      .catch(() => {})
       .then(() => self.skipWaiting())
   );
 });
@@ -88,24 +97,40 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Only handle GET requests for same-origin
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
-  if (url.origin !== location.origin) return;
 
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(response => {
-        if (!response || response.status !== 200 || response.type !== 'basic') return response;
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
-        return response;
-      }).catch(() => {
-        if (e.request.destination === 'document') {
-          return caches.match('/404.html');
-        }
-      });
-    })
-  );
+  // Cache-first for same-origin
+  if (url.origin === location.origin) {
+    e.respondWith(
+      caches.match(e.request).then(cached => {
+        if (cached) return cached;
+        return fetch(e.request).then(response => {
+          if (!response || response.status !== 200) return response;
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+          return response;
+        }).catch(() => {
+          if (e.request.destination === 'document') return caches.match('/index.html');
+        });
+      })
+    );
+    return;
+  }
+
+  // Stale-while-revalidate for CDN fonts/icons
+  const isCDN = CDN_PATTERNS.some(p => url.hostname.includes(p) || url.href.includes(p));
+  if (isCDN) {
+    e.respondWith(
+      caches.open(CACHE_NAME).then(cache =>
+        cache.match(e.request).then(cached => {
+          const fetchPromise = fetch(e.request).then(response => {
+            if (response && response.status === 200) cache.put(e.request, response.clone());
+            return response;
+          }).catch(() => cached);
+          return cached || fetchPromise;
+        })
+      )
+    );
+  }
 });

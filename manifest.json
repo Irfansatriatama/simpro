@@ -1,12 +1,16 @@
 {
   "name": "SIMPRO — Project Management",
   "short_name": "SIMPRO",
-  "description": "Aplikasi manajemen proyek tim berbasis browser. Task tracking, sprint planning, kanban board, dan laporan progress.",
+  "description": "Aplikasi manajemen proyek tim berbasis browser. Task tracking, sprint planning, kanban board, dan laporan progress. Berjalan 100% offline.",
   "start_url": "/index.html",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#F7F8FA",
   "theme_color": "#3B5BDB",
   "orientation": "any",
+  "lang": "id",
+  "dir": "ltr",
   "icons": [
     {
       "src": "/assets/icons/icon-192.png",
@@ -22,5 +26,25 @@
     }
   ],
   "categories": ["productivity", "business"],
-  "screenshots": []
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "url": "/pages/dashboard.html",
+      "description": "Lihat ringkasan project dan task"
+    },
+    {
+      "name": "Kanban Board",
+      "short_name": "Board",
+      "url": "/pages/board.html",
+      "description": "Lihat dan kelola task di board"
+    },
+    {
+      "name": "Backlog",
+      "short_name": "Backlog",
+      "url": "/pages/backlog.html",
+      "description": "Kelola backlog dan sprint"
+    }
+  ],
+  "prefer_related_applications": false
 }

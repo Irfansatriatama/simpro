@@ -123,7 +123,7 @@ const ProjectDetailPage = (() => {
     const sprintBody = document.getElementById('sprint-active-body');
     const activeSprints = Storage.query('sp_sprints', s => s.projectId === _project.id && s.status === 'active');
     if (activeSprints.length === 0) {
-      sprintBody.innerHTML = '<p class="text-sm text-muted">Tidak ada sprint aktif.</p>';
+      sprintBody.innerHTML = `<div class="empty-state" style="padding:var(--sp-6);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-state-icon"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><p class="empty-state-title">Tidak ada sprint aktif</p><p class="empty-state-desc">Mulai sprint dari halaman Backlog</p><a href="/pages/backlog.html?project=${_project.id}" class="btn btn-secondary btn-sm" style="margin-top:var(--sp-3)">Buka Backlog</a></div>`;
     } else {
       const sp = activeSprints[0];
       const spTasks = Storage.query('sp_tasks', t => t.sprintId === sp.id && !t.parentId);
@@ -150,7 +150,7 @@ const ProjectDetailPage = (() => {
     const msBody = document.getElementById('milestones-body');
     const milestones = Storage.query('sp_milestones', m => m.projectId === _project.id);
     if (milestones.length === 0) {
-      msBody.innerHTML = '<p class="text-sm text-muted">Belum ada milestone.</p>';
+      msBody.innerHTML = `<div class="empty-state" style="padding:var(--sp-6);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-state-icon"><path d="M3 3h18M3 9h18M3 15h18"/><circle cx="9" cy="21" r="1"/><circle cx="15" cy="21" r="1"/></svg><p class="empty-state-title">Belum ada milestone</p><p class="empty-state-desc">Buat milestone dari halaman Gantt</p></div>`;
     } else {
       const statusColor = { 'on-track': 'success', 'at-risk': 'warning', 'missed': 'danger', 'completed': 'neutral' };
       msBody.innerHTML = milestones.map(m => `
@@ -168,7 +168,7 @@ const ProjectDetailPage = (() => {
     if (timeBody && typeof TimeLog !== 'undefined') {
       const summary = TimeLog.getSummaryByMember(_project.id);
       if (summary.length === 0) {
-        timeBody.innerHTML = '<p class="text-sm text-muted">Belum ada log waktu.</p>';
+        timeBody.innerHTML = `<div class="empty-state" style="padding:var(--sp-6);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-state-icon"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><p class="empty-state-title">Belum ada log waktu</p></div>`;
       } else {
         timeBody.innerHTML = `
           <table class="data-table" style="font-size:var(--text-sm)">
@@ -206,7 +206,7 @@ const ProjectDetailPage = (() => {
     const tbody = document.getElementById('members-table-body');
 
     if (members.length === 0) {
-      tbody.innerHTML = '<p class="text-sm text-muted">Belum ada member.</p>';
+      tbody.innerHTML = `<tr><td colspan="5" style="padding:var(--sp-6);text-align:center;color:var(--color-text-3);">Belum ada member di project ini.</td></tr>`;
       return;
     }
 

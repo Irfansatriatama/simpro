@@ -1,4 +1,4 @@
-/* SIMPRO — Dashboard Page (v0.3.0) */
+/* SIMPRO — Dashboard Page (v1.0.0) */
 const Page = (() => {
 
   function _currentUser() { return Auth.getCurrentUser(); }
@@ -392,37 +392,79 @@ const Page = (() => {
       </div>`;
   }
 
+  // ── Skeleton ──────────────────────────────────────────────────────────────
+  function _skeletonRows(n, widths) {
+    return Array.from({ length: n }, (_, i) => {
+      const w = widths[i % widths.length];
+      return `<div class="skeleton-row" style="margin-bottom:10px;">
+        <div class="skeleton skeleton-line" style="width:40px;height:12px;flex-shrink:0;"></div>
+        <div class="skeleton skeleton-line" style="width:${w};height:12px;flex:1;margin-left:8px;"></div>
+        <div class="skeleton skeleton-line" style="width:60px;height:12px;flex-shrink:0;"></div>
+      </div>`;
+    }).join('');
+  }
+
+  function _showSkeletons() {
+    const widgets = [
+      { id: 'widget-my-tasks', html: `<div style="padding:var(--sp-2) 0">${_skeletonRows(5, ['70%','60%','80%','55%','65%'])}</div>` },
+      { id: 'widget-sprint-overview', html: `<div style="padding:var(--sp-2) 0">${['80%','90%','70%'].map(w => `<div class="skeleton skeleton-line" style="width:${w};height:14px;margin-bottom:10px;"></div>`).join('')}<div class="skeleton skeleton-line" style="width:100%;height:6px;margin-top:8px;border-radius:4px;"></div></div>` },
+      { id: 'widget-recent-activity', html: Array.from({length:4}, () => `<div class="skeleton-row" style="margin-bottom:12px;"><div class="skeleton" style="width:28px;height:28px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;margin-left:8px;"><div class="skeleton skeleton-line" style="width:80%;height:12px;margin-bottom:6px;"></div><div class="skeleton skeleton-line" style="width:40%;height:10px;"></div></div></div>`).join('') },
+      { id: 'widget-active-projects', html: `<div class="project-card-grid">${Array.from({length:2}, () => `<div class="skeleton" style="height:120px;border-radius:var(--radius-lg);"></div>`).join('')}</div>` },
+    ];
+    widgets.forEach(({ id, html }) => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = html;
+    });
+    const statBar = document.getElementById('dash-stat-bar');
+    if (statBar) {
+      statBar.innerHTML = Array.from({length:3}, () => `<div class="dash-stat"><div class="skeleton skeleton-line" style="width:40px;height:28px;margin:0 auto 4px;"></div><div class="skeleton skeleton-line" style="width:70px;height:11px;"></div></div>`).join('');
+    }
+  }
+
   // ── Init ──────────────────────────────────────────────────────────────────
   function init() {
     const user = _currentUser();
     if (!user) return;
 
-    const projects = _getVisibleProjects(user);
-    const main = document.getElementById('main-content');
-    if (!main) return;
+    try {
+      const projects = _getVisibleProjects(user);
+      const main = document.getElementById('main-content');
+      if (!main) return;
 
-    if (!projects.length) { _renderWelcome(user); return; }
+      if (!projects.length) { _renderWelcome(user); return; }
 
-    main.innerHTML = _buildLayout(user);
-    if (window.lucide) lucide.createIcons();
+      main.innerHTML = _buildLayout(user);
+      if (window.lucide) lucide.createIcons();
 
-    // Greeting
-    const greetEl    = document.getElementById('dash-greeting');
-    const subtitleEl = document.getElementById('dash-subtitle');
-    if (greetEl) {
-      const h = new Date().getHours();
-      const g = h < 12 ? 'Selamat pagi' : h < 17 ? 'Selamat siang' : 'Selamat malam';
-      greetEl.textContent = `${g}, ${user.name.split(' ')[0]}`;
+      // Greeting
+      const greetEl    = document.getElementById('dash-greeting');
+      const subtitleEl = document.getElementById('dash-subtitle');
+      if (greetEl) {
+        const h = new Date().getHours();
+        const g = h < 12 ? 'Selamat pagi' : h < 17 ? 'Selamat siang' : 'Selamat malam';
+        greetEl.textContent = `${g}, ${user.name.split(' ')[0]}`;
+      }
+      if (subtitleEl) {
+        subtitleEl.textContent = new Date().toLocaleDateString('id-ID', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+      }
+
+      _showSkeletons();
+
+      // Render after brief simulated delay for skeleton visibility
+      setTimeout(() => {
+        try {
+          _renderStatBar(user, projects);
+          if (user.role !== 'viewer') _renderMyTasks(user);
+          _renderSprintOverview(projects);
+          _renderRecentActivity(projects);
+          _renderActiveProjects(projects);
+        } catch (err) {
+          App.Toast.error('Gagal memuat dashboard', 'Coba refresh halaman');
+        }
+      }, 80);
+    } catch (err) {
+      App.Toast.error('Gagal memuat dashboard', 'Coba refresh halaman');
     }
-    if (subtitleEl) {
-      subtitleEl.textContent = new Date().toLocaleDateString('id-ID', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-    }
-
-    _renderStatBar(user, projects);
-    if (user.role !== 'viewer') _renderMyTasks(user);
-    _renderSprintOverview(projects);
-    _renderRecentActivity(projects);
-    _renderActiveProjects(projects);
   }
 
   return { init };

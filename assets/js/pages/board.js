@@ -68,22 +68,52 @@ const Page = (() => {
     const projectId = params.project || null;
     const sprintId = params.sprint || null;
 
-    const projects = _getVisibleProjects();
-    if (!projects.length) return _renderNoProject();
+    try {
+      const projects = _getVisibleProjects();
+      if (!projects.length) return _renderNoProject();
 
-    _project = projectId ? projects.find(p => p.id === projectId) : projects[0];
-    if (!_project) _project = projects[0];
+      _project = projectId ? projects.find(p => p.id === projectId) : projects[0];
+      if (!_project) _project = projects[0];
 
-    const sprints = _getActiveSprints();
-    if (sprintId) {
-      _sprint = sprints.find(s => s.id === sprintId) || null;
-    } else {
-      _sprint = sprints.find(s => s.status === 'active') || sprints[0] || null;
+      const sprints = _getActiveSprints();
+      if (sprintId) {
+        _sprint = sprints.find(s => s.id === sprintId) || null;
+      } else {
+        _sprint = sprints.find(s => s.status === 'active') || sprints[0] || null;
+      }
+
+      // Show skeleton before rendering board
+      _showBoardSkeleton();
+      setTimeout(() => {
+        try {
+          _renderBoard();
+          App.events.on('task:updated', _onTaskUpdated);
+        } catch (err) {
+          App.Toast.error('Gagal memuat board', 'Coba refresh halaman');
+        }
+      }, 60);
+    } catch (err) {
+      App.Toast.error('Gagal memuat board', 'Coba refresh halaman');
     }
+  }
 
-    _renderBoard();
-
-    App.events.on('task:updated', _onTaskUpdated);
+  function _showBoardSkeleton() {
+    const main = document.getElementById('main-content');
+    if (!main) return;
+    const cols = ['To Do', 'In Progress', 'In Review', 'Done'];
+    main.innerHTML = `
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1 class="page-title">Board</h1>
+        </div>
+      </div>
+      <div class="board-columns" style="display:flex;gap:var(--sp-4);padding-top:var(--sp-2);">
+        ${cols.map(() => `
+          <div style="flex:1;min-width:240px;">
+            <div class="skeleton skeleton-line" style="width:80px;height:14px;margin-bottom:12px;"></div>
+            ${Array.from({length:3}, () => `<div class="skeleton" style="height:82px;border-radius:var(--radius-lg);margin-bottom:8px;"></div>`).join('')}
+          </div>`).join('')}
+      </div>`;
   }
 
   function _onTaskUpdated(task) {

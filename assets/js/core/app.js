@@ -162,11 +162,34 @@ const App = (() => {
   }
 
   // ── Modal ──
+  function _trapFocus(modalEl) {
+    const focusable = modalEl.querySelectorAll(
+      'button, input, textarea, select, a[href], [tabindex]:not([tabindex="-1"])'
+    );
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last  = focusable[focusable.length - 1];
+
+    const handler = (e) => {
+      if (e.key !== 'Tab') return;
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
+
+    modalEl.addEventListener('keydown', handler);
+    modalEl._focusTrapHandler = handler;
+  }
+
   function openModal(modalEl) {
     if (!modalEl) return;
     modalEl.classList.remove('hidden');
-    const firstInput = modalEl.querySelector('input, textarea, select');
+    modalEl.setAttribute('aria-hidden', 'false');
+    const firstInput = modalEl.querySelector('input, textarea, select, button');
     if (firstInput) setTimeout(() => firstInput.focus(), 50);
+    _trapFocus(modalEl);
 
     const handleKey = (e) => {
       if (e.key === 'Escape') {
@@ -181,6 +204,7 @@ const App = (() => {
   function closeModal(modalEl) {
     if (!modalEl) return;
     modalEl.classList.add('hidden');
+    modalEl.setAttribute('aria-hidden', 'true');
     if (modalEl._escHandler) {
       document.removeEventListener('keydown', modalEl._escHandler);
     }
@@ -216,8 +240,17 @@ const App = (() => {
     });
 
     document.body.appendChild(overlay);
+    _trapFocus(overlay);
     const firstInput = overlay.querySelector('input, textarea, select');
     if (firstInput) setTimeout(() => firstInput.focus(), 50);
+
+    // Enter key submits the primary action button (unless in textarea)
+    overlay.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'BUTTON') {
+        const primaryBtn = overlay.querySelector('.modal-footer .btn-primary');
+        if (primaryBtn) { e.preventDefault(); primaryBtn.click(); }
+      }
+    });
 
     return { overlay, close };
   }
@@ -227,6 +260,113 @@ const App = (() => {
     if (window.lucide) {
       lucide.createIcons();
     }
+  }
+
+  // ── Global Error Boundary ──
+  function _initErrorBoundary() {
+    window.addEventListener('error', (e) => {
+      console.error('SIMPRO error:', e.error);
+      // Avoid toast spam for same error
+      const msg = e.error ? (e.error.message || 'Kesalahan tidak diketahui') : 'Kesalahan halaman';
+      if (!window._lastErrorMsg || window._lastErrorMsg !== msg) {
+        window._lastErrorMsg = msg;
+        Toast.error('Terjadi kesalahan', 'Coba refresh halaman jika masalah berlanjut');
+        setTimeout(() => { window._lastErrorMsg = null; }, 5000);
+      }
+    });
+
+    window.addEventListener('unhandledrejection', (e) => {
+      console.error('SIMPRO unhandled promise:', e.reason);
+    });
+  }
+
+  // ── PWA & Offline ──
+  function _initPWA() {
+    // Offline/online banner
+    const banner = document.createElement('div');
+    banner.id = 'offline-banner';
+    banner.setAttribute('role', 'status');
+    banner.setAttribute('aria-live', 'polite');
+    banner.textContent = '⚡ Anda sedang offline — data diambil dari cache lokal';
+    document.body.prepend(banner);
+
+    function updateOnlineStatus() {
+      if (!navigator.onLine) {
+        banner.classList.add('visible');
+        document.body.classList.add('offline');
+      } else {
+        banner.classList.remove('visible');
+        document.body.classList.remove('offline');
+      }
+    }
+
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    updateOnlineStatus();
+
+    // PWA Install prompt
+    let _deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      _deferredPrompt = e;
+
+      if (localStorage.getItem('sp_pwa_dismissed')) return;
+
+      const installBanner = document.createElement('div');
+      installBanner.id = 'pwa-install-banner';
+      installBanner.setAttribute('role', 'complementary');
+      installBanner.setAttribute('aria-label', 'Pasang aplikasi SIMPRO');
+      installBanner.innerHTML = `
+        <div class="pwa-banner-icon" aria-hidden="true">S</div>
+        <div class="pwa-banner-text">
+          <div class="pwa-banner-title">Pasang SIMPRO</div>
+          <div class="pwa-banner-desc">Akses lebih cepat, bisa offline</div>
+        </div>
+        <div class="pwa-banner-actions">
+          <button class="btn btn-ghost btn-sm" id="pwa-dismiss" aria-label="Abaikan">Nanti</button>
+          <button class="btn btn-primary btn-sm" id="pwa-install" aria-label="Pasang aplikasi">Pasang</button>
+        </div>`;
+      document.body.appendChild(installBanner);
+
+      document.getElementById('pwa-install').addEventListener('click', async () => {
+        if (!_deferredPrompt) return;
+        _deferredPrompt.prompt();
+        const { outcome } = await _deferredPrompt.userChoice;
+        _deferredPrompt = null;
+        installBanner.remove();
+        if (outcome === 'accepted') Toast.success('SIMPRO terpasang!');
+      });
+
+      document.getElementById('pwa-dismiss').addEventListener('click', () => {
+        localStorage.setItem('sp_pwa_dismissed', '1');
+        installBanner.remove();
+      });
+    });
+
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+  }
+
+  // ── Keyboard UX ──
+  function _initKeyboardUX() {
+    // Add keyboard class so we can show focus rings
+    let usingMouse = false;
+    document.addEventListener('mousedown', () => { usingMouse = true; });
+    document.addEventListener('keydown', (e) => {
+      if (!usingMouse) document.body.classList.add('using-keyboard');
+      usingMouse = false;
+
+      // Global Esc: close any open modal or dropdown
+      if (e.key === 'Escape') {
+        const openDropdown = document.querySelector('.dropdown-menu:not(.hidden)');
+        if (openDropdown) {
+          openDropdown.classList.add('hidden');
+          e.stopPropagation();
+        }
+      }
+    });
   }
 
   // ── Main init ──
@@ -256,6 +396,13 @@ const App = (() => {
 
     // Notification badge
     _updateNotifBadge();
+
+    // Error boundary
+    _initErrorBoundary();
+
+    // PWA + offline + keyboard UX
+    _initPWA();
+    _initKeyboardUX();
 
     return true;
   }
