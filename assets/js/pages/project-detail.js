@@ -78,10 +78,10 @@ const ProjectDetailPage = (() => {
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
         btn.classList.add('active');
         const panel = document.getElementById(`panel-${btn.dataset.tab}`);
-        if (panel) panel.classList.remove('hidden');
+        if (panel) panel.classList.add('active');
         if (window.lucide) lucide.createIcons();
       });
     });

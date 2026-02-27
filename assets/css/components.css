@@ -1119,8 +1119,14 @@
 }
 
 .task-title-input {
-  font-size: var(--text-md);
+  font-size: var(--text-base);
   font-weight: 500;
+}
+
+/* Modal header content takes flex space so close button goes to right */
+.modal-header-content {
+  flex: 1;
+  min-width: 0;
 }
 
 .task-modal-divider {

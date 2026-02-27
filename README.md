@@ -2,7 +2,7 @@
 
 > **Dokumen Tunggal & Tersentralisasi** — Ini adalah satu-satunya README yang perlu dibaca.  
 > Menggabungkan semua informasi dari `README_SIMPRO.md` dan `README_BUG_SIMPRO.md`.  
-> Update terakhir: **2026-02-27** | Versi saat ini: **v1.1.3** (Bug Fix Release — BUG-19 SELESAI)
+> Update terakhir: **2026-02-27** | Versi saat ini: **v1.1.4** (Bug Fix Release — BUG-20 SELESAI)
 
 Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint planning, kanban board, gantt chart, dan laporan progress untuk Project Manager, Developer, Client, dan Manager.
 
@@ -36,7 +36,7 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 | **Kepanjangan** | Simple Project Management Office |
 | **Versi App** | v1.1.3 (Bug Fix Release — BUG-19) |
 | **Fase Pembangunan Selesai** | FASE 16 — Polish, PWA Penuh & Audit Final ✅ |
-| **Fase Bug Fix Saat Ini** | BUG-19 ✅ — Backlog: (1) Fix button "Mulai Sprint" & "Selesaikan" tidak merespons — hapus `onclick="event.stopPropagation()"` pada `.sprint-actions` yang memblokir event delegation; (2) Fix assignee dropdown hanya tampilkan project members — sekarang tampilkan semua user aktif, non-member diberi label visual, project members muncul di atas |
+| **Fase Bug Fix Saat Ini** | BUG-20 ✅ — Project Detail: (1) Fix tab Members & Settings tidak tampil — root cause: `_bindTabs` menggunakan `classList.add/remove('hidden')` tapi CSS `.tab-panel` pakai pattern `active` (`display:none` default, `display:block` saat `.tab-panel.active`); diperbaiki ke toggle class `active`; (2) Fix placeholder judul task terlalu besar — font-size dikurangi dari `--text-md` (15px) ke `--text-base` (14px); (3) Fix tombol close modal task — tambah `flex: 1` ke `.modal-header-content` agar close button otomatis ke pojok kanan |
 | **Fase Bug Fix Berikutnya** | — (Ongoing bug fix, upload zip terbaru jika ada bug baru) |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
@@ -66,6 +66,7 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 | BUG-17 | Members: Fix modal tambah/edit user tidak muncul — struktur HTML modal salah (`.modal` sebagai container outer), diganti ke `.modal-overlay.hidden` pattern konsisten dengan modul lain | ✅ Selesai | 2026-02-27 |
 | BUG-18 | Backlog: (1) Enhanced modal tambah task — layout & styling diperbaiki; (2) Assignee field diganti jadi custom dropdown multi-select; (3) Fix scrollbar backlog page dan per-sprint section | ✅ Selesai | 2026-02-27 |
 | BUG-19 | Backlog: (1) Fix button Mulai Sprint & Selesaikan tidak merespons (stopPropagation bug); (2) Fix assignee dropdown hanya tampilkan project members — tampilkan semua user aktif | ✅ Selesai | 2026-02-27 |
+| BUG-20 | Project Detail: (1) Tab Members & Settings tidak tampil (CSS active vs hidden pattern mismatch); (2) Placeholder judul task terlalu besar; (3) Tombol close modal task tidak di pojok kanan | ✅ Selesai | 2026-02-27 |
 
 ---
 
@@ -1462,5 +1463,31 @@ Widget My Tasks hanya menampilkan project dot (bukan label), badge type, dan due
 
 ---
 
-*SIMPRO v1.1.3 — Offline-first. Zero server. Pure localStorage.*
+### BUG-20 — Project Detail: Fix Tab Members & Settings + Modal Task UX
+
+**2026-02-27** | ✅
+
+**Bug yang Diperbaiki:**
+
+**1. Tab Members dan Settings tidak tampil saat diklik (BUG KRITIS):**
+- Root cause: `_bindTabs()` di `project-detail.js` menggunakan pattern `classList.add('hidden')` / `classList.remove('hidden')` untuk toggle tab panel. Namun CSS di `components.css` mendefinisikan `.tab-panel { display: none }` dan `.tab-panel.active { display: block }` — bukan menggunakan class `.hidden`. Saat tab diklik, panel mendapat `classList.remove('hidden')` tapi tidak mendapat class `active`, sehingga CSS `.tab-panel { display: none }` masih berlaku dan panel tetap tersembunyi.
+- Fix: `_bindTabs()` diubah untuk menggunakan pattern class `active` — `classList.remove('active')` untuk semua panel, lalu `classList.add('active')` pada panel yang diklik. HTML `project-detail.html` juga diupdate: class `hidden` dihapus dari `panel-members` dan `panel-settings` (cukup tidak punya class `active` saja, karena default CSS sudah `display: none`).
+
+**2. Placeholder judul task di modal terlalu besar (BUG UX):**
+- Sebelum: `.task-title-input { font-size: var(--text-md) }` (15px) — font placeholder terasa besar karena menggunakan ukuran di atas teks body default
+- Sesudah: `.task-title-input { font-size: var(--text-base) }` (14px) — ukuran sama dengan input field standar lainnya, konsisten dan tidak dominan
+
+**3. Tombol close modal task tidak di pojok kanan (BUG UX):**
+- Root cause: Struktur HTML `modal-header` berisi `div.modal-header-content` (dengan title + subtitle) dan `button.modal-close`. CSS `.modal-title { flex: 1 }` ditujukan agar title mengisi ruang sehingga close button terdorong ke kanan — tapi `modal-title` ada di dalam `modal-header-content`, bukan langsung di `modal-header`. Akibatnya, `flex: 1` pada title tidak berpengaruh terhadap posisi close button di parent flex container.
+- Fix: Tambah `.modal-header-content { flex: 1; min-width: 0 }` di CSS — sekarang `modal-header-content` sebagai flex child langsung mengisi ruang tersisa di `modal-header`, mendorong `modal-close` ke pojok kanan sesuai best practice.
+
+**File yang Dimodifikasi:**
+- `assets/js/pages/project-detail.js` (v0.4.1) — `_bindTabs`: ganti pattern `hidden` class ke `active` class
+- `pages/project-detail.html` (v0.4.1) — hapus class `hidden` dari `panel-members` dan `panel-settings`
+- `assets/css/components.css` (v1.1.1) — `task-title-input` font-size dikecilkan; tambah `.modal-header-content { flex: 1 }`
+- `README.md` (v1.1.4)
+
+---
+
+*SIMPRO v1.1.4 — Offline-first. Zero server. Pure localStorage.*
 *README ini adalah sumber kebenaran tunggal. Tidak ada file dokumentasi lain yang diperlukan.*
