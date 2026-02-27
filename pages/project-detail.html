@@ -110,81 +110,143 @@
 
       <!-- Tab: Settings -->
       <div class="tab-panel" id="panel-settings">
-        <div class="card" style="max-width:560px;">
-          <div class="card-header"><h3 class="card-title">Pengaturan Project</h3></div>
-          <div class="card-body">
-            <div class="form-group">
-              <label class="form-label" for="setting-name">Nama Project</label>
-              <input type="text" id="setting-name" class="input" maxlength="80">
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label" for="setting-key">Key</label>
-                <input type="text" id="setting-key" class="input input-mono" maxlength="5" style="text-transform:uppercase;">
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="setting-priority">Priority</label>
-                <select id="setting-priority" class="input select">
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="critical">Critical</option>
-                </select>
-              </div>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="setting-desc">Deskripsi</label>
-              <textarea id="setting-desc" class="input textarea" rows="3"></textarea>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Warna</label>
-              <div class="color-picker-row" id="settings-color-row">
-                <div class="color-swatch" data-color="#3B5BDB" style="background:#3B5BDB;"></div>
-                <div class="color-swatch" data-color="#2F9E44" style="background:#2F9E44;"></div>
-                <div class="color-swatch" data-color="#C92A2A" style="background:#C92A2A;"></div>
-                <div class="color-swatch" data-color="#E67700" style="background:#E67700;"></div>
-                <div class="color-swatch" data-color="#7048E8" style="background:#7048E8;"></div>
-                <div class="color-swatch" data-color="#1971C2" style="background:#1971C2;"></div>
-                <div class="color-swatch" data-color="#2C7A7B" style="background:#2C7A7B;"></div>
-                <div class="color-swatch" data-color="#5C6070" style="background:#5C6070;"></div>
-                <input type="color" id="setting-color" class="color-custom-input" title="Warna custom">
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label" for="setting-start">Tanggal Mulai</label>
-                <input type="date" id="setting-start" class="input">
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="setting-end">Tanggal Selesai</label>
-                <input type="date" id="setting-end" class="input">
-              </div>
-            </div>
-            <div id="settings-form-error" class="form-error hidden"></div>
-            <div class="form-footer">
-              <button class="btn btn-primary" id="btn-settings-save">Simpan Perubahan</button>
-            </div>
-          </div>
-        </div>
+        <div class="settings-container">
 
-        <div class="card danger-zone" style="max-width:560px;margin-top:var(--sp-4);">
-          <div class="card-header"><h3 class="card-title" style="color:var(--color-danger);">Danger Zone</h3></div>
-          <div class="card-body">
-            <div class="danger-action">
-              <div>
-                <div class="text-sm fw-500">Arsipkan Project</div>
-                <div class="text-xs text-muted">Project akan disembunyikan dari tampilan utama.</div>
+          <div class="settings-section-header">
+            <h2 class="settings-section-title">Pengaturan Project</h2>
+            <p class="settings-section-desc">Kelola informasi dasar, warna, dan jadwal project.</p>
+          </div>
+
+          <div class="card settings-card">
+            <div class="card-header">
+              <div class="settings-card-icon">
+                <i data-lucide="folder-edit" width="16" height="16"></i>
               </div>
-              <button class="btn btn-ghost btn-sm" id="btn-settings-archive">Arsipkan</button>
+              <div>
+                <h3 class="card-title">Informasi Project</h3>
+                <p class="card-subtitle">Nama, key, dan deskripsi project</p>
+              </div>
             </div>
-            <div class="danger-action" style="margin-top:var(--sp-3);">
-              <div>
-                <div class="text-sm fw-500" style="color:var(--color-danger);">Hapus Project</div>
-                <div class="text-xs text-muted">Hapus permanen project beserta semua task dan data terkait.</div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label" for="setting-name">Nama Project</label>
+                <input type="text" id="setting-name" class="input" maxlength="80" placeholder="Contoh: Website Redesign 2026">
               </div>
-              <button class="btn btn-danger btn-sm" id="btn-settings-delete">Hapus</button>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="setting-key">
+                    Key
+                    <span class="form-hint">2–5 huruf kapital</span>
+                  </label>
+                  <input type="text" id="setting-key" class="input input-mono" maxlength="5" style="text-transform:uppercase;" placeholder="PROJ">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="setting-priority">Priority</label>
+                  <select id="setting-priority" class="input select">
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="setting-desc">Deskripsi</label>
+                <textarea id="setting-desc" class="input textarea" rows="3" placeholder="Deskripsi singkat tentang project ini..."></textarea>
+              </div>
             </div>
           </div>
+
+          <div class="card settings-card">
+            <div class="card-header">
+              <div class="settings-card-icon">
+                <i data-lucide="palette" width="16" height="16"></i>
+              </div>
+              <div>
+                <h3 class="card-title">Warna & Tampilan</h3>
+                <p class="card-subtitle">Identitas visual project di dashboard</p>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Warna Project</label>
+                <div class="color-picker-row" id="settings-color-row">
+                  <div class="color-swatch" data-color="#3B5BDB" style="background:#3B5BDB;" title="Indigo"></div>
+                  <div class="color-swatch" data-color="#2F9E44" style="background:#2F9E44;" title="Green"></div>
+                  <div class="color-swatch" data-color="#C92A2A" style="background:#C92A2A;" title="Red"></div>
+                  <div class="color-swatch" data-color="#E67700" style="background:#E67700;" title="Orange"></div>
+                  <div class="color-swatch" data-color="#7048E8" style="background:#7048E8;" title="Violet"></div>
+                  <div class="color-swatch" data-color="#1971C2" style="background:#1971C2;" title="Blue"></div>
+                  <div class="color-swatch" data-color="#2C7A7B" style="background:#2C7A7B;" title="Teal"></div>
+                  <div class="color-swatch" data-color="#5C6070" style="background:#5C6070;" title="Gray"></div>
+                  <input type="color" id="setting-color" class="color-custom-input" title="Warna custom">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card settings-card">
+            <div class="card-header">
+              <div class="settings-card-icon">
+                <i data-lucide="calendar" width="16" height="16"></i>
+              </div>
+              <div>
+                <h3 class="card-title">Jadwal Project</h3>
+                <p class="card-subtitle">Tanggal mulai dan target selesai</p>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="setting-start">Tanggal Mulai</label>
+                  <input type="date" id="setting-start" class="input">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="setting-end">Tanggal Selesai</label>
+                  <input type="date" id="setting-end" class="input">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="settings-form-error" class="form-error hidden"></div>
+
+          <div class="settings-save-bar">
+            <button class="btn btn-primary" id="btn-settings-save">
+              <i data-lucide="save" width="14" height="14"></i>
+              Simpan Perubahan
+            </button>
+          </div>
+
+          <div class="card settings-card danger-zone">
+            <div class="card-header">
+              <div class="settings-card-icon settings-card-icon--danger">
+                <i data-lucide="alert-triangle" width="16" height="16"></i>
+              </div>
+              <div>
+                <h3 class="card-title" style="color:var(--color-danger);">Danger Zone</h3>
+                <p class="card-subtitle">Tindakan ini tidak dapat dibatalkan</p>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="danger-action">
+                <div>
+                  <div class="text-sm fw-500">Arsipkan Project</div>
+                  <div class="text-xs text-muted">Project akan disembunyikan dari tampilan utama, data tetap tersimpan.</div>
+                </div>
+                <button class="btn btn-ghost btn-sm" id="btn-settings-archive">Arsipkan</button>
+              </div>
+              <div class="danger-divider"></div>
+              <div class="danger-action">
+                <div>
+                  <div class="text-sm fw-500" style="color:var(--color-danger);">Hapus Project</div>
+                  <div class="text-xs text-muted">Hapus permanen project beserta semua task, sprint, dan data terkait.</div>
+                </div>
+                <button class="btn btn-danger btn-sm" id="btn-settings-delete">Hapus Permanen</button>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
 

@@ -2,7 +2,7 @@
 
 > **Dokumen Tunggal & Tersentralisasi** — Ini adalah satu-satunya README yang perlu dibaca.  
 > Menggabungkan semua informasi dari `README_SIMPRO.md` dan `README_BUG_SIMPRO.md`.  
-> Update terakhir: **2026-02-27** | Versi saat ini: **v1.1.4** (Bug Fix Release — BUG-20 SELESAI)
+> Update terakhir: **2026-02-27** | Versi saat ini: **v1.1.5** (Bug Fix Release — BUG-21 SELESAI)
 
 Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint planning, kanban board, gantt chart, dan laporan progress untuk Project Manager, Developer, Client, dan Manager.
 
@@ -34,9 +34,9 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | v1.1.3 (Bug Fix Release — BUG-19) |
+| **Versi App** | v1.1.5 (Bug Fix Release — BUG-21) |
 | **Fase Pembangunan Selesai** | FASE 16 — Polish, PWA Penuh & Audit Final ✅ |
-| **Fase Bug Fix Saat Ini** | BUG-20 ✅ — Project Detail: (1) Fix tab Members & Settings tidak tampil — root cause: `_bindTabs` menggunakan `classList.add/remove('hidden')` tapi CSS `.tab-panel` pakai pattern `active` (`display:none` default, `display:block` saat `.tab-panel.active`); diperbaiki ke toggle class `active`; (2) Fix placeholder judul task terlalu besar — font-size dikurangi dari `--text-md` (15px) ke `--text-base` (14px); (3) Fix tombol close modal task — tambah `flex: 1` ke `.modal-header-content` agar close button otomatis ke pojok kanan |
+| **Fase Bug Fix Saat Ini** | BUG-21 ✅ — Project Detail: (1) Fix tombol "Undang Member" tidak berfungsi — `inviteBtn.onclick` ter-bind setelah early return saat `members.length === 0`, dipindahkan sebelum early return; empty state members ditambah tombol undang; (2) Enhance Settings UI/UX — layout diubah ke card berseksi (Informasi, Warna, Jadwal, Danger Zone) dengan icon header; centering via `.settings-container` dengan `max-width:640px; margin:0 auto` |
 | **Fase Bug Fix Berikutnya** | — (Ongoing bug fix, upload zip terbaru jika ada bug baru) |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
@@ -67,6 +67,7 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 | BUG-18 | Backlog: (1) Enhanced modal tambah task — layout & styling diperbaiki; (2) Assignee field diganti jadi custom dropdown multi-select; (3) Fix scrollbar backlog page dan per-sprint section | ✅ Selesai | 2026-02-27 |
 | BUG-19 | Backlog: (1) Fix button Mulai Sprint & Selesaikan tidak merespons (stopPropagation bug); (2) Fix assignee dropdown hanya tampilkan project members — tampilkan semua user aktif | ✅ Selesai | 2026-02-27 |
 | BUG-20 | Project Detail: (1) Tab Members & Settings tidak tampil (CSS active vs hidden pattern mismatch); (2) Placeholder judul task terlalu besar; (3) Tombol close modal task tidak di pojok kanan | ✅ Selesai | 2026-02-27 |
+| BUG-21 | Project Detail: (1) Fix tombol "Undang Member" tidak berfungsi (inviteBtn.onclick ter-bind setelah early return); (2) Enhance Settings UI/UX — card berseksi + centering | ✅ Selesai | 2026-02-27 |
 
 ---
 
@@ -1490,4 +1491,41 @@ Widget My Tasks hanya menampilkan project dot (bukan label), badge type, dan due
 ---
 
 *SIMPRO v1.1.4 — Offline-first. Zero server. Pure localStorage.*
+*README ini adalah sumber kebenaran tunggal. Tidak ada file dokumentasi lain yang diperlukan.*
+
+---
+
+### BUG-21 — Project Detail: Fix Undang Member + Enhance Settings UI/UX
+
+**2026-02-27** | ✅
+
+**Bug yang Diperbaiki:**
+
+**1. Tombol "Undang Member" tidak berfungsi (BUG KRITIS):**
+- Root cause: `_renderMembers()` memanggil `inviteBtn.onclick = _openInviteModal` di bagian bawah fungsi, setelah kondisi `if (members.length === 0) return` — artinya jika project belum punya member, binding onclick tidak pernah dieksekusi. Tombol "Undang Member" di card header menjadi tidak responsif.
+- Fix: Pindahkan `inviteBtn.onclick = _openInviteModal` ke atas, sebelum pengecekan `members.length === 0`, agar binding selalu terjadi.
+- Bonus: Empty state members diperbarui — tampilan lebih informatif, dilengkapi button "Undang Member" inline di empty state agar user bisa langsung undang tanpa harus cari tombol di header.
+
+**2. Settings UI/UX jelek dan menempel di kiri (BUG UX):**
+- Root cause: Settings hanya menggunakan satu `.card` flat dengan `max-width:560px` tanpa centering. Tidak ada `margin: 0 auto`, sehingga card menempel di kiri mengikuti padding main-content.
+- Fix 1 (Centering): Tambah `.settings-container` dengan `max-width:640px; margin:0 auto; display:flex; flex-direction:column; gap:var(--sp-4)` — settings sekarang selalu centered di area konten.
+- Fix 2 (UI Enhancement): Layout dipisah jadi 4 card berseksi dengan icon header:
+  - **Informasi Project** (icon: folder-edit) — Nama, Key, Priority, Deskripsi
+  - **Warna & Tampilan** (icon: palette) — Color picker
+  - **Jadwal Project** (icon: calendar) — Tanggal mulai & selesai
+  - **Danger Zone** (icon: alert-triangle, warna merah) — Arsip & Hapus
+- Save button dipindah ke save bar tersendiri di antara form cards dan danger zone — lebih jelas dan tidak membingungkan.
+- Tambah `card-subtitle` di setiap card header sebagai deskripsi singkat.
+- Tambah `form-hint` pada field Key sebagai petunjuk format.
+- Danger zone: tambah `.danger-divider` sebagai pemisah antara aksi Arsip dan Hapus.
+
+**File yang Dimodifikasi:**
+- `assets/js/pages/project-detail.js` (v0.4.2) — pindah `inviteBtn.onclick` sebelum early return; update empty state members
+- `pages/project-detail.html` (v0.4.2) — restruktur settings panel ke 4 card berseksi dengan `.settings-container`
+- `assets/css/projects.css` (v0.13.2) — tambah `.settings-container`, `.settings-section-header`, `.settings-card-icon`, `.card-subtitle`, `.form-hint`, `.settings-save-bar`, `.danger-divider`
+- `README.md` (v1.1.5)
+
+---
+
+*SIMPRO v1.1.5 — Offline-first. Zero server. Pure localStorage.*
 *README ini adalah sumber kebenaran tunggal. Tidak ada file dokumentasi lain yang diperlukan.*

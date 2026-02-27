@@ -203,10 +203,20 @@ const ProjectDetailPage = (() => {
     if (_canManage) inviteBtn.style.display = '';
     else inviteBtn.style.display = 'none';
 
+    // Bind onclick sebelum early return agar tombol selalu berfungsi
+    inviteBtn.onclick = _openInviteModal;
+
     const tbody = document.getElementById('members-table-body');
 
     if (members.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5" style="padding:var(--sp-6);text-align:center;color:var(--color-text-3);">Belum ada member di project ini.</td></tr>`;
+      tbody.innerHTML = `
+        <div class="empty-state" style="padding:var(--sp-8);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-state-icon"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <p class="empty-state-title">Belum ada member</p>
+          <p class="empty-state-desc">Undang member untuk berkolaborasi di project ini.</p>
+          ${_canManage ? `<button class="btn btn-primary btn-sm" style="margin-top:var(--sp-3);" onclick="document.getElementById('btn-invite-member').click()"><i data-lucide="user-plus" width="14" height="14"></i> Undang Member</button>` : ''}
+        </div>`;
+      if (window.lucide) lucide.createIcons();
       return;
     }
 
@@ -258,7 +268,6 @@ const ProjectDetailPage = (() => {
       });
     });
 
-    inviteBtn.onclick = _openInviteModal;
     if (window.lucide) lucide.createIcons();
   }
 
