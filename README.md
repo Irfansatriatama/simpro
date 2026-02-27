@@ -30,9 +30,9 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | 0.4.0 |
-| **Fase Saat Ini** | FASE 4 — Project Management ✅ |
-| **Fase Berikutnya** | FASE 5 — Task Management: CRUD & Task Detail |
+| **Versi App** | 0.5.0 |
+| **Fase Saat Ini** | FASE 5 — Task Management: CRUD & Task Detail ✅ |
+| **Fase Berikutnya** | FASE 6 — Kanban Board |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
 | **PWA** | Aktif sejak Fase 1 (manifest.json + sw.js) |
@@ -1264,16 +1264,36 @@ Log ini diupdate **setiap akhir fase** oleh Claude. Mencatat apa yang sudah dike
 ---
 
 #### FASE 5 — Task Management: CRUD & Task Detail
-**Versi:** v0.5.0 | **Tanggal:** — | **Status:** Belum dikerjakan
+**Versi:** v0.5.0 | **Tanggal:** 2026-02-27 | **Status:** ✅ Selesai
 
 **File Ditambahkan:**
-*(diisi setelah fase selesai)*
+- `assets/css/task.css` — Style task detail (layout 2 kolom, breadcrumb, inline-edit title/desc, subtask list, thread komentar, sidebar metadata)
+- `assets/js/modules/task.js` — create, getAll, getById, getByProject, getBySprintId, getBacklog, getSubtasks, update, remove, reorder, addSubtask
+- `assets/js/modules/comment.js` — addComment, editComment, deleteComment, getByTask, addActivity
+- `assets/js/modules/label.js` — create, getByProject, getById, update, remove
+- `assets/js/modules/task-modal.js` — Modal global buat task baru: TaskModal.open({ projectId, onSuccess })
+- `assets/js/pages/task-detail.js` — Halaman detail task penuh
 
 **File Diubah:**
-*(diisi setelah fase selesai)*
+- `pages/task-detail.html` — Implementasi penuh: load task.css + semua modul
+- `pages/project-detail.html` — Tambah task.css + modul task/comment/label/task-modal + tombol "Buat Task"
+- `pages/dashboard.html` — Tambah modul task/comment/label/task-modal
+- `assets/js/pages/project-detail.js` — Tambah tombol "Buat Task" di project actions (semua role kecuali viewer)
+- `sw.js` — Versi cache → v0.5.0, tambah task.css + modul baru ke SHELL_FILES
+- `README_SIMPRO.md` — Update status versi, log fase
 
-**Catatan Teknis:**
-*(diisi setelah fase selesai)*
+**Fitur yang Diimplementasikan:**
+- Halaman task-detail layout 2 kolom: kiri (title inline-edit, deskripsi auto-save, subtask list, thread aktivitas+komentar) + kanan (semua metadata editable)
+- Inline edit title (blur = save) dan deskripsi (autosave 800ms)
+- Subtask: tambah via modal, toggle done/undone via klik checkbox, progress bar, link ke subtask detail
+- Thread komentar: tambah, edit (dalam 24 jam), hapus; role guard (developer hanya hapus milik sendiri)
+- Auto-log aktivitas saat: task dibuat, status/prioritas/assignee/sprint berubah
+- Sidebar: semua field editable via select/input; assignee multi-checkbox; label chips (add dari select, remove via x); milestone
+- Tombol hapus task dengan konfirmasi (cascade: subtask + komentar + timelog)
+- Breadcrumb: Project → Sprint/Backlog → Key task
+- TaskModal global: bisa dipanggil dari halaman manapun, semua field ada, onSuccess callback
+- Tombol "Buat Task" di project-detail untuk semua role kecuali viewer
+- Role guard penuh: viewer read-only, developer hanya edit task milik sendiri
 
 ---
 

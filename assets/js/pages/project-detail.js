@@ -47,19 +47,30 @@ const ProjectDetailPage = (() => {
     const actionsEl = document.getElementById('project-actions');
     actionsEl.innerHTML = '';
 
-    if (_canManage) {
-      const links = [
-        { href: `/pages/board.html?project=${_project.id}`, icon: 'kanban', label: 'Board' },
-        { href: `/pages/backlog.html?project=${_project.id}`, icon: 'list', label: 'Backlog' },
-        { href: `/pages/gantt.html?project=${_project.id}`, icon: 'gantt-chart', label: 'Gantt' },
-      ];
-      links.forEach(l => {
-        const a = document.createElement('a');
-        a.className = 'btn btn-ghost btn-sm';
-        a.href = l.href;
-        a.innerHTML = `<i data-lucide="${l.icon}" width="14" height="14"></i> ${l.label}`;
-        actionsEl.appendChild(a);
+    const _sess = Storage.get('sp_session');
+    const links = [
+      { href: `/pages/board.html?project=${_project.id}`, icon: 'kanban', label: 'Board' },
+      { href: `/pages/backlog.html?project=${_project.id}`, icon: 'list', label: 'Backlog' },
+      { href: `/pages/gantt.html?project=${_project.id}`, icon: 'gantt-chart', label: 'Gantt' },
+    ];
+    links.forEach(l => {
+      const a = document.createElement('a');
+      a.className = 'btn btn-ghost btn-sm';
+      a.href = l.href;
+      a.innerHTML = `<i data-lucide="${l.icon}" width="14" height="14"></i> ${l.label}`;
+      actionsEl.appendChild(a);
+    });
+
+    if (_sess && _sess.role !== 'viewer') {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-primary btn-sm';
+      btn.innerHTML = '<i data-lucide="plus" width="14" height="14"></i> Buat Task';
+      btn.addEventListener('click', () => {
+        if (typeof TaskModal !== 'undefined') {
+          TaskModal.open({ projectId: _project.id, onSuccess: () => _renderOverview() });
+        }
       });
+      actionsEl.appendChild(btn);
     }
   }
 
