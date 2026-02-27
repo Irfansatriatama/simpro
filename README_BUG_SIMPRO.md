@@ -12,7 +12,7 @@
 | Info | Detail |
 |------|--------|
 | **Versi Base** | v1.0.0 (simpro_fase16.zip) |
-| **Fase Bug Saat Ini** | BUG-3 |
+| **Fase Bug Saat Ini** | BUG-4 ✅ |
 | **Total Fase Bug** | 7 Fase |
 | **Prioritas** | Kritis — aplikasi tidak bisa digunakan |
 
@@ -393,7 +393,7 @@ BUG-7  ← User & Setting    : members, settings, profile + README final
 | BUG-1 | Foundation: Fix Semua Path & Nav Links | ✅ Selesai | 2026-02-27 | Semua path HTML, shell.js, auth.js, dan semua JS pages diperbaiki ke relative path |
 | BUG-2 | Auth: Login, Register & Logout | ✅ Selesai | 2026-02-27 | Fix link navigasi login↔register, fix redirect file:// aman di auth.js & login.js |
 | BUG-3 | Shell & Dashboard | ✅ Selesai | 2026-02-27 | Fix urutan init dashboard (Page.init sebelum lucide), fix manifest path di semua pages, fix sw.js register path di app.js |
-| BUG-4 | Project & Task | ⏳ Belum dimulai | — | — |
+| BUG-4 | Project & Task | ✅ Selesai | 2026-02-27 | Fix init order projects.html & project-detail.html (App.init().then()), fix breadcrumb absolute path di project-detail.html, fix urutan Page.init() sebelum lucide di task-detail.html |
 | BUG-5 | Board & Sprint | ⏳ Belum dimulai | — | — |
 | BUG-6 | Data & Laporan | ⏳ Belum dimulai | — | — |
 | BUG-7 | User & Setting + README Final | ⏳ Belum dimulai | — | — |

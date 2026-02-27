@@ -162,8 +162,10 @@
 <script>
   Auth.requireAuth();
   Shell.applyTo('projects', 'Projects');
-  App.init('projects');
-  ProjectsPage.init();
+  App.init('projects').then(() => {
+    ProjectsPage.init();
+    if (window.lucide) lucide.createIcons();
+  });
 </script>
 </body>
 </html>

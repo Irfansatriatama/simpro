@@ -38,7 +38,7 @@
 
       <!-- Breadcrumb -->
       <div class="breadcrumb" id="breadcrumb">
-        <a href="/pages/projects.html" class="breadcrumb-item">Projects</a>
+        <a href="./projects.html" class="breadcrumb-item">Projects</a>
         <span class="breadcrumb-sep"><i data-lucide="chevron-right" width="14" height="14"></i></span>
         <span class="breadcrumb-item active" id="breadcrumb-name">—</span>
       </div>
@@ -242,8 +242,10 @@
 <script>
   Auth.requireAuth();
   Shell.applyTo('projects', 'Project Detail');
-  App.init('projects');
-  ProjectDetailPage.init();
+  App.init('projects').then(() => {
+    ProjectDetailPage.init();
+    if (window.lucide) lucide.createIcons();
+  });
 </script>
 </body>
 </html>

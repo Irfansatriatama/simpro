@@ -56,8 +56,8 @@
   Auth.requireAuth();
   Shell.applyTo('task-detail', 'Detail Task');
   App.init('task-detail').then(() => {
-    if (window.lucide) lucide.createIcons();
     if (typeof Page !== 'undefined' && Page.init) Page.init();
+    if (window.lucide) lucide.createIcons();
   });
 </script>
 </body>
