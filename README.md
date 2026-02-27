@@ -30,9 +30,9 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | 0.1.0 |
-| **Fase Saat Ini** | FASE 1 — Core Infrastructure & Design System ✅ |
-| **Fase Berikutnya** | FASE 2 — Auth: Login, Register & Session |
+| **Versi App** | 0.2.0 |
+| **Fase Saat Ini** | FASE 2 — Auth: Login, Register & Session ✅ |
+| **Fase Berikutnya** | FASE 3 — Dashboard Utama |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
 | **PWA** | Aktif sejak Fase 1 (manifest.json + sw.js) |
@@ -1165,22 +1165,35 @@ Log ini diupdate **setiap akhir fase** oleh Claude. Mencatat apa yang sudah dike
 ---
 
 #### FASE 2 — Auth: Login, Register & Session
-**Versi:** v0.2.0 | **Tanggal:** — | **Status:** Belum dikerjakan
+**Versi:** v0.2.0 | **Tanggal:** 2026-02-27 | **Status:** ✅ Selesai
 
 **File Ditambahkan:**
-*(diisi setelah fase selesai)*
+- `assets/js/core/shell.js` — Builder sidebar + topbar HTML; dipakai semua halaman authenticated. Menyediakan: nav fungsional, notif dropdown, avatar dropdown, logout.
+- `assets/js/pages/login.js` — Logic halaman login (submit, password toggle, demo fill, error banner)
+- `assets/js/pages/register.js` — Logic halaman register (validasi, duplikat email, password strength, auto-login)
 
 **File Diubah:**
-*(diisi setelah fase selesai)*
+- `pages/login.html` — Redesign dua kolom: brand panel kiri (aksen biru, fitur list) + form panel kanan; demo account grid klik-to-fill; password show/hide
+- `pages/register.html` — Layout dua kolom konsisten; password strength indicator; disabled-state jika allowRegistration=false
+- `pages/dashboard.html` + 12 halaman authenticated — Shell terintegrasi: sidebar via Shell.applyTo(), topbar dengan notif & avatar dropdown
+- `assets/css/components.css` — Tambah: topbar-notif-count, topbar-avatar-btn, notif-dropdown, notif-item, dropdown-user-info, dropdown-item-danger
+- `assets/js/core/app.js` — _populateSidebarUser() dijadikan no-op (digantikan Shell.js)
+- `sw.js` — Versi cache diupdate ke v0.2.0, tambah shell.js ke SHELL_FILES
 
 **localStorage Keys Baru:**
-*(diisi setelah fase selesai)*
+- Tidak ada key baru (session & users sudah ada dari Fase 1)
 
 **Catatan Teknis:**
-*(diisi setelah fase selesai)*
+- Shell.js menggunakan IIFE pattern (konsisten dengan pola seluruh codebase)
+- Notifikasi dropdown: render real-time dari sp_notifications, klik → markRead + navigate
+- Avatar dropdown: link ke profil & settings, tombol logout
+- Sidebar nav menggunakan tag `<a>` (bukan div) untuk aksesibilitas dan navigasi keyboard
+- Shell.applyTo() dipanggil sebelum App.init() agar DOM tersedia saat icons di-init
+- Password strength: 5 level berdasarkan panjang + karakter huruf besar + angka + simbol
 
 **Yang Perlu Diperhatikan Fase Berikutnya:**
-*(diisi setelah fase selesai)*
+- Fase 3 (Dashboard) tinggal populate #main-content — shell sudah berfungsi penuh
+- Shell.js sudah expose applyTo(pageId, pageTitle) — semua halaman baru tinggal pakai pola yang sama
 
 ---
 

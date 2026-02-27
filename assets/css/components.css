@@ -975,3 +975,118 @@
   font-size: var(--text-sm);
   color: var(--color-danger);
 }
+
+/* ════════════════════════════════
+   TOPBAR EXTRA (Fase 2)
+   ════════════════════════════════ */
+.topbar-notif-count {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
+  background: var(--color-danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  pointer-events: none;
+  line-height: 1;
+}
+
+.topbar-avatar-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  transition: opacity var(--transition);
+}
+.topbar-avatar-btn:hover { opacity: 0.85; }
+
+/* ════════════════════════════════
+   NOTIFICATION DROPDOWN (Fase 2)
+   ════════════════════════════════ */
+.notif-dropdown {
+  width: 340px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.notif-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  background: var(--color-surface);
+  z-index: 1;
+}
+
+.notif-header-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.notif-list { padding: var(--sp-2) 0; }
+
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  cursor: pointer;
+  transition: background var(--transition);
+  border-left: 3px solid transparent;
+}
+.notif-item:hover { background: var(--color-surface-2); }
+.notif-item.unread {
+  background: var(--color-accent-light);
+  border-left-color: var(--color-accent);
+}
+.notif-item.unread:hover { filter: brightness(0.97); }
+
+.notif-item-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+.notif-item-dot.read { background: transparent; }
+
+.notif-item-body { flex: 1; min-width: 0; }
+.notif-item-title { font-size: var(--text-sm); font-weight: 500; color: var(--color-text); margin-bottom: 2px; }
+.notif-item-msg   { font-size: var(--text-xs); color: var(--color-text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.notif-item-time  { font-size: 10px; color: var(--color-text-3); margin-top: 2px; }
+.notif-empty      { padding: var(--sp-8) var(--sp-4); text-align: center; color: var(--color-text-3); font-size: var(--text-sm); }
+
+/* ════════════════════════════════
+   AVATAR DROPDOWN USER INFO (Fase 2)
+   ════════════════════════════════ */
+.dropdown-user-info {
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--color-border);
+}
+.dropdown-user-name  { font-size: var(--text-sm); font-weight: 600; color: var(--color-text); }
+.dropdown-user-email { font-size: var(--text-xs); color: var(--color-text-3); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.dropdown-item-danger { color: var(--color-danger) !important; }
+.dropdown-item-danger:hover { background: var(--color-danger-bg) !important; }
+
+/* sidebar-item as <a> tag */
+.sidebar-item {
+  text-decoration: none;
+  color: inherit;
+}

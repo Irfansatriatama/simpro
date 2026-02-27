@@ -1,4 +1,4 @@
-const CACHE_NAME = 'simpro-v0.1.0';
+const CACHE_NAME = 'simpro-v0.2.0';
 const SHELL_FILES = [
   '/index.html',
   '/404.html',
@@ -12,6 +12,7 @@ const SHELL_FILES = [
   '/assets/js/core/app.js',
   '/assets/js/core/auth.js',
   '/assets/js/core/router.js',
+  '/assets/js/core/shell.js',
   '/pages/login.html',
   '/pages/register.html',
   '/pages/dashboard.html',

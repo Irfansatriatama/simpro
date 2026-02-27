@@ -20,106 +20,40 @@
   <link rel="stylesheet" href="/assets/css/components.css">
 </head>
 <body data-page="projects">
+
 <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
 <div class="app-shell">
-  <aside id="sidebar" class="sidebar">
-    <div class="sidebar-logo">
-      <div class="sidebar-logo-mark">S</div>
-      <div><span class="sidebar-logo-text">SIMPRO</span></div>
-    </div>
-    <nav class="sidebar-nav">
-      <div class="sidebar-section">
-        <div class="sidebar-item" data-page="dashboard" onclick="window.location.href='/pages/dashboard.html'">
-          <span class="sidebar-item-icon"><i data-lucide="layout-dashboard"></i></span>Dashboard
-        </div>
-        <div class="sidebar-item" data-page="projects" onclick="window.location.href='/pages/projects.html'">
-          <span class="sidebar-item-icon"><i data-lucide="folder"></i></span>Projects
-        </div>
-      </div>
-      <div class="sidebar-divider"></div>
-      <div class="sidebar-section">
-        <div class="sidebar-section-label">Kerja</div>
-        <div class="sidebar-item" data-page="board" onclick="window.location.href='/pages/board.html'">
-          <span class="sidebar-item-icon"><i data-lucide="kanban"></i></span>Board
-        </div>
-        <div class="sidebar-item" data-page="backlog" onclick="window.location.href='/pages/backlog.html'">
-          <span class="sidebar-item-icon"><i data-lucide="list"></i></span>Backlog
-        </div>
-        <div class="sidebar-item" data-page="sprint" onclick="window.location.href='/pages/sprint.html'">
-          <span class="sidebar-item-icon"><i data-lucide="zap"></i></span>Sprint
-        </div>
-        <div class="sidebar-item" data-page="gantt" onclick="window.location.href='/pages/gantt.html'">
-          <span class="sidebar-item-icon"><i data-lucide="gantt-chart"></i></span>Gantt
-        </div>
-      </div>
-      <div class="sidebar-divider"></div>
-      <div class="sidebar-section">
-        <div class="sidebar-section-label">Laporan</div>
-        <div class="sidebar-item" data-page="reports" onclick="window.location.href='/pages/reports.html'">
-          <span class="sidebar-item-icon"><i data-lucide="bar-chart-2"></i></span>Laporan
-        </div>
-      </div>
-      <div class="sidebar-divider"></div>
-      <div class="sidebar-section">
-        <div class="sidebar-section-label">Admin</div>
-        <div class="sidebar-item" data-page="members" onclick="window.location.href='/pages/members.html'">
-          <span class="sidebar-item-icon"><i data-lucide="users"></i></span>Member
-        </div>
-        <div class="sidebar-item" data-page="settings" onclick="window.location.href='/pages/settings.html'">
-          <span class="sidebar-item-icon"><i data-lucide="settings"></i></span>Settings
-        </div>
-        <div class="sidebar-item" data-page="io" onclick="window.location.href='/pages/io.html'">
-          <span class="sidebar-item-icon"><i data-lucide="arrow-left-right"></i></span>Import/Export
-        </div>
-      </div>
-    </nav>
-    <div class="sidebar-footer">
-      <div class="sidebar-user" onclick="window.location.href='/pages/profile.html'">
-        <div id="sidebar-user-avatar" class="avatar avatar-sm" style="background:var(--color-accent-light);color:var(--color-accent);">?</div>
-        <div class="sidebar-user-info">
-          <div id="sidebar-user-name" class="sidebar-user-name">—</div>
-          <div id="sidebar-user-role" class="sidebar-user-role">—</div>
-        </div>
-        <button class="sidebar-logout-btn" id="sidebar-logout" aria-label="Logout" data-tooltip="Logout">
-          <i data-lucide="log-out"></i>
-        </button>
-      </div>
-    </div>
-  </aside>
+  <aside id="sidebar" class="sidebar"></aside>
   <div class="main-area">
-    <header class="topbar">
-      <button id="hamburger" class="hamburger" aria-label="Toggle sidebar"><i data-lucide="menu"></i></button>
-      <span class="topbar-title">Projects</span>
-      <div class="topbar-actions">
-        <button id="theme-toggle" class="topbar-btn" aria-label="Toggle theme" data-tooltip="Mode Gelap"><i data-lucide="moon"></i></button>
-        <button class="topbar-btn" id="notif-btn" aria-label="Notifikasi" data-tooltip="Notifikasi" style="position:relative;">
-          <i data-lucide="bell"></i>
-          <span id="notif-count" class="topbar-notif-count hidden">0</span>
-        </button>
-        <button class="topbar-btn" onclick="window.location.href='/pages/profile.html'" aria-label="Profil" data-tooltip="Profil saya"><i data-lucide="user"></i></button>
-      </div>
-    </header>
+    <header class="topbar"></header>
     <main class="main-content" id="main-content">
       <div class="page-header">
         <div class="page-header-left">
           <h1 class="page-title">Projects</h1>
         </div>
       </div>
-      <p style="color:var(--color-text-2);font-size:var(--text-sm);">Halaman ini akan diimplementasikan di fase berikutnya.</p>
+      <p style="color:var(--color-text-2);font-size:var(--text-sm);">Halaman ini akan tersedia di fase berikutnya.</p>
     </main>
   </div>
 </div>
+
 <div id="toast-container"></div>
+
 <script src="/assets/js/core/utils.js"></script>
 <script src="/assets/js/core/storage.js"></script>
 <script src="/assets/js/core/auth.js"></script>
 <script src="/assets/js/core/app.js"></script>
 <script src="/assets/js/core/router.js"></script>
+<script src="/assets/js/core/shell.js"></script>
+<script src="/assets/js/pages/projects.js"></script>
 <script>
   Auth.requireAuth();
+  Shell.applyTo('projects', 'Projects');
   App.init('projects').then(() => {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
-    document.getElementById('sidebar-logout').addEventListener('click', (e) => { e.stopPropagation(); Auth.logout(); });
+    if (window.lucide) lucide.createIcons();
+    if (typeof Page !== 'undefined' && Page.init) Page.init();
   });
 </script>
 </body>

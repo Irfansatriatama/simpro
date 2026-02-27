@@ -261,23 +261,7 @@ const App = (() => {
   }
 
   function _populateSidebarUser() {
-    const session = Storage.get('sp_session');
-    if (!session) return;
-    const users = Storage.get('sp_users') || [];
-    const user = users.find(u => u.id === session.userId);
-    if (!user) return;
-
-    const nameEl = document.getElementById('sidebar-user-name');
-    const roleEl = document.getElementById('sidebar-user-role');
-    const avatarEl = document.getElementById('sidebar-user-avatar');
-
-    if (nameEl) nameEl.textContent = user.name;
-    if (roleEl) roleEl.textContent = Utils.getRoleLabel(user.role);
-    if (avatarEl) {
-      const av = Utils.createAvatarEl(user, 'sm');
-      avatarEl.replaceWith(av);
-      av.id = 'sidebar-user-avatar';
-    }
+    // Handled by Shell.js — kept as no-op for backward compatibility
   }
 
   function _updateNotifBadge() {
