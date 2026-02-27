@@ -2,7 +2,7 @@
 
 > **Dokumen Tunggal & Tersentralisasi** — Ini adalah satu-satunya README yang perlu dibaca.  
 > Menggabungkan semua informasi dari `README_SIMPRO.md` dan `README_BUG_SIMPRO.md`.  
-> Update terakhir: **2026-02-27** | Versi saat ini: **v1.1.0** (Bug Fix Release — BUG-16 SELESAI)
+> Update terakhir: **2026-02-27** | Versi saat ini: **v1.1.1** (Bug Fix Release — BUG-17 SELESAI)
 
 Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint planning, kanban board, gantt chart, dan laporan progress untuk Project Manager, Developer, Client, dan Manager.
 
@@ -34,9 +34,9 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | v1.1.0 (Bug Fix Release — BUG-16) |
+| **Versi App** | v1.1.1 (Bug Fix Release — BUG-17) |
 | **Fase Pembangunan Selesai** | FASE 16 — Polish, PWA Penuh & Audit Final ✅ |
-| **Fase Bug Fix Saat Ini** | BUG-16 ✅ — Members: fix _renderRow missing function definition (data tidak tampil), toolbar UI/UX overhaul (card container, label cari, divider, search alignment fix) |
+| **Fase Bug Fix Saat Ini** | BUG-17 ✅ — Members: fix modal tambah/edit user tidak muncul (struktur HTML modal salah — `.modal` bukan `.modal-overlay` sebagai container luar), ganti pattern ke `classList hidden` konsisten dengan modul lain |
 | **Fase Bug Fix Berikutnya** | — (Ongoing bug fix, upload zip terbaru jika ada bug baru) |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
@@ -63,6 +63,7 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 | BUG-14 | Members: async Storage.update fix (hash password dulu, lalu sync callback), null/undefined guard, try-catch, TimeLog guard | ✅ Selesai | 2026-02-27 |
 | BUG-15 | Members: Filter bar redesign (label, pill, clear button), _openModal full reset, input-error state, pw-hint | ✅ Selesai | 2026-02-27 |
 | BUG-16 | Members: Fix _renderRow missing function def (data tidak tampil), toolbar UI overhaul (card container, divider, search label, alignment fix) | ✅ Selesai | 2026-02-27 |
+| BUG-17 | Members: Fix modal tambah/edit user tidak muncul — struktur HTML modal salah (`.modal` sebagai container outer), diganti ke `.modal-overlay.hidden` pattern konsisten dengan modul lain | ✅ Selesai | 2026-02-27 |
 
 ---
 
@@ -1358,13 +1359,34 @@ Widget My Tasks hanya menampilkan project dot (bukan label), badge type, dan due
 
 ---
 
-*SIMPRO v1.1.0 — Offline-first. Zero server. Pure localStorage.*
+### BUG-17 — Members: Fix Modal Tambah/Edit User Tidak Muncul
 
 **2026-02-27** | ✅
 
 **Bug yang Diperbaiki:**
 
-**1. Create Project gagal tanpa pesan error yang jelas (BUG KRITIS):**
+**1. Modal tambah user tidak tampil / tampil rusak — BUG KRITIS:**
+- Root cause: Struktur HTML modal di `members.html` **terbalik** dibanding pattern yang benar. Di `members.html`, `#modal-user` menggunakan class `.modal` (panel konten) sebagai container luar — saat JS men-set `style.display = 'flex'`, elemen ini tampil sebagai panel kecil (max-width:520px), bukan sebagai overlay fullscreen.
+- Pattern yang benar (seperti di `projects.html`, `board.html`, dll): container luar adalah `.modal-overlay` yang `position:fixed; inset:0; display:flex; align-items:center; justify-content:center` — tampil penuh sebagai backdrop — dan di dalamnya baru `.modal` sebagai panel konten.
+- Akibat bug ini: modal tambah user dan modal detail user tidak pernah tampil sebagai overlay — modal muncul di posisi inline pada halaman, tanpa backdrop gelap, tanpa centering, atau bahkan tidak terlihat sama sekali tergantung scroll position.
+
+**2. Pattern toggle modal tidak konsisten — BUG UX:**
+- Sebelum: `members.js` menggunakan `element.style.display = 'flex'` / `element.style.display = 'none'` untuk buka/tutup modal — berbeda dengan semua modul lain yang menggunakan `classList.remove('hidden')` / `classList.add('hidden')`.
+- Sesudah: Diganti ke pattern `classList` yang konsisten. Modal-overlay dimulai dengan class `hidden` (memanfaatkan `.hidden { display:none !important }` yang sudah ada di `components.css`).
+
+**3. Click-outside dan Escape key handler disesuaikan:**
+- Sebelum: `e.target.classList.contains('modal-overlay')` — tidak akurat dengan struktur baru karena elemen yang diklik saat klik di luar panel adalah `#modal-user.modal-overlay` itu sendiri
+- Sesudah: `e.target === modalUser` — lebih presisi, cek apakah klik langsung pada overlay container (bukan pada panel di dalamnya)
+- Escape key: `mu.style.display !== 'none'` → `!mu.classList.contains('hidden')` — konsisten dengan pattern baru
+
+**File yang Dimodifikasi:**
+- `pages/members.html` (v0.14.4) — struktur modal-user & modal-user-detail diubah: `.modal-overlay.hidden` sebagai container luar, `.modal` sebagai panel dalam
+- `assets/js/pages/members.js` (v0.14.4) — `_openModal`, `_closeModal`, `_openDetail`, `_closeDetail`, event listener click-outside & Escape diupdate ke classList pattern
+- `README.md` (v1.1.1)
+
+---
+
+*SIMPRO v1.1.1 — Offline-first. Zero server. Pure localStorage.*
 - Sebelum: `_save()` hanya cek `result && result.error` — jika `Project.create()` return `null` (session tidak valid atau error internal), kondisi ini false → `_closeModal()` dan toast success dijalankan tapi project tidak tersimpan. User tidak mendapat feedback error.
 - Sesudah: tambah check `if (!result)` sebelum `result.error` check → tampilkan pesan error "Gagal menyimpan project. Pastikan kamu sudah login."
 - Tambah try-catch di seluruh `_save()` → error runtime (field tidak ditemukan, dsb) tidak lagi silent fail

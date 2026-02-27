@@ -1,4 +1,4 @@
-/* SIMPRO Page: members — v0.14.2 (BUG-15) */
+/* SIMPRO Page: members — v0.14.4 (BUG-17) */
 const MembersPage = (() => {
   let _session = null;
   let _isAdmin = false;
@@ -241,7 +241,7 @@ const MembersPage = (() => {
 
     var modalUser = document.getElementById('modal-user');
     if (modalUser) modalUser.addEventListener('click', function(e) {
-      if (e.target.classList.contains('modal-overlay')) _closeModal();
+      if (e.target === modalUser) _closeModal();
     });
 
     var saveBtn = document.getElementById('btn-user-save');
@@ -255,7 +255,7 @@ const MembersPage = (() => {
 
     var modalDetail = document.getElementById('modal-user-detail');
     if (modalDetail) modalDetail.addEventListener('click', function(e) {
-      if (e.target.classList.contains('modal-overlay')) _closeDetail();
+      if (e.target === modalDetail) _closeDetail();
     });
 
     var detailEditBtn = document.getElementById('btn-detail-edit');
@@ -269,8 +269,8 @@ const MembersPage = (() => {
       if (e.key !== 'Escape') return;
       var mu = document.getElementById('modal-user');
       var md = document.getElementById('modal-user-detail');
-      if (mu && mu.style.display !== 'none') _closeModal();
-      else if (md && md.style.display !== 'none') _closeDetail();
+      if (mu && !mu.classList.contains('hidden')) _closeModal();
+      else if (md && !md.classList.contains('hidden')) _closeDetail();
     });
   }
 
@@ -328,14 +328,14 @@ const MembersPage = (() => {
     }
 
     var modal = document.getElementById('modal-user');
-    if (modal) modal.style.display = 'flex';
+    if (modal) { modal.classList.remove('hidden'); modal.removeAttribute('aria-hidden'); }
     if (window.lucide) lucide.createIcons();
     setTimeout(function() { if (nameEl) nameEl.focus(); }, 50);
   }
 
   function _closeModal() {
     var modal = document.getElementById('modal-user');
-    if (modal) modal.style.display = 'none';
+    if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
     _editingUserId = null;
   }
 
@@ -512,13 +512,13 @@ const MembersPage = (() => {
     if (detailEditBtn) detailEditBtn.style.display = _isAdmin ? '' : 'none';
 
     var modal = document.getElementById('modal-user-detail');
-    if (modal) modal.style.display = 'flex';
+    if (modal) { modal.classList.remove('hidden'); modal.removeAttribute('aria-hidden'); }
     if (window.lucide) lucide.createIcons();
   }
 
   function _closeDetail() {
     var modal = document.getElementById('modal-user-detail');
-    if (modal) modal.style.display = 'none';
+    if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
     _detailUserId = null;
   }
 
