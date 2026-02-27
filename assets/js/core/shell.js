@@ -129,6 +129,8 @@ const Shell = (() => {
       .notif-header { display:flex;align-items:center;justify-content:space-between;padding:var(--sp-3) var(--sp-4);border-bottom:1px solid var(--color-border);position:sticky;top:0;background:var(--color-surface);z-index:1; }
       .notif-header-title { font-size:var(--text-sm);font-weight:600;color:var(--color-text); }
       .notif-list { padding:var(--sp-2) 0; }
+      /* Fix: topbar dropdowns menggunakan position:fixed agar tidak terpotong overflow parent */
+      #notif-dropdown, #avatar-dropdown { position:fixed !important; top:auto !important; left:auto !important; z-index:1600 !important; }
       .notif-item { display:flex;align-items:flex-start;gap:var(--sp-3);padding:var(--sp-3) var(--sp-4);cursor:pointer;transition:background var(--transition);border-left:3px solid transparent; }
       .notif-item:hover { background:var(--color-surface-2); }
       .notif-item.unread { background:var(--color-accent-light);border-left-color:var(--color-accent); }
@@ -206,6 +208,10 @@ const Shell = (() => {
       const hidden = notifDropdown.classList.contains('hidden');
       document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden'));
       if (hidden) {
+        const rect = notifBtn.getBoundingClientRect();
+        notifDropdown.style.top   = (rect.bottom + 4) + 'px';
+        notifDropdown.style.right = (window.innerWidth - rect.right) + 'px';
+        notifDropdown.style.left  = 'auto';
         notifDropdown.classList.remove('hidden');
         renderNotifs();
       }
@@ -243,7 +249,13 @@ const Shell = (() => {
       e.stopPropagation();
       const hidden = dropdown.classList.contains('hidden');
       document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden'));
-      if (hidden) dropdown.classList.remove('hidden');
+      if (hidden) {
+        const rect = btn.getBoundingClientRect();
+        dropdown.style.top   = (rect.bottom + 4) + 'px';
+        dropdown.style.right = (window.innerWidth - rect.right) + 'px';
+        dropdown.style.left  = 'auto';
+        dropdown.classList.remove('hidden');
+      }
     });
 
     logoutBtn && logoutBtn.addEventListener('click', () => Auth.logout());

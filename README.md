@@ -2,7 +2,7 @@
 
 > **Dokumen Tunggal & Tersentralisasi** — Ini adalah satu-satunya README yang perlu dibaca.  
 > Menggabungkan semua informasi dari `README_SIMPRO.md` dan `README_BUG_SIMPRO.md`.  
-> Update terakhir: **2026-02-27** | Versi saat ini: **v1.0.3** (Bug Fix Release — BUG-9 SELESAI)
+> Update terakhir: **2026-02-27** | Versi saat ini: **v1.0.4** (Bug Fix Release — BUG-10 SELESAI)
 
 Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint planning, kanban board, gantt chart, dan laporan progress untuk Project Manager, Developer, Client, dan Manager.
 
@@ -34,9 +34,9 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | v1.0.3 (Bug Fix Release — BUG-9) |
+| **Versi App** | v1.0.4 (Bug Fix Release — BUG-10) |
 | **Fase Pembangunan Selesai** | FASE 16 — Polish, PWA Penuh & Audit Final ✅ |
-| **Fase Bug Fix Saat Ini** | BUG-9 ✅ — Route Fix: Absolute Path → Relative Path (SELESAI) |
+| **Fase Bug Fix Saat Ini** | BUG-10 ✅ — Navbar Dropdown Fix + Dashboard My Tasks Overhaul (SELESAI) |
 | **Fase Bug Fix Berikutnya** | — (Ongoing bug fix, upload zip terbaru jika ada bug baru) |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
@@ -56,6 +56,7 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 | BUG-7 | User & Setting + README Final | ✅ Selesai | 2026-02-27 |
 | BUG-8 | Navbar Dropdown, Notifikasi & Dashboard My Tasks | ✅ Selesai | 2026-02-27 |
 | BUG-9 | Route Fix: Absolute Path → Relative Path (index.html, 404.html, manifest.json, sw.js) | ✅ Selesai | 2026-02-27 |
+| BUG-10 | Navbar Dropdown Fix (position:fixed) + Dashboard My Tasks Overhaul | ✅ Selesai | 2026-02-27 |
 
 ---
 
@@ -1097,5 +1098,47 @@ Saat user mengakses `simpro/index.html`, redirect diarahkan ke `/pages/dashboard
 
 ---
 
-*SIMPRO v1.0.3 — Offline-first. Zero server. Pure localStorage.*  
+### BUG-10 — Navbar Dropdown Fix + Dashboard My Tasks Overhaul
+**2026-02-27** | ✅
+
+**Root Cause 1: Dropdown terpotong karena `overflow: hidden` pada ancestor**
+
+`.main-area` (wrapper konten utama) memiliki `overflow: hidden` yang menyebabkan dropdown notifikasi dan avatar di topbar terpotong karena menggunakan `position: absolute`. Dropdown hanya terlihat di dalam bounding box `.main-area`, sisanya terpotong.
+
+**Fix 1 — `assets/js/core/shell.js` — Dropdown pakai `position: fixed`:**
+- Tambah CSS rule: `#notif-dropdown, #avatar-dropdown { position: fixed !important; z-index: 1600 !important; }`
+- Update `_setupNotifDropdown()`: saat tombol diklik, hitung posisi via `getBoundingClientRect()` lalu set `style.top`, `style.right` secara dinamis sebelum tampilkan dropdown
+- Update `_setupAvatarDropdown()`: sama — hitung posisi fix saat tombol diklik
+- Pendekatan ini memastikan dropdown selalu tampil di luar semua `overflow: hidden` container karena posisinya relatif terhadap viewport
+
+**Fix 2 — `assets/css/components.css` — z-index dropdown dinaikkan:**
+- `.dropdown-menu` z-index dari `500` → `1500` (agar konsisten dan tidak tertutup elemen lain)
+- Topbar dropdowns `#notif-dropdown` & `#avatar-dropdown` mendapat override `z-index: 1600` via shell styles
+
+**Root Cause 2: Dashboard My Tasks kurang informatif dan styling jelek**
+
+Widget My Tasks hanya menampilkan project dot (bukan label), badge type, dan due date. Tidak ada indikasi status task, dan tampilan terlalu sempit/tidak readable.
+
+**Fix 3 — `assets/js/pages/dashboard.js` — My Tasks widget overhaul:**
+- Task row sekarang menampilkan: project key (color-coded pill), status icon+label (To Do / In Progress / Review), dan due date
+- Project key ditampilkan sebagai pill dengan warna project (lebih jelas dari dot)
+- Status ditampilkan dengan ikon SVG dan warna: abu-abu (todo), biru (in-progress), oranye (review)
+- Due date "Tanpa deadline" ditampilkan italic untuk task tanpa deadline (sebelumnya kosong)
+- Link "+N task lainnya" sekarang navigasi ke Board (sebelumnya plain text)
+- Widget header My Tasks ditambah link ganda: "Board" dan "Backlog"
+
+**Fix 4 — `assets/js/pages/dashboard.js` — Stat bar lebih informatif:**
+- Tambah stat "Due Hari Ini" (task yang due-date-nya hari ini) dengan warna warning jika > 0
+- Total stat bar sekarang: Project Aktif / Task Saya / Due Hari Ini / Terlambat / Sprint Aktif
+
+**Fix 5 — `assets/css/dashboard.css` — My Tasks CSS baru:**
+- `.task-row-project` — project key pill dengan border tipis warna project
+- `.task-row-status` — flex row dengan ikon SVG + label status
+- `.task-row-due.no-due` — styling italic untuk task tanpa deadline
+- `.task-group-more-link` — link styled untuk "+N task lainnya"
+- `.dash-stat-warning` — warna warning untuk stat "Due Hari Ini"
+
+---
+
+*SIMPRO v1.0.4 — Offline-first. Zero server. Pure localStorage.*  
 *README ini adalah sumber kebenaran tunggal. Tidak ada file dokumentasi lain yang diperlukan.*

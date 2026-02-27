@@ -62,18 +62,38 @@ const Page = (() => {
       return a.dueDate.localeCompare(b.dueDate);
     });
 
+    const STATUS_ICON = {
+      'todo': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><circle cx="12" cy="12" r="10"/></svg>`,
+      'in-progress': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>`,
+      'review': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>`,
+    };
+    const STATUS_LABEL = { 'todo': 'To Do', 'in-progress': 'In Progress', 'review': 'Review' };
+    const STATUS_COLOR = { 'todo': 'var(--color-text-3)', 'in-progress': 'var(--color-accent)', 'review': 'var(--color-warning)' };
+
     const taskRow = (t) => {
       const project = _getProjectById(t.projectId);
-      const overdueClass = t.dueDate && t.dueDate < today ? ' overdue' : '';
-      const dueDateHTML = t.dueDate ? `<span class="task-row-due${overdueClass}">${Utils.formatDateShort(t.dueDate)}</span>` : '';
-      const projectDot = project ? `<span class="task-project-dot" style="background:${project.color}"></span>` : '';
+      const isOverdue = t.dueDate && t.dueDate < today;
+      const overdueClass = isOverdue ? ' overdue' : '';
+      const dueDateHTML = t.dueDate
+        ? `<span class="task-row-due${overdueClass}" title="${isOverdue ? 'Terlambat' : ''}">${Utils.formatDateShort(t.dueDate)}</span>`
+        : '<span class="task-row-due no-due">Tanpa deadline</span>';
+      const projectTag = project
+        ? `<span class="task-row-project" style="color:${project.color};border-color:${project.color}20;background:${project.color}12;">${Utils.escapeHtml(project.key)}</span>`
+        : '';
+      const statusColor = STATUS_COLOR[t.status] || 'var(--color-text-3)';
+      const statusIcon  = STATUS_ICON[t.status]  || '';
+      const statusLabel = STATUS_LABEL[t.status]  || t.status;
       return `<div class="task-row" data-task-id="${t.id}" role="button" tabindex="0">
-        <span class="priority-dot priority-${t.priority}"></span>
+        <span class="priority-dot priority-${t.priority}" title="Priority: ${t.priority}"></span>
         <div class="task-row-info">
           <span class="task-row-key">${Utils.escapeHtml(t.key)}</span>
-          <span class="task-row-title">${Utils.escapeHtml(Utils.truncate(t.title, 55))}</span>
+          <span class="task-row-title">${Utils.escapeHtml(Utils.truncate(t.title, 52))}</span>
         </div>
-        <div class="task-row-meta">${projectDot}<span class="badge badge-type-${t.type}">${Utils.getTypeLabel(t.type)}</span>${dueDateHTML}</div>
+        <div class="task-row-meta">
+          ${projectTag}
+          <span class="task-row-status" style="color:${statusColor};">${statusIcon} ${statusLabel}</span>
+          ${dueDateHTML}
+        </div>
       </div>`;
     };
 
@@ -98,7 +118,7 @@ const Page = (() => {
       html += `<div class="task-group">
         <div class="task-group-header">${iconUpcoming} Upcoming <span class="task-group-count">${groups.upcoming.length}</span></div>
         ${shown.map(taskRow).join('')}
-        ${more > 0 ? `<div class="task-group-more">+${more} task lainnya</div>` : ''}
+        ${more > 0 ? `<a class="task-group-more-link" href="./board.html">+${more} task lainnya — Lihat di Board</a>` : ''}
       </div>`;
     }
 
@@ -299,12 +319,14 @@ const Page = (() => {
       ? tasks.filter(t => t.assigneeIds && t.assigneeIds.includes(user.id) && t.status !== 'done')
       : [];
     const overdue    = myTasks.filter(t => t.dueDate && t.dueDate < today).length;
+    const dueToday   = myTasks.filter(t => t.dueDate === today).length;
     const activeSp   = sprints.filter(s => s.status === 'active' && ids.includes(s.projectId)).length;
 
     statBar.innerHTML = `
       <div class="dash-stat"><div class="dash-stat-value">${projects.length}</div><div class="dash-stat-label">Project Aktif</div></div>
       ${user.role !== 'viewer' ? `
       <div class="dash-stat"><div class="dash-stat-value">${myTasks.length}</div><div class="dash-stat-label">Task Saya</div></div>
+      <div class="dash-stat ${dueToday > 0 ? 'dash-stat-warning' : ''}"><div class="dash-stat-value">${dueToday}</div><div class="dash-stat-label">Due Hari Ini</div></div>
       <div class="dash-stat ${overdue > 0 ? 'dash-stat-danger' : ''}"><div class="dash-stat-value">${overdue}</div><div class="dash-stat-label">Terlambat</div></div>` : ''}
       <div class="dash-stat"><div class="dash-stat-value">${activeSp}</div><div class="dash-stat-label">Sprint Aktif</div></div>`;
   }
@@ -360,9 +382,13 @@ const Page = (() => {
           <div class="widget">
             <div class="widget-header">
               <h2 class="widget-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg> My Tasks</h2>
-              <a href="./board.html" class="widget-action">Lihat Board</a>
+              <div style="display:flex;gap:var(--sp-2);align-items:center;">
+                <a href="./board.html" class="widget-action">Board</a>
+                <span style="color:var(--color-border-strong)">·</span>
+                <a href="./backlog.html" class="widget-action">Backlog</a>
+              </div>
             </div>
-            <div class="widget-body" id="widget-my-tasks"><div class="widget-loading">Memuat...</div></div>
+            <div class="widget-body" id="widget-my-tasks" style="padding:var(--sp-2) var(--sp-3);"><div class="widget-loading">Memuat...</div></div>
           </div>
         </div>` : ''}
         <div class="${!isViewer ? 'dash-col-side' : 'dash-col-full'}">
