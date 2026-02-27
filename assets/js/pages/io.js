@@ -18,7 +18,7 @@ const Page = (() => {
     _renderImportTrelloSection();
     _renderImportJiraSection();
     _renderExportCSVSection();
-    lucide.createIcons();
+    if (window.lucide) lucide.createIcons();
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -202,7 +202,7 @@ const Page = (() => {
         }
       });
     }
-    lucide.createIcons();
+    if (window.lucide) lucide.createIcons();
   }
 
   function _trelloStep1HTML() {
@@ -300,7 +300,7 @@ const Page = (() => {
         _jiraMapping = IO.autoDetectJiraMapping(_jiraHeaders);
         _renderJiraPreview(previewEl);
         btnImport.disabled = false;
-        lucide.createIcons();
+        if (window.lucide) lucide.createIcons();
       } catch (e) {
         previewEl.innerHTML = '<p class="io-error">Gagal membaca file: ' + Utils.escapeHtml(e.message) + '</p>';
       }

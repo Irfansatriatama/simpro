@@ -60,8 +60,8 @@
   Auth.requireAuth();
   Shell.applyTo('gantt', 'Gantt Chart');
   App.init('gantt').then(() => {
-    if (window.lucide) lucide.createIcons();
     if (typeof Page !== 'undefined' && Page.init) Page.init();
+    if (window.lucide) lucide.createIcons();
   });
 </script>
 </body>

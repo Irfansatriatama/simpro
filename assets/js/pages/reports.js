@@ -1,6 +1,24 @@
 /* SIMPRO Page: reports — v0.12.0 */
 const Page = (() => {
 
+  // ── roundRect polyfill for older browsers ─────────────────────────────────
+  if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+      const radius = Array.isArray(r) ? r[0] : (r || 0);
+      this.beginPath();
+      this.moveTo(x + radius, y);
+      this.lineTo(x + w - radius, y);
+      this.quadraticCurveTo(x + w, y, x + w, y + radius);
+      this.lineTo(x + w, y + h - radius);
+      this.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+      this.lineTo(x + radius, y + h);
+      this.quadraticCurveTo(x, y + h, x, y + h - radius);
+      this.lineTo(x, y + radius);
+      this.quadraticCurveTo(x, y, x + radius, y);
+      this.closePath();
+    };
+  }
+
   let _projectId = null;
   let _sprintId  = null;
 

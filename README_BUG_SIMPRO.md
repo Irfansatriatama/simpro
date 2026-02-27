@@ -12,7 +12,7 @@
 | Info | Detail |
 |------|--------|
 | **Versi Base** | v1.0.0 (simpro_fase16.zip) |
-| **Fase Bug Saat Ini** | BUG-4 ✅ |
+| **Fase Bug Saat Ini** | BUG-6 ✅ |
 | **Total Fase Bug** | 7 Fase |
 | **Prioritas** | Kritis — aplikasi tidak bisa digunakan |
 
@@ -395,7 +395,7 @@ BUG-7  ← User & Setting    : members, settings, profile + README final
 | BUG-3 | Shell & Dashboard | ✅ Selesai | 2026-02-27 | Fix urutan init dashboard (Page.init sebelum lucide), fix manifest path di semua pages, fix sw.js register path di app.js |
 | BUG-4 | Project & Task | ✅ Selesai | 2026-02-27 | Fix init order projects.html & project-detail.html (App.init().then()), fix breadcrumb absolute path di project-detail.html, fix urutan Page.init() sebelum lucide di task-detail.html |
 | BUG-5 | Board & Sprint | ✅ Selesai | 2026-02-27 | Fix getAvatarColor destructuring (board/backlog/sprint), fix init order lucide, guard lucide calls |
-| BUG-6 | Data & Laporan | ⏳ Belum dimulai | — | — |
+| BUG-6 | Data & Laporan | ✅ Selesai | 2026-02-27 | Fix init order (Page.init sebelum lucide) di gantt/reports/io.html; fix STATUS_COLORS keys di gantt.js module (in-progress/review); tambah roundRect polyfill di reports.js; guard semua lucide.createIcons() di io.js |
 | BUG-7 | User & Setting + README Final | ⏳ Belum dimulai | — | — |
 
 ---

@@ -81,8 +81,8 @@
   Auth.requireAuth();
   Shell.applyTo('reports', 'Laporan');
   App.init('reports').then(() => {
-    if (window.lucide) lucide.createIcons();
     if (typeof Page !== 'undefined' && Page.init) Page.init();
+    if (window.lucide) lucide.createIcons();
   });
 </script>
 </body>

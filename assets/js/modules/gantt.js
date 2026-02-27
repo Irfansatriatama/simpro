@@ -141,10 +141,12 @@ const Gantt = (() => {
   }
 
   const STATUS_COLORS = {
-    todo:       { fill: '#E0E4F0', stroke: '#A0AABB' },
-    inprogress: { fill: '#BFD4FD', stroke: '#3B5BDB' },
-    inreview:   { fill: '#FFE8A3', stroke: '#E67700' },
-    done:       { fill: '#B2F0C8', stroke: '#2F9E44' },
+    'todo':        { fill: '#E0E4F0', stroke: '#A0AABB' },
+    'in-progress': { fill: '#BFD4FD', stroke: '#3B5BDB' },
+    'inprogress':  { fill: '#BFD4FD', stroke: '#3B5BDB' },
+    'review':      { fill: '#FFE8A3', stroke: '#E67700' },
+    'inreview':    { fill: '#FFE8A3', stroke: '#E67700' },
+    'done':        { fill: '#B2F0C8', stroke: '#2F9E44' },
   };
 
   function renderToSVG(tasks, milestones, layout, rowHeight, leftWidth) {
@@ -242,7 +244,7 @@ const Gantt = (() => {
       // Progress fill
       let progressW = 0;
       if (task.status === 'done') progressW = w;
-      else if (task.status === 'inprogress' || task.status === 'inreview') {
+      else if (task.status === 'in-progress' || task.status === 'inprogress' || task.status === 'review' || task.status === 'inreview') {
         progressW = Math.round(w * 0.5);
       }
 

@@ -206,8 +206,8 @@
   Auth.requireAuth();
   Shell.applyTo('io', 'Import / Export');
   App.init('io').then(() => {
-    if (window.lucide) lucide.createIcons();
     if (typeof Page !== 'undefined' && Page.init) Page.init();
+    if (window.lucide) lucide.createIcons();
   });
 </script>
 </body>
