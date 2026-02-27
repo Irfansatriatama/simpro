@@ -1,4 +1,4 @@
-const CACHE_NAME = 'simpro-v0.10.0';
+const CACHE_NAME = 'simpro-v0.11.0';
 const SHELL_FILES = [
   '/index.html',
   '/404.html',

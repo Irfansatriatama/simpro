@@ -76,7 +76,9 @@ const Sprint = (() => {
     Storage.update('sp_sprints', arr => arr.map(s =>
       s.id === id ? { ...s, status: 'active', startDate: s.startDate || Utils.todayISO() } : s
     ));
-    App.events.emit('sprint:started', getById(id));
+    const startedSprint = getById(id);
+    App.events.emit('sprint:started', startedSprint);
+    if (window.Notification) Notification.onSprintStarted(startedSprint);
     return { ok: true };
   }
 
@@ -112,7 +114,9 @@ const Sprint = (() => {
       velocity,
     };
 
-    App.events.emit('sprint:completed', { sprint: getById(id), summary });
+    const completedSprint = getById(id);
+    App.events.emit('sprint:completed', { sprint: completedSprint, summary });
+    if (window.Notification) Notification.onSprintCompleted(completedSprint);
     return { ok: true, summary };
   }
 

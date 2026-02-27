@@ -768,7 +768,9 @@ const Page = (() => {
   function _saveAssignees() {
     const cbs = document.querySelectorAll('.assignee-cb:checked');
     const ids = Array.from(cbs).map(cb => cb.value);
+    const prevIds = _task.assigneeIds || [];
     _saveField({ assigneeIds: ids });
+    if (window.Notification) Notification.onTaskAssigned(_task, prevIds);
   }
 
   function _addLabel(labelId) {
@@ -801,6 +803,7 @@ const Page = (() => {
       App.Toast.error('Gagal mengirim komentar');
       return;
     }
+    if (window.Notification) Notification.onTaskCommented(_task, null);
     ta.value = '';
     ta.style.height = 'auto';
     const actions = document.getElementById('comment-form-actions');

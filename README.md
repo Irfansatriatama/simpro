@@ -30,9 +30,9 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | 0.10.0 |
-| **Fase Saat Ini** | FASE 10 — Time Tracking ✅ |
-| **Fase Berikutnya** | FASE 11 — Notifikasi In-App |
+| **Versi App** | 0.11.0 |
+| **Fase Saat Ini** | FASE 11 — Notifikasi In-App ✅ |
+| **Fase Berikutnya** | FASE 12 — Laporan & Statistik |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
 | **PWA** | Aktif sejak Fase 1 (manifest.json + sw.js) |
@@ -1102,7 +1102,7 @@ Log ini diupdate **setiap akhir fase** oleh Claude. Mencatat apa yang sudah dike
 | 0.8.0 | FASE 8 | 2026-02-27 | ✅ Selesai | Sprint Active View |
 | 0.9.0 | FASE 9 | 2026-02-27 | ✅ Selesai | Gantt Chart & Milestone |
 | 0.10.0 | FASE 10 | 2026-02-27 | ✅ Selesai | Time Tracking |
-| 0.11.0 | FASE 11 | — | Belum dikerjakan | Notifikasi In-App |
+| 0.11.0 | FASE 11 | 2026-02-27 | ✅ Selesai | Notifikasi In-App |
 | 0.12.0 | FASE 12 | — | Belum dikerjakan | Laporan & Statistik |
 | 0.13.0 | FASE 13 | — | Belum dikerjakan | Import / Export |
 | 0.14.0 | FASE 14 | — | Belum dikerjakan | Member Management & Admin Panel |
@@ -1478,16 +1478,26 @@ Log ini diupdate **setiap akhir fase** oleh Claude. Mencatat apa yang sudah dike
 ---
 
 #### FASE 11 — Notifikasi In-App
-**Versi:** v0.11.0 | **Tanggal:** — | **Status:** Belum dikerjakan
+**Versi:** v0.11.0 | **Tanggal:** 2026-02-27 | **Status:** ✅ Selesai
 
 **File Ditambahkan:**
-*(diisi setelah fase selesai)*
+- (tidak ada file halaman baru — sistem notifikasi diintegrasikan ke modul dan halaman yang sudah ada)
 
 **File Diubah:**
-*(diisi setelah fase selesai)*
+- `assets/js/modules/notification.js` — Implementasi penuh: create, getByUser, getUnreadCount, markRead, markAllRead, clearAll, onTaskAssigned, onTaskCommented, onSprintStarted, onSprintCompleted, checkDueSoon
+- `assets/js/pages/task-detail.js` — Trigger notifikasi saat assignee berubah (onTaskAssigned) dan saat komentar dikirim (onTaskCommented)
+- `assets/js/modules/sprint.js` — Trigger onSprintStarted dan onSprintCompleted setelah operasi sprint berhasil
+- `assets/js/core/auth.js` — Jalankan Notification.checkDueSoon() setelah login sukses (setTimeout 500ms)
+- `assets/js/core/shell.js` — Tambah tombol "Hapus semua" di header dropdown notifikasi + handler clearAll
+- Semua halaman authenticated — Tambah script tag notification.js
+- `sw.js` — Versi cache ke v0.11.0, tambah notification.js ke SHELL_FILES
 
 **Catatan Teknis:**
-*(diisi setelah fase selesai)*
+- checkDueSoon() cek sekali per hari per task menggunakan createdAt.slice(0,10) === today
+- onTaskCommented() notify assignee + previous commenters, kecuali aktor sendiri
+- onSprintStarted/Completed() notify semua memberIds project, kecuali aktor yang menjalankan aksi
+- Dropdown topbar shell sudah ada sejak Fase 2 — fase ini menyempurnakan logika render dan "Hapus semua"
+- Notifikasi disimpan di sp_notifications (sudah ada di skema data sejak Fase 1)
 
 ---
 

@@ -85,7 +85,10 @@ const Shell = (() => {
         <div id="notif-dropdown" class="dropdown-menu notif-dropdown hidden">
           <div class="notif-header">
             <span class="notif-header-title">Notifikasi</span>
-            <button id="notif-mark-all" class="btn btn-ghost btn-sm">Tandai semua dibaca</button>
+            <div style="display:flex;gap:4px;">
+              <button id="notif-mark-all" class="btn btn-ghost btn-sm">Baca semua</button>
+              <button id="notif-clear-all" class="btn btn-ghost btn-sm" style="color:var(--color-text-3)">Hapus semua</button>
+            </div>
           </div>
           <div id="notif-list" class="notif-list"></div>
         </div>
@@ -213,6 +216,17 @@ const Shell = (() => {
       if (!session) return;
       Storage.update('sp_notifications', arr =>
         (arr || []).map(n => n.userId === session.userId ? { ...n, isRead: true } : n)
+      );
+      App.refreshNotifBadge();
+      renderNotifs();
+    });
+
+    const clearAllBtn = document.getElementById('notif-clear-all');
+    clearAllBtn && clearAllBtn.addEventListener('click', () => {
+      const session = Storage.get('sp_session');
+      if (!session) return;
+      Storage.update('sp_notifications', arr =>
+        (arr || []).filter(n => n.userId !== session.userId)
       );
       App.refreshNotifBadge();
       renderNotifs();

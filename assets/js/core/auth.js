@@ -54,6 +54,11 @@ const Auth = (() => {
       arr.map(u => u.id === user.id ? { ...u, lastLoginAt: Utils.nowISO() } : u)
     );
 
+    // Check due-soon notifications (deferred so Notification module is available)
+    setTimeout(() => {
+      if (window.Notification) Notification.checkDueSoon();
+    }, 500);
+
     return { ok: true, user };
   }
 
