@@ -30,9 +30,9 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | 0.11.0 |
-| **Fase Saat Ini** | FASE 12 — Laporan & Statistik ✅ |
-| **Fase Berikutnya** | FASE 13 — Import / Export |
+| **Versi App** | 0.13.0 |
+| **Fase Saat Ini** | FASE 13 — Import / Export ✅ |
+| **Fase Berikutnya** | FASE 14 — Member Management & Admin Panel |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
 | **PWA** | Aktif sejak Fase 1 (manifest.json + sw.js) |
@@ -1104,7 +1104,7 @@ Log ini diupdate **setiap akhir fase** oleh Claude. Mencatat apa yang sudah dike
 | 0.10.0 | FASE 10 | 2026-02-27 | ✅ Selesai | Time Tracking |
 | 0.11.0 | FASE 11 | 2026-02-27 | ✅ Selesai | Notifikasi In-App |
 | 0.12.0 | FASE 12 | 2026-02-27 | ✅ Selesai | Laporan & Statistik |
-| 0.13.0 | FASE 13 | — | Belum dikerjakan | Import / Export |
+| 0.13.0 | FASE 13 | 2026-02-27 | ✅ Selesai | Import / Export |
 | 0.14.0 | FASE 14 | — | Belum dikerjakan | Member Management & Admin Panel |
 | 0.15.0 | FASE 15 | — | Belum dikerjakan | Profile & Settings |
 | 1.0.0 | FASE 16 | — | Belum dikerjakan | Polish, PWA Penuh & Audit Final |
@@ -1530,16 +1530,33 @@ Log ini diupdate **setiap akhir fase** oleh Claude. Mencatat apa yang sudah dike
 ---
 
 #### FASE 13 — Import / Export
-**Versi:** v0.13.0 | **Tanggal:** — | **Status:** Belum dikerjakan
+**Versi:** v0.13.0 | **Tanggal:** 2026-02-27 | **Status:** ✅ Selesai
 
 **File Ditambahkan:**
-*(diisi setelah fase selesai)*
+- `assets/js/modules/io.js` — exportJSON, validateJSON, importJSONReplace, importJSONMerge, exportTasksCSV, readFile, parseTrelloJSON, importTrello, parseCSVText, autoDetectJiraMapping, importJiraCSV
+- `assets/js/pages/io.js` — Logic halaman io: 5 section (export JSON, import JSON, Trello wizard, Jira CSV, export CSV)
+- `assets/css/io.css` — Style lengkap halaman Import/Export
 
 **File Diubah:**
-*(diisi setelah fase selesai)*
+- `pages/io.html` — Implementasi penuh: layout 2 section (Export/Import), 5 card fitur
+- `sw.js` — Versi cache → v0.13.0, tambah io.css, io.js, pages/io.js, pages/io.html
+
+**Fitur yang Diimplementasikan:**
+- **Export SIMPRO JSON**: serialize semua `sp_*` → download `simpro_backup_YYYY-MM-DD.json` + tampilkan ringkasan project/task/user/sprint
+- **Import SIMPRO JSON**: upload → parse → validasi → preview stat → mode Merge atau Replace (ketik CONFIRM) → reload
+- **Import Trello JSON**: wizard 3 langkah — pilih board (dengan jumlah kartu), mapping list→status (auto-guess), konfirmasi preview → import (board→project, card→task, checklist→subtask)
+- **Import Jira CSV**: upload → parse → auto-detect 7 field mapping → preview 5 baris + mapping editable → pilih project tujuan → import
+- **Export Task CSV**: pilih project → download CSV dengan 10 kolom (Key, Title, Type, Status, Priority, Assignee, Sprint, SP, Due Date, Created)
 
 **Catatan Teknis:**
-*(diisi setelah fase selesai)*
+- `IO.parseCSVText()` parser CSV custom tanpa library (handle quoted fields + escaped quotes) — Jira CDN papaparse tidak diperlukan karena parser cukup robust untuk format standar
+- Trello wizard menggunakan state lokal di halaman (`_trelloBoards`, `_selectedBoardIds`, `_listStatusMap`) — tidak ada server
+- `_autoGuessStatus()` mapping heuristik list Trello ke status SIMPRO berdasarkan keywords
+- `autoDetectJiraMapping()` case-insensitive matching terhadap kandidat nama kolom umum
+- Import Trello: checklist items menjadi subtask (parentId = ID task parent)
+- Import Jira: `_mapJiraStatus/Priority/Type()` normalisasi nilai umum Jira ke enum SIMPRO
+- Export CSV menggunakan BOM (U+FEFF) untuk kompatibilitas Excel
+- Mode Replace memerlukan ketik "CONFIRM" — validasi real-time via input event
 
 ---
 
