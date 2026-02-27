@@ -2,7 +2,7 @@
 
 > **Dokumen Tunggal & Tersentralisasi** — Ini adalah satu-satunya README yang perlu dibaca.  
 > Menggabungkan semua informasi dari `README_SIMPRO.md` dan `README_BUG_SIMPRO.md`.  
-> Update terakhir: **2026-02-27** | Versi saat ini: **v1.0.5** (Bug Fix Release — BUG-10 SELESAI)
+> Update terakhir: **2026-02-27** | Versi saat ini: **v1.0.6** (Bug Fix Release — BUG-12 SELESAI)
 
 Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint planning, kanban board, gantt chart, dan laporan progress untuk Project Manager, Developer, Client, dan Manager.
 
@@ -34,9 +34,9 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | v1.0.5 (Bug Fix Release — BUG-11) |
+| **Versi App** | v1.0.6 (Bug Fix Release — BUG-12) |
 | **Fase Pembangunan Selesai** | FASE 16 — Polish, PWA Penuh & Audit Final ✅ |
-| **Fase Bug Fix Saat Ini** | BUG-11 ✅ — Backlog Module Overhaul: Filter, Status Badge, Drag Reorder Fix (SELESAI) |
+| **Fase Bug Fix Saat Ini** | BUG-12 ✅ — Backlog Deep Fix: Collapse State, Drag→Backlog Reorder, Task Order, reorder() Status Bug (SELESAI) |
 | **Fase Bug Fix Berikutnya** | — (Ongoing bug fix, upload zip terbaru jika ada bug baru) |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
@@ -58,6 +58,7 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 | BUG-9 | Route Fix: Absolute Path → Relative Path (index.html, 404.html, manifest.json, sw.js) | ✅ Selesai | 2026-02-27 |
 | BUG-10 | Navbar Dropdown Fix (position:fixed) + Dashboard My Tasks Overhaul | ✅ Selesai | 2026-02-27 |
 | BUG-11 | Backlog: Filter Bar, Status Badge, Due Date, Drag Reorder Fix, Order on Add | ✅ Selesai | 2026-02-27 |
+| BUG-12 | Backlog Deep Fix: Collapse State, Drag→Backlog Reorder, Task.reorder() Status Bug, _nextOrder Fix, addTask Batch | ✅ Selesai | 2026-02-27 |
 
 ---
 
@@ -1194,5 +1195,49 @@ Widget My Tasks hanya menampilkan project dot (bukan label), badge type, dan due
 
 ---
 
-*SIMPRO v1.0.5 — Offline-first. Zero server. Pure localStorage.*  
+### BUG-12 — Backlog Deep Fix: Order, Collapse & Drag
+
+**2026-02-27** | ✅
+
+**Bug yang Diperbaiki:**
+
+**1. Task.reorder() memfilter berdasarkan status (BUG KRITIS):**
+- Sebelum: `reorder()` di `task.js` memfilter sibling tasks berdasarkan `status` — artinya task dengan status berbeda tidak ikut di-reorder bersama. Di backlog/sprint view yang menampilkan semua task lintas status, ini menyebabkan order visual ≠ order actual di storage
+- Sesudah: ditambahkan parameter `filterByStatus` internal. Saat dipanggil dari backlog drag-drop (dengan `targetStatus = null`), reorder dilakukan lintas semua status dalam sprint/backlog — konsisten dengan tampilan visual
+
+**2. `_nextOrder()` memfilter berdasarkan status (BUG):**
+- Sebelum: task baru dibuat dengan `order = jumlah task berstatus sama` — bisa bentrok dengan task lain yang punya status berbeda
+- Sesudah: `_nextOrder()` tidak lagi menerima parameter `status`, menghitung max order dari SEMUA task dalam sprint/backlog, lalu +1
+
+**3. Drag sprint → backlog tidak mengatur posisi drop (BUG KRITIS):**
+- Sebelum: saat task dari sprint di-drag ke backlog, hanya `Sprint.removeTask()` yang dipanggil — task muncul di posisi random di backlog bukan di titik drop yang dituju
+- Sesudah: menggunakan `Task.reorder()` dengan `targetSprintId = null` dan `insertIdx` berdasarkan posisi drop visual di backlog
+
+**4. Collapse state sprint direset setiap `_render()` (BUG UX):**
+- Sebelum: setiap kali filter berubah atau ada aksi yang memanggil `_render()`, semua sprint kembali ke posisi expanded — user tidak bisa collapse sprint lalu filter
+- Sesudah: ditambah `_collapseState` object yang menyimpan state `{ sprintId: boolean }`. State disimpan saat toggle, diterapkan kembali saat render. Reset hanya saat ganti project
+
+**5. `_showAddTaskModal` multiple Storage.update menyebabkan partial re-render (BUG):**
+- Sebelum: `Sprint.addTask()` dipanggil per task (yang emit `task:updated` → `_render()`), kemudian `Storage.update` order dipanggil lagi — menyebabkan render antara, task muncul di order tidak benar sebelum di-update
+- Sesudah: semua task diproses dalam satu `Storage.update` batch, tidak ada intermediate emit. `_render()` hanya dipanggil sekali di akhir
+
+**6. `memberIds` crash di `_getVisibleProjects` dan `_renderFilterBar` (BUG):**
+- Sebelum: `p.memberIds.includes()` crash jika `memberIds` tidak ada (undefined)
+- Sesudah: tambah `Array.isArray(p.memberIds)` guard di kedua tempat
+
+**7. `pointercancel` tidak ditangani di drag-drop (BUG):**
+- Sebelum: jika browser mengambil kendali pointer (e.g. scroll pada mobile, modal popup), `pointercancel` fired tapi drag state tidak dibersihkan — ghost tetap di layar
+- Sesudah: tambah `addEventListener('pointercancel', _onUp, { once: true })` dan cleanup di `_onUp`
+
+**8. `close()` dipanggil setelah `_render()` di `_confirmStartSprint` (BUG MINOR):**
+- Sebelum: `close()` setelah `_render()` — modal element sudah hilang dari DOM (karena render ulang) tapi close masih dipanggil
+- Sesudah: urutan diperbaiki: `close()` dipanggil sebelum `_render()`
+
+**File yang Dimodifikasi:**
+- `assets/js/pages/backlog.js` (v0.8.1)
+- `assets/js/modules/task.js` (v0.8.1)
+
+---
+
+*SIMPRO v1.0.6 — Offline-first. Zero server. Pure localStorage.*  
 *README ini adalah sumber kebenaran tunggal. Tidak ada file dokumentasi lain yang diperlukan.*

@@ -1,8 +1,10 @@
-/* SIMPRO Page: backlog — Sprint Planning & Backlog v0.8.0 */
+/* SIMPRO Page: backlog — Sprint Planning & Backlog v0.8.1 */
 const Page = (() => {
   let _session = null;
   let _project = null;
   let _filters = { status: '', type: '', priority: '', assignee: '' };
+  // BUG-12 FIX: Preserve collapse state across renders
+  let _collapseState = {}; // { sprintId: true } = collapsed; 'backlog': true = backlog collapsed
 
   // Drag state
   let _drag = {
@@ -20,7 +22,8 @@ const Page = (() => {
     if (_session.role === 'admin' || _session.role === 'pm') {
       return projects.filter(p => p.status !== 'archived');
     }
-    return projects.filter(p => p.memberIds && p.memberIds.includes(_session.userId) && p.status !== 'archived');
+    // BUG-12 FIX: Guard against undefined memberIds
+    return projects.filter(p => Array.isArray(p.memberIds) && p.memberIds.includes(_session.userId) && p.status !== 'archived');
   }
 
   function _canManage() {
@@ -152,7 +155,7 @@ const Page = (() => {
       : '';
 
     return `
-      <div class="sprint-section ${isActive ? 'is-active' : ''}" data-sprint-id="${sprint.id}">
+      <div class="sprint-section ${isActive ? 'is-active' : ''} ${_collapseState[sprint.id] ? 'collapsed' : ''}" data-sprint-id="${sprint.id}">
         <div class="sprint-header" data-collapse-sprint="${sprint.id}">
           <i class="sprint-collapse-icon" data-lucide="chevron-down" style="width:16px;height:16px;"></i>
           <span class="sprint-name">${Utils.escapeHtml(sprint.name)}</span>
@@ -192,7 +195,7 @@ const Page = (() => {
       : `<li class="sprint-empty-state"><i data-lucide="${allTasks.length ? 'filter-x' : 'check-circle'}" style="width:16px;height:16px;"></i> ${allTasks.length ? 'Tidak ada task yang cocok filter' : 'Backlog kosong'}</li>`;
 
     return `
-      <div class="backlog-section" id="backlog-section">
+      <div class="backlog-section ${_collapseState['backlog'] ? 'collapsed' : ''}" id="backlog-section">
         <div class="backlog-section-header" data-collapse-backlog="1">
           <i class="sprint-collapse-icon" data-lucide="chevron-down" style="width:16px;height:16px;"></i>
           <span class="backlog-section-title">Backlog</span>
@@ -213,7 +216,8 @@ const Page = (() => {
   function _renderFilterBar() {
     const users = _getUsers().filter(u => {
       const proj = _project;
-      return proj && proj.memberIds && proj.memberIds.includes(u.id);
+      // BUG-12 FIX: Guard against undefined memberIds
+      return proj && Array.isArray(proj.memberIds) && proj.memberIds.includes(u.id);
     });
     const hasFilter = _filters.status || _filters.type || _filters.priority || _filters.assignee;
     return `
@@ -304,6 +308,8 @@ const Page = (() => {
       const projects = _getVisibleProjects();
       _project = projects.find(p => p.id === e.target.value) || _project;
       _filters = { status: '', type: '', priority: '', assignee: '' };
+      // BUG-12 FIX: Reset collapse state when project changes
+      _collapseState = {};
       _render();
     });
 
@@ -353,7 +359,13 @@ const Page = (() => {
       const collapseEl = e.target.closest('[data-collapse-sprint]');
       if (collapseEl) {
         const s = collapseEl.closest('.sprint-section');
-        if (s) { s.classList.toggle('collapsed'); if (window.lucide) lucide.createIcons(); }
+        if (s) {
+          s.classList.toggle('collapsed');
+          // BUG-12 FIX: Persist collapse state so it survives re-renders
+          const sid = collapseEl.dataset.collapseSprint;
+          _collapseState[sid] = s.classList.contains('collapsed');
+          if (window.lucide) lucide.createIcons();
+        }
         return;
       }
 
@@ -361,7 +373,12 @@ const Page = (() => {
       const collapseBacklog = e.target.closest('[data-collapse-backlog]');
       if (collapseBacklog) {
         const sec = document.getElementById('backlog-section');
-        if (sec) { sec.classList.toggle('collapsed'); if (window.lucide) lucide.createIcons(); }
+        if (sec) {
+          sec.classList.toggle('collapsed');
+          // BUG-12 FIX: Persist collapse state
+          _collapseState['backlog'] = sec.classList.contains('collapsed');
+          if (window.lucide) lucide.createIcons();
+        }
         return;
       }
 
@@ -462,11 +479,14 @@ const Page = (() => {
       const result = Sprint.start(sprintId);
       if (result.error === 'active_exists') {
         App.Toast.error(`Sprint "${result.sprintName}" sudah aktif`);
+        close();
       } else if (result.ok) {
+        close();
         App.Toast.success('Sprint dimulai!');
         _render();
+      } else {
+        close();
       }
-      close();
     });
   }
 
@@ -593,20 +613,22 @@ const Page = (() => {
     overlay.querySelector('#m-add').addEventListener('click', () => {
       const checked = [...overlay.querySelectorAll('input[type=checkbox]:checked')];
       if (!checked.length) { App.Toast.error('Pilih minimal satu task'); return; }
-      // Add tasks with proper order
+      // BUG-12 FIX: Add all tasks, compute order after all added to avoid partial re-renders
+      // Sprint.addTask emits task:updated which can trigger _render, so update order in same pass
       const sprintTasks = Storage.query('sp_tasks', t => t.sprintId === sprintId && !t.parentId);
       let nextOrder = sprintTasks.length > 0
         ? Math.max(...sprintTasks.map(t => t.order || 0)) + 1
         : 0;
-      checked.forEach(cb => {
-        Sprint.addTask(sprintId, cb.value);
-        // Update order after adding
-        Storage.update('sp_tasks', arr => arr.map(t =>
-          t.id === cb.value ? { ...t, order: nextOrder++ } : t
-        ));
-      });
+      const taskIdsToAdd = checked.map(cb => cb.value);
+      // Build order map first
+      const orderMap = {};
+      taskIdsToAdd.forEach(id => { orderMap[id] = nextOrder++; });
+      // Update all at once in a single Storage.update call to avoid multiple renders
+      Storage.update('sp_tasks', arr => arr.map(t =>
+        orderMap[t.id] !== undefined ? { ...t, sprintId, order: orderMap[t.id], updatedAt: Utils.nowISO() } : t
+      ));
       close();
-      App.Toast.success(`${checked.length} task ditambahkan ke sprint`);
+      App.Toast.success(`${taskIdsToAdd.length} task ditambahkan ke sprint`);
       _render();
     });
   }
@@ -644,6 +666,8 @@ const Page = (() => {
       _drag._moveHandler = _onMove;
       handle.addEventListener('pointermove', _drag._moveHandler);
       handle.addEventListener('pointerup', _onUp, { once: true });
+      // BUG-12 FIX: Also handle pointercancel (e.g. touch interrupted, browser takes control)
+      handle.addEventListener('pointercancel', _onUp, { once: true });
       _drag._handle = handle;
     });
   }
@@ -680,6 +704,8 @@ const Page = (() => {
     // Cleanup pointermove listener
     if (_drag._handle && _drag._moveHandler) {
       _drag._handle.removeEventListener('pointermove', _drag._moveHandler);
+      // BUG-12 FIX: Also remove pointercancel if still pending (when pointerup fires first)
+      _drag._handle.removeEventListener('pointercancel', _onUp);
     }
 
     document.querySelectorAll('.task-row.dragging').forEach(el => el.classList.remove('dragging'));
@@ -692,15 +718,25 @@ const Page = (() => {
       if (_drag.sourceSprintId !== targetSprintId) {
         // Moving BETWEEN sprints (or sprint ↔ backlog)
         if (targetSprintId) {
-          // Compute order position at drop target
+          // Compute order position at drop target (moving TO a sprint)
           const siblings = Storage.query('sp_tasks', t => t.sprintId === targetSprintId && !t.parentId)
             .sort((a, b) => (a.order || 0) - (b.order || 0));
           const targetIdx = siblings.findIndex(t => t.id === targetTaskId);
           const insertIdx = _drag.dropBefore ? targetIdx : targetIdx + 1;
           Task.reorder(_drag.taskId, Math.max(0, insertIdx), targetSprintId, null);
         } else {
-          // Move to backlog
-          Sprint.removeTask(_drag.taskId);
+          // BUG-12 FIX: Moving TO backlog — use Task.reorder to set proper order at drop position
+          const backlogTasks = Storage.query('sp_tasks', t =>
+            t.projectId === _project.id && !t.sprintId && !t.parentId
+          ).sort((a, b) => (a.order || 0) - (b.order || 0));
+          const targetIdx = backlogTasks.findIndex(t => t.id === targetTaskId);
+          if (targetIdx !== -1) {
+            const insertIdx = _drag.dropBefore ? targetIdx : targetIdx + 1;
+            Task.reorder(_drag.taskId, Math.max(0, insertIdx), null, null);
+          } else {
+            // Drop on empty backlog or no matching task found — just move to backlog
+            Sprint.removeTask(_drag.taskId);
+          }
         }
         _render();
       } else {

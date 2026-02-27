@@ -1,4 +1,4 @@
-/* SIMPRO Module: task */
+/* SIMPRO Module: task — v0.8.1 (BUG-12: reorder fix, _nextOrder fix) */
 const Task = (() => {
 
   function _session() {
@@ -13,13 +13,16 @@ const Task = (() => {
     return false;
   }
 
-  function _nextOrder(projectId, sprintId, status) {
+  // BUG-12 FIX: Order new tasks at end of all tasks in sprint/backlog (not per-status)
+  // so the visual order in backlog view is consistent
+  function _nextOrder(projectId, sprintId) {
     const tasks = Storage.query('sp_tasks', t =>
       t.projectId === projectId &&
       t.sprintId === sprintId &&
-      t.status === status
+      !t.parentId
     );
-    return tasks.length;
+    if (!tasks.length) return 0;
+    return Math.max(...tasks.map(t => t.order || 0)) + 1;
   }
 
   function create(data) {
@@ -62,7 +65,7 @@ const Task = (() => {
       estimatedHours: data.estimatedHours != null ? Number(data.estimatedHours) : null,
       loggedHours: 0,
       dueDate: data.dueDate || null,
-      order: data.order != null ? data.order : _nextOrder(data.projectId, data.sprintId || null, data.status || 'todo'),
+      order: data.order != null ? data.order : _nextOrder(data.projectId, data.sprintId || null),
       createdAt: now,
       updatedAt: now,
     };
@@ -144,15 +147,18 @@ const Task = (() => {
     if (!task) return false;
 
     const resolvedSprintId = targetSprintId !== undefined ? targetSprintId : task.sprintId;
-    const resolvedStatus   = targetStatus || task.status;
+    // BUG-12 FIX: When targetStatus is explicitly null, keep existing task status unchanged
+    // This allows backlog/sprint drag-drop to reorder across all statuses visually
+    const resolvedStatus = targetStatus != null ? targetStatus : task.status;
+    const filterByStatus = targetStatus != null;
 
     const siblings = Storage.query('sp_tasks', t =>
       t.projectId === task.projectId &&
       t.sprintId === resolvedSprintId &&
-      t.status === resolvedStatus &&
+      (filterByStatus ? t.status === resolvedStatus : true) &&
       t.id !== taskId &&
       !t.parentId
-    ).sort((a, b) => a.order - b.order);
+    ).sort((a, b) => (a.order || 0) - (b.order || 0));
 
     siblings.splice(newOrder, 0, { id: taskId });
 
