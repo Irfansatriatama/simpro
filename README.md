@@ -30,9 +30,9 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | 0.8.0 |
-| **Fase Saat Ini** | FASE 8 — Sprint Active View ✅ |
-| **Fase Berikutnya** | FASE 9 — Gantt Chart & Milestone |
+| **Versi App** | 0.9.0 |
+| **Fase Saat Ini** | FASE 9 — Gantt Chart & Milestone ✅ |
+| **Fase Berikutnya** | FASE 10 — Time Tracking |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
 | **PWA** | Aktif sejak Fase 1 (manifest.json + sw.js) |
@@ -1402,16 +1402,42 @@ Log ini diupdate **setiap akhir fase** oleh Claude. Mencatat apa yang sudah dike
 ---
 
 #### FASE 9 — Gantt Chart & Milestone
-**Versi:** v0.9.0 | **Tanggal:** — | **Status:** Belum dikerjakan
+**Versi:** v0.9.0 | **Tanggal:** 2026-02-27 | **Status:** ✅ Selesai
 
 **File Ditambahkan:**
-*(diisi setelah fase selesai)*
+- `assets/css/gantt.css` — Layout gantt page, left panel rows, SVG area, zoom buttons, milestone items, empty states
+- `assets/js/modules/gantt.js` — calculateLayout, getTasksWithDates, renderToSVG, getZoomConfig
+- `assets/js/modules/milestone.js` — create, getByProject, getById, update, remove, checkStatus
+- `assets/js/pages/gantt.js` — Logic halaman Gantt penuh
 
 **File Diubah:**
-*(diisi setelah fase selesai)*
+- `pages/gantt.html` — Implementasi penuh: load gantt.css + semua modul yang dibutuhkan
+- `sw.js` — Versi cache → v0.9.0, tambah gantt.css, gantt.js, milestone.js ke SHELL_FILES
+- `README_SIMPRO.md` — Update status versi, log fase
+
+**Fitur yang Diimplementasikan:**
+- **Toolbar**: project selector, tombol Milestones (PM/Admin), zoom group (Minggu/Bulan/Kuartal)
+- **Split layout**: kolom kiri (daftar task + milestone) sinkron scroll vertikal dengan area chart kanan
+- **Gantt SVG murni** (tanpa library): grid tanggal, header adaptif per zoom (hari/minggu/bulan), bar task warna per status, diamond marker milestone, garis "Hari Ini" merah
+- **Zoom Week**: colWidth 40px, header hari, weekend shading abu-abu
+- **Zoom Month**: colWidth 16px, dual-header (bulan di atas, minggu di bawah)
+- **Zoom Quarter**: colWidth 6px, dual-header (bulan di atas, nomor minggu di bawah)
+- **Klik bar task** → navigasi ke task detail
+- **Modal Milestones**: list semua milestone project, tambah/edit/delete (PM/Admin only)
+- **Modal add/edit milestone**: nama, deskripsi, due date, status (open/selesai/terlewat)
+- **Auto-check status**: milestone dengan dueDate < hari ini otomatis → "Terlewat" saat render
+- **Info banner**: task tanpa due date diberi tahu jumlahnya (tidak muncul di Gantt)
+- **Empty state**: jika tidak ada task/milestone dengan tanggal
+- Scroll horizontal smooth di area chart; today marker di-center-kan saat load
+- Role guard: Viewer tidak bisa manage milestone
 
 **Catatan Teknis:**
-*(diisi setelah fase selesai)*
+- SVG dirender sebagai string HTML — tidak menggunakan Canvas API atau library chart
+- `Gantt.calculateLayout()` menentukan startDate dan totalDays dari semua tanggal task+milestone+today
+- `_buildHeaderGroups()` generate header adaptif sesuai zoom (hari/minggu/bulan grouping)
+- Sync scroll vertikal antara `.gantt-left-rows` dan `.gantt-right` via scroll event listeners dengan flag `_syncScrolling` untuk mencegah loop
+- Task tanpa `startDate` menggunakan `dueDate` sebagai titik mulai bar (single-day bar)
+- `Milestone.checkStatus()` dipanggil tiap render untuk update status missed secara otomatis
 
 ---
 

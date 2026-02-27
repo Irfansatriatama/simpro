@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="/assets/css/reset.css">
   <link rel="stylesheet" href="/assets/css/layout.css">
   <link rel="stylesheet" href="/assets/css/components.css">
+  <link rel="stylesheet" href="/assets/css/gantt.css">
 </head>
 <body data-page="gantt">
 
@@ -27,13 +28,9 @@
   <aside id="sidebar" class="sidebar"></aside>
   <div class="main-area">
     <header class="topbar"></header>
-    <main class="main-content" id="main-content">
-      <div class="page-header">
-        <div class="page-header-left">
-          <h1 class="page-title">Gantt Chart</h1>
-        </div>
-      </div>
-      <p style="color:var(--color-text-2);font-size:var(--text-sm);">Halaman ini akan tersedia di fase berikutnya.</p>
+    <main class="main-content" id="main-content" style="padding:0;display:flex;flex-direction:column;overflow:hidden;height:calc(100vh - var(--topbar-height));">
+      <div id="gantt-toolbar" class="gantt-toolbar"></div>
+      <div id="gantt-container" style="flex:1;overflow:hidden;display:flex;flex-direction:column;"></div>
     </main>
   </div>
 </div>
@@ -46,6 +43,12 @@
 <script src="/assets/js/core/app.js"></script>
 <script src="/assets/js/core/router.js"></script>
 <script src="/assets/js/core/shell.js"></script>
+<script src="/assets/js/modules/project.js"></script>
+<script src="/assets/js/modules/task.js"></script>
+<script src="/assets/js/modules/comment.js"></script>
+<script src="/assets/js/modules/label.js"></script>
+<script src="/assets/js/modules/milestone.js"></script>
+<script src="/assets/js/modules/gantt.js"></script>
 <script src="/assets/js/pages/gantt.js"></script>
 <script>
   Auth.requireAuth();
