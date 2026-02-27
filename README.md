@@ -30,9 +30,9 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | 0.7.0 |
-| **Fase Saat Ini** | FASE 7 — Sprint Planning & Backlog ✅ |
-| **Fase Berikutnya** | FASE 8 — Sprint Active View |
+| **Versi App** | 0.8.0 |
+| **Fase Saat Ini** | FASE 8 — Sprint Active View ✅ |
+| **Fase Berikutnya** | FASE 9 — Gantt Chart & Milestone |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
 | **PWA** | Aktif sejak Fase 1 (manifest.json + sw.js) |
@@ -1099,7 +1099,7 @@ Log ini diupdate **setiap akhir fase** oleh Claude. Mencatat apa yang sudah dike
 | 0.5.0 | FASE 5 | — | Belum dikerjakan | Task Management: CRUD & Task Detail |
 | 0.6.0 | FASE 6 | — | Belum dikerjakan | Kanban Board |
 | 0.7.0 | FASE 7 | — | Belum dikerjakan | Sprint Planning & Backlog |
-| 0.8.0 | FASE 8 | — | Belum dikerjakan | Sprint Active View |
+| 0.8.0 | FASE 8 | 2026-02-27 | ✅ Selesai | Sprint Active View |
 | 0.9.0 | FASE 9 | — | Belum dikerjakan | Gantt Chart & Milestone |
 | 0.10.0 | FASE 10 | — | Belum dikerjakan | Time Tracking |
 | 0.11.0 | FASE 11 | — | Belum dikerjakan | Notifikasi In-App |
@@ -1368,16 +1368,36 @@ Log ini diupdate **setiap akhir fase** oleh Claude. Mencatat apa yang sudah dike
 ---
 
 #### FASE 8 — Sprint Active View
-**Versi:** v0.8.0 | **Tanggal:** — | **Status:** Belum dikerjakan
+**Versi:** v0.8.0 | **Tanggal:** 2026-02-27 | **Status:** ✅ Selesai
 
 **File Ditambahkan:**
-*(diisi setelah fase selesai)*
+- `assets/js/pages/sprint.js` — Logic halaman sprint active view penuh
+- CSS sprint active view ditambahkan ke `assets/css/sprint.css`
 
 **File Diubah:**
-*(diisi setelah fase selesai)*
+- `pages/sprint.html` — Implementasi penuh: load sprint.css + kanban.css + semua modul yang dibutuhkan
+- `sw.js` — Versi cache → v0.8.0
+- `README_SIMPRO.md` — Update status versi, log fase
+
+**Fitur yang Diimplementasikan:**
+- **Toolbar**: project selector, label nama sprint aktif
+- **Header sprint**: nama, status badge, goal, tanggal range, sisa hari (badge days remaining/overdue), progress bar done/total task
+- **Mini burndown SVG**: garis planned (diagonal dashed) vs actual (biru solid), today marker merah — tanpa library
+- **3 tab**: Board View / List View / Statistik
+- **Tab Board View**: 4 kolom kompak read-only (To Do/In Progress/In Review/Done), link ke task detail, quick-nav ke Board Penuh & Backlog
+- **Tab List View**: tabel task dengan filter assignee + priority, baris klik ke task detail
+- **Tab Statistik**: stat cards (total/done/in-progress/review/todo), story points summary + progress bar velocity, breakdown per assignee (tabel + mini bar)
+- **State Sprint Completed**: icon, summary (task selesai, velocity SP), link ke backlog + sprint berikutnya (planned)
+- **State No Active Sprint**: empty state dengan link ke backlog
+- **Project selector**: ganti project akan auto-load sprint aktif project tersebut
+- Responsive: 4→2 kolom board di ≤1024px, 1 kolom di mobile
 
 **Catatan Teknis:**
-*(diisi setelah fase selesai)*
+- Burndown SVG dirender inline (tanpa library) dengan koordinat kalkulasi dari totalDays dan story points
+- Elapsed days dihitung dari startDate ke today (clamped 0–totalDays)
+- Actual line hanya snapshot saat ini (Day 0 → Today) karena tidak ada historical data per hari di schema saat ini
+- Sprint module sudah ada dari Fase 7 — tidak ada perubahan pada sprint.js modul
+- Re-render dipicu oleh `App.events.on('task:updated')` untuk konsistensi dengan perubahan dari halaman lain
 
 ---
 

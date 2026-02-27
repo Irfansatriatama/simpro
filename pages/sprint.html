@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sprint — SIMPRO</title>
+  <title>Sprint Active View — SIMPRO</title>
   <script>
     (function() {
       const t = localStorage.getItem('sp_theme');
@@ -18,6 +18,8 @@
   <link rel="stylesheet" href="/assets/css/reset.css">
   <link rel="stylesheet" href="/assets/css/layout.css">
   <link rel="stylesheet" href="/assets/css/components.css">
+  <link rel="stylesheet" href="/assets/css/sprint.css">
+  <link rel="stylesheet" href="/assets/css/kanban.css">
 </head>
 <body data-page="sprint">
 
@@ -27,13 +29,8 @@
   <aside id="sidebar" class="sidebar"></aside>
   <div class="main-area">
     <header class="topbar"></header>
-    <main class="main-content" id="main-content">
-      <div class="page-header">
-        <div class="page-header-left">
-          <h1 class="page-title">Sprint</h1>
-        </div>
-      </div>
-      <p style="color:var(--color-text-2);font-size:var(--text-sm);">Halaman ini akan tersedia di fase berikutnya.</p>
+    <main class="main-content sprint-active-page" id="main-content">
+      <!-- Diisi oleh sprint.js -->
     </main>
   </div>
 </div>
@@ -46,6 +43,12 @@
 <script src="/assets/js/core/app.js"></script>
 <script src="/assets/js/core/router.js"></script>
 <script src="/assets/js/core/shell.js"></script>
+<script src="/assets/js/modules/project.js"></script>
+<script src="/assets/js/modules/sprint.js"></script>
+<script src="/assets/js/modules/task.js"></script>
+<script src="/assets/js/modules/comment.js"></script>
+<script src="/assets/js/modules/label.js"></script>
+<script src="/assets/js/modules/task-modal.js"></script>
 <script src="/assets/js/pages/sprint.js"></script>
 <script>
   Auth.requireAuth();
