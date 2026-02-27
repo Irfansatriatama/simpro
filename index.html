@@ -10,7 +10,7 @@
       if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
     })();
   </script>
-  <link rel="manifest" href="/manifest.json">
+  <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#3B5BDB" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#4C6EF5" media="(prefers-color-scheme: dark)">
   <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
@@ -44,9 +44,9 @@
 
       const session = Storage.get('sp_session');
       if (session && session.userId) {
-        window.location.replace('/pages/dashboard.html');
+        window.location.replace('./pages/dashboard.html');
       } else {
-        window.location.replace('/pages/login.html');
+        window.location.replace('./pages/login.html');
       }
     })();
   </script>

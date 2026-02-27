@@ -265,7 +265,7 @@ const Page = (() => {
       // Navigate to task
       const navTask = e.target.closest('[data-nav-task]');
       if (navTask) {
-        window.location.href = `task-detail.html?id=${navTask.dataset.navTask}`;
+        window.location.href = `./task-detail.html?id=${navTask.dataset.navTask}`;
       }
     });
   }

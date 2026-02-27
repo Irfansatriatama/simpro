@@ -2,7 +2,7 @@
 
 > **Dokumen Tunggal & Tersentralisasi** — Ini adalah satu-satunya README yang perlu dibaca.  
 > Menggabungkan semua informasi dari `README_SIMPRO.md` dan `README_BUG_SIMPRO.md`.  
-> Update terakhir: **2026-02-27** | Versi saat ini: **v1.0.2** (Bug Fix Release — BUG-8 SELESAI)
+> Update terakhir: **2026-02-27** | Versi saat ini: **v1.0.3** (Bug Fix Release — BUG-9 SELESAI)
 
 Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint planning, kanban board, gantt chart, dan laporan progress untuk Project Manager, Developer, Client, dan Manager.
 
@@ -34,9 +34,9 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | v1.0.2 (Bug Fix Release — BUG-8) |
+| **Versi App** | v1.0.3 (Bug Fix Release — BUG-9) |
 | **Fase Pembangunan Selesai** | FASE 16 — Polish, PWA Penuh & Audit Final ✅ |
-| **Fase Bug Fix Saat Ini** | BUG-8 ✅ — Navbar Dropdown, Notifikasi & Dashboard My Tasks (SELESAI) |
+| **Fase Bug Fix Saat Ini** | BUG-9 ✅ — Route Fix: Absolute Path → Relative Path (SELESAI) |
 | **Fase Bug Fix Berikutnya** | — (Ongoing bug fix, upload zip terbaru jika ada bug baru) |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
@@ -55,6 +55,7 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 | BUG-6 | Data & Laporan (Gantt, Reports, IO) | ✅ Selesai | 2026-02-27 |
 | BUG-7 | User & Setting + README Final | ✅ Selesai | 2026-02-27 |
 | BUG-8 | Navbar Dropdown, Notifikasi & Dashboard My Tasks | ✅ Selesai | 2026-02-27 |
+| BUG-9 | Route Fix: Absolute Path → Relative Path (index.html, 404.html, manifest.json, sw.js) | ✅ Selesai | 2026-02-27 |
 
 ---
 
@@ -1057,6 +1058,44 @@ Seluruh JS codebase menggunakan `classList.add('hidden')` / `classList.remove('h
 
 ---
 
-*SIMPRO v1.0.2 — Offline-first. Zero server. Pure localStorage.*  
-*README ini adalah sumber kebenaran tunggal. Tidak ada file dokumentasi lain yang diperlukan.*
+---
+
+### BUG-9 — Route Fix: Absolute Path → Relative Path
+**2026-02-27** | ✅
+
+**Root Cause: `index.html` menggunakan absolute path saat redirect, sehingga gagal di `file://` dan GitHub Pages subdirectory**
+
+Saat user mengakses `simpro/index.html`, redirect diarahkan ke `/pages/dashboard.html` atau `/pages/login.html` (absolute). Di lingkungan `file://`, path ini resolve ke root drive. Di GitHub Pages di subdirectory (misal `/simpro/`), path ini salah karena menghilangkan base path repo.
+
+**Fix 1 — `index.html`:**
+- `window.location.replace('/pages/dashboard.html')` → `window.location.replace('./pages/dashboard.html')`
+- `window.location.replace('/pages/login.html')` → `window.location.replace('./pages/login.html')`
+- `href="/manifest.json"` → `href="manifest.json"` (relative)
+
+**Fix 2 — `404.html`:**
+- `href="/assets/css/tokens.css"` → `href="assets/css/tokens.css"` (relative)
+- `href="/assets/css/reset.css"` → `href="assets/css/reset.css"` (relative)
+- `href="/index.html"` → `href="index.html"` (relative)
+
+**Fix 3 — `manifest.json`:**
+- `"start_url": "/index.html"` → `"./index.html"`
+- `"scope": "/"` → `"./"`
+- Semua icon src dan shortcut url: dari `/assets/...` dan `/pages/...` → `./assets/...` dan `./pages/...`
+
+**Fix 4 — `sw.js`:**
+- Cache list berisi hard-coded absolute paths (`/index.html`, `/assets/...`, `/pages/...`)
+- Diganti dengan dynamic BASE path: `const BASE = self.location.pathname.replace(/\/sw\.js$/, '')`
+- Semua file di-cache via template literal: `` `${BASE}/index.html` ``
+- Ini membuat SW bekerja baik di root domain maupun GitHub Pages subdirectory (misal `/simpro/`)
+
+**Fix 5 — `assets/js/core/app.js`:**
+- `navigator.serviceWorker.register('../sw.js')` → ditambah `{ scope: '../' }`
+- Tanpa scope eksplisit, SW di-register dari `pages/` sehingga scope defaultnya hanya `pages/`, bukan seluruh app
+
+**Fix 6 — `assets/js/pages/backlog.js`:**
+- `window.location.href = \`task-detail.html?id=...\`` → ditambah `./` prefix (konsistensi)
+
+---
+
+*SIMPRO v1.0.3 — Offline-first. Zero server. Pure localStorage.*  
 *README ini adalah sumber kebenaran tunggal. Tidak ada file dokumentasi lain yang diperlukan.*
