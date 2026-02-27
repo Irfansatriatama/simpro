@@ -5,6 +5,7 @@ const ProjectsPage = (() => {
   let _editingId = null;
   let _session = null;
   let _selectedColor = '#3B5BDB';
+  let _cardClickListenerAttached = false;
 
   function init() {
     _session = Storage.get('sp_session');
@@ -131,8 +132,9 @@ const ProjectsPage = (() => {
   function _buildCard(project) {
     const stats = Project.getStats(project.id);
     const users = Storage.get('sp_users') || [];
-    const members = project.memberIds.slice(0, 4).map(id => users.find(u => u.id === id)).filter(Boolean);
-    const extraCount = project.memberIds.length - 4;
+    const memberIds = Array.isArray(project.memberIds) ? project.memberIds : [];
+    const members = memberIds.slice(0, 4).map(id => users.find(u => u.id === id)).filter(Boolean);
+    const extraCount = memberIds.length - 4;
     const sprintActive = (Storage.query('sp_sprints', s => s.projectId === project.id && s.status === 'active') || [])[0];
 
     const avatarStack = members.map(u => {
@@ -229,7 +231,7 @@ const ProjectsPage = (() => {
           </div>
           <span class="text-xs text-muted">${stats.done}/${stats.total}</span>
         </td>
-        <td><span class="text-sm">${p.memberIds.length}</span></td>
+        <td><span class="text-sm">${Array.isArray(p.memberIds) ? p.memberIds.length : 0}</span></td>
         <td>${owner ? `<span class="text-sm">${Utils.escapeHtml(owner.name)}</span>` : '—'}</td>
         <td>${p.endDate ? `<span class="text-sm">${Utils.formatDate(p.endDate)}</span>` : '—'}</td>
         <td>
@@ -264,17 +266,34 @@ const ProjectsPage = (() => {
   }
 
   function _bindCardEvents() {
-    // Menu toggle
+    // Menu toggle — use fixed positioning to escape overflow:hidden on card
     document.querySelectorAll('.card-menu-btn').forEach(btn => {
       btn.addEventListener('click', e => {
         e.stopPropagation();
         const id = btn.dataset.id;
         const dropdown = document.querySelector(`.card-menu-dropdown[data-id="${id}"]`);
         if (!dropdown) return;
+
+        const isHidden = dropdown.classList.contains('hidden');
+
+        // Close all dropdowns first
         document.querySelectorAll('.card-menu-dropdown').forEach(d => {
-          if (d !== dropdown) d.classList.add('hidden');
+          d.classList.add('hidden');
+          d.style.top = '';
+          d.style.left = '';
+          d.style.right = '';
         });
-        dropdown.classList.toggle('hidden');
+
+        if (!isHidden) return; // toggle off
+
+        // Position dropdown using fixed coords from button
+        const rect = btn.getBoundingClientRect();
+        dropdown.style.position = 'fixed';
+        dropdown.style.top = (rect.bottom + 4) + 'px';
+        dropdown.style.right = (window.innerWidth - rect.right) + 'px';
+        dropdown.style.left = 'auto';
+        dropdown.style.zIndex = '1600';
+        dropdown.classList.remove('hidden');
       });
     });
 
@@ -315,10 +334,18 @@ const ProjectsPage = (() => {
       });
     });
 
-    // Close menu on outside click
-    document.addEventListener('click', () => {
-      document.querySelectorAll('.card-menu-dropdown').forEach(d => d.classList.add('hidden'));
-    }, { capture: false });
+    // Close menu on outside click — use once-registered global handler via flag
+    if (!_cardClickListenerAttached) {
+      _cardClickListenerAttached = true;
+      document.addEventListener('click', () => {
+        document.querySelectorAll('.card-menu-dropdown').forEach(d => {
+          d.classList.add('hidden');
+          d.style.top = '';
+          d.style.left = '';
+          d.style.right = '';
+        });
+      }, false);
+    }
   }
 
   function _openModal(editId) {
@@ -370,6 +397,7 @@ const ProjectsPage = (() => {
   }
 
   function _save() {
+    try {
     const name = document.getElementById('input-project-name').value.trim();
     const key = document.getElementById('input-project-key').value.trim().toUpperCase();
     const desc = document.getElementById('input-project-desc').value.trim();
@@ -393,7 +421,12 @@ const ProjectsPage = (() => {
       result = Project.create(data);
     }
 
-    if (result && result.error) {
+    if (!result) {
+      _showError('Gagal menyimpan project. Pastikan kamu sudah login.');
+      return;
+    }
+
+    if (result.error) {
       if (result.error === 'key_exists') _showError(`Key "${key}" sudah digunakan project lain.`);
       else if (result.error === 'name_exists') _showError(`Nama "${name}" sudah digunakan project lain.`);
       else _showError('Gagal menyimpan project.');
@@ -403,6 +436,10 @@ const ProjectsPage = (() => {
     _closeModal();
     App.Toast.success(_editingId ? 'Project diperbarui' : 'Project berhasil dibuat');
     _render();
+  } catch(err) {
+    console.error('Error saving project:', err);
+    _showError('Terjadi error saat menyimpan project. Lihat console untuk detail.');
+  }
   }
 
   function _showError(msg) {

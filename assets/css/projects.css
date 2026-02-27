@@ -152,11 +152,11 @@
   flex-shrink: 0;
 }
 .card-menu-dropdown {
-  position: absolute;
+  position: fixed; /* overridden by JS with exact coords, but fixed as default */
   right: 0;
   top: 100%;
   margin-top: 4px;
-  z-index: 200;
+  z-index: 1600;
   min-width: 160px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);

@@ -34,9 +34,9 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | v1.0.6 (Bug Fix Release — BUG-12) |
+| **Versi App** | v1.0.7 (Bug Fix Release — BUG-13) |
 | **Fase Pembangunan Selesai** | FASE 16 — Polish, PWA Penuh & Audit Final ✅ |
-| **Fase Bug Fix Saat Ini** | BUG-12 ✅ — Backlog Deep Fix: Collapse State, Drag→Backlog Reorder, Task Order, reorder() Status Bug (SELESAI) |
+| **Fase Bug Fix Saat Ini** | BUG-13 ✅ — Projects: Create Project Fix, Card Dropdown Menu Fix (position:fixed) (SELESAI) |
 | **Fase Bug Fix Berikutnya** | — (Ongoing bug fix, upload zip terbaru jika ada bug baru) |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
@@ -59,6 +59,7 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 | BUG-10 | Navbar Dropdown Fix (position:fixed) + Dashboard My Tasks Overhaul | ✅ Selesai | 2026-02-27 |
 | BUG-11 | Backlog: Filter Bar, Status Badge, Due Date, Drag Reorder Fix, Order on Add | ✅ Selesai | 2026-02-27 |
 | BUG-12 | Backlog Deep Fix: Collapse State, Drag→Backlog Reorder, Task.reorder() Status Bug, _nextOrder Fix, addTask Batch | ✅ Selesai | 2026-02-27 |
+| BUG-13 | Projects: Create Project Fix (null check, try-catch, memberIds guard), Card Dropdown Menu Fix (position:fixed, no duplicate listener) | ✅ Selesai | 2026-02-27 |
 
 ---
 
@@ -1239,5 +1240,36 @@ Widget My Tasks hanya menampilkan project dot (bukan label), badge type, dan due
 
 ---
 
-*SIMPRO v1.0.6 — Offline-first. Zero server. Pure localStorage.*  
+*SIMPRO v1.0.7 — Offline-first. Zero server. Pure localStorage.*  
 *README ini adalah sumber kebenaran tunggal. Tidak ada file dokumentasi lain yang diperlukan.*
+
+---
+
+### BUG-13 — Projects: Create Project Fix & Card Dropdown Menu Fix
+
+**2026-02-27** | ✅
+
+**Bug yang Diperbaiki:**
+
+**1. Create Project gagal tanpa pesan error yang jelas (BUG KRITIS):**
+- Sebelum: `_save()` hanya cek `result && result.error` — jika `Project.create()` return `null` (session tidak valid atau error internal), kondisi ini false → `_closeModal()` dan toast success dijalankan tapi project tidak tersimpan. User tidak mendapat feedback error.
+- Sesudah: tambah check `if (!result)` sebelum `result.error` check → tampilkan pesan error "Gagal menyimpan project. Pastikan kamu sudah login."
+- Tambah try-catch di seluruh `_save()` → error runtime (field tidak ditemukan, dsb) tidak lagi silent fail
+- Tambah `memberIds` guard di `_buildCard` dan `_buildListTable`: `Array.isArray(p.memberIds) ? p.memberIds : []` → tidak crash jika project baru tidak punya `memberIds`
+
+**2. Card Dropdown Menu tampil di dalam card (BUG VISUAL KRITIS):**
+- Root cause: `.project-card` memiliki `overflow: hidden` (untuk color bar + border radius), menyebabkan `.card-menu-dropdown` dengan `position: absolute` terpotong di dalam bounding box card — dropdown items tidak terlihat / terpotong
+- Solusi: Gunakan `position: fixed` dengan kalkulasi koordinat dari `btn.getBoundingClientRect()` (sama dengan fix BUG-10 untuk navbar dropdown)
+- Saat tombol ⋯ diklik, hitung `rect.bottom` dan `window.innerWidth - rect.right` lalu set ke style dropdown secara dinamis
+- CSS `.card-menu-dropdown` diupdate: `position: fixed; z-index: 1600` sebagai default
+- Saat dropdown ditutup (outside click atau toggle), reset style `top/left/right` ke string kosong
+
+**3. Duplicate event listener `document.addEventListener('click')` (BUG MEMORY LEAK):**
+- Sebelum: `_bindCardEvents()` dipanggil setiap `_render()` — setiap render menambahkan satu global click listener untuk menutup dropdown. Setelah 10 render, ada 10 listener aktif.
+- Sesudah: tambah flag `_cardClickListenerAttached` — listener hanya didaftarkan sekali. Reset style di close handler juga ditambahkan.
+
+**File yang Dimodifikasi:**
+- `assets/js/pages/projects.js` (v0.13.1)
+- `assets/css/projects.css` (v0.13.1)
+- `README.md` (v1.0.7)
+
