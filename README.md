@@ -1609,17 +1609,19 @@ Widget My Tasks hanya menampilkan project dot (bukan label), badge type, dan due
 - Sebelum: border tipis 1px, opacity border rendah (rgba 0.25), font-weight 600
 - Sesudah: border tebal 1.5px, warna border lebih jenuh dan solid (`#69DB7C`, `#FFD43B`, `#74C0FC`, `#ADB5BD`), font-weight 700, letter-spacing 0.01em — badge jauh lebih mudah dibaca dan dibedakan satu sama lain.
 
-**3. `inviteBtn` null guard di `_renderMembers()` — BUG:**
-- Sebelum: jika `btn-invite-member` tidak ada di DOM (misal error render), `inviteBtn.classList.remove(...)` crash dengan TypeError dan menghentikan seluruh `_renderMembers()`
-- Sesudah: tambah `if (inviteBtn)` null guard sebelum manipulasi classList dan binding onclick
+**3. `inviteBtn` null guard + ganti `onclick` ke `addEventListener` — BUG DEFINITIF:**
+- Root cause yang ditemukan setelah investigasi mendalam: `inviteBtn.onclick = _openInviteModal` di-set saat `init()` — SEBELUM user klik tab Members. Jika ada re-render atau kondisi browser tertentu, `onclick` property bisa ter-overwrite atau tidak terpanggil reliably.
+- Fix 1: `_bindTabs()` sekarang memanggil `_renderMembers()` saat tab Members diklik — memastikan binding selalu fresh setiap kali panel dibuka.
+- Fix 2: Ganti `inviteBtn.onclick = fn` ke pattern **clone node + addEventListener**: node di-clone untuk hapus semua listener lama, lalu fresh `addEventListener('click', _openInviteModal)` dipasang. Ini pattern paling defensif dan tidak bisa di-overwrite.
+- Fix 3: Empty state button ganti dari `onclick="document.getElementById('btn-invite-member').click()"` (trigger click pada button lain yang mungkin hidden) ke `addEventListener('click', _openInviteModal)` langsung pada button itu sendiri.
 
-**4. `_saveInvite()` tanpa error handling — BUG:**
-- Sebelum: `Project.addMember()` dipanggil tanpa try-catch — jika gagal (null return atau exception), tidak ada feedback ke user, modal tidak merespons
-- Sesudah: bungkus seluruh body dalam try-catch; cek `result` dari `addMember` — jika null, tampilkan error inline di `invite-form-error`; jika exception, tampilkan pesan error ke user
+**4. `getForUser()` crash tanpa guard `memberIds` — BUG:**
+- `p.memberIds.includes(userId)` tanpa guard — crash jika project lama tidak punya `memberIds`
+- Fix: `Array.isArray(p.memberIds) && p.memberIds.includes(userId)`
 
-**5. `removeMember` crash jika `memberIds` undefined — BUG:**
-- Sebelum: `p.memberIds.filter(...)` dipanggil langsung — crash jika project lama tidak punya field `memberIds`
-- Sesudah: `(Array.isArray(p.memberIds) ? p.memberIds : []).filter(...)` — safe untuk semua kondisi data
+**5. `_saveInvite` tambah `console.error` di catch:**
+- Error sebelumnya diam-diam di UI dan tidak ada di console — susah debug
+- Sekarang selalu print ke console dengan prefix `[SIMPRO]`
 
 **File yang Dimodifikasi:**
 - `assets/js/core/utils.js` — `getProjectStatusColor`: return `active` bukan `badge-active`

@@ -82,6 +82,9 @@ const ProjectDetailPage = (() => {
         btn.classList.add('active');
         const panel = document.getElementById(`panel-${btn.dataset.tab}`);
         if (panel) panel.classList.add('active');
+        // Re-render tab content saat diklik untuk memastikan binding fresh
+        if (btn.dataset.tab === 'members') _renderMembers();
+        if (btn.dataset.tab === 'settings' && _canManage) _renderSettings();
         if (window.lucide) lucide.createIcons();
       });
     });
@@ -204,8 +207,14 @@ const ProjectDetailPage = (() => {
     if (inviteBtn) {
       if (_canManage) inviteBtn.classList.remove('hidden');
       else inviteBtn.classList.add('hidden');
-      // Bind onclick sebelum early return agar tombol selalu berfungsi
-      inviteBtn.onclick = _openInviteModal;
+      // Ganti onclick ke addEventListener - lebih reliable, hindari override issue
+      // Clone node untuk hapus semua listener lama, lalu attach fresh
+      const newInviteBtn = inviteBtn.cloneNode(true);
+      inviteBtn.parentNode.replaceChild(newInviteBtn, inviteBtn);
+      if (_canManage) {
+        newInviteBtn.classList.remove('hidden');
+        newInviteBtn.addEventListener('click', _openInviteModal);
+      }
     }
 
     const tbody = document.getElementById('members-table-body');
@@ -216,9 +225,11 @@ const ProjectDetailPage = (() => {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-state-icon"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           <p class="empty-state-title">Belum ada member</p>
           <p class="empty-state-desc">Undang member untuk berkolaborasi di project ini.</p>
-          ${_canManage ? `<button class="btn btn-primary btn-sm" style="margin-top:var(--sp-3);" onclick="document.getElementById('btn-invite-member').click()"><i data-lucide="user-plus" width="14" height="14"></i> Undang Member</button>` : ''}
+          ${_canManage ? `<button class="btn btn-primary btn-sm" style="margin-top:var(--sp-3);" id="btn-empty-state-invite"><i data-lucide="user-plus" width="14" height="14"></i> Undang Member</button>` : ''}
         </div>`;
       if (window.lucide) lucide.createIcons();
+      const emptyInviteBtn = document.getElementById('btn-empty-state-invite');
+      if (emptyInviteBtn) emptyInviteBtn.addEventListener('click', _openInviteModal);
       return;
     }
 
@@ -328,6 +339,7 @@ const ProjectDetailPage = (() => {
       App.Toast.success('Member berhasil diundang');
       if (window.lucide) lucide.createIcons();
     } catch (e) {
+      console.error('[SIMPRO] _saveInvite error:', e);
       errEl.textContent = 'Terjadi kesalahan: ' + e.message;
       errEl.classList.remove('hidden');
     }

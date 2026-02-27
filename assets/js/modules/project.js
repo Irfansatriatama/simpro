@@ -47,7 +47,7 @@ const Project = (() => {
   function getForUser(userId, role) {
     const projects = getAll();
     if (role === 'admin' || role === 'pm') return projects;
-    return projects.filter(p => p.memberIds.includes(userId));
+    return projects.filter(p => Array.isArray(p.memberIds) && p.memberIds.includes(userId));
   }
 
   function update(id, data) {
