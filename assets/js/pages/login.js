@@ -55,7 +55,11 @@
     if (result.ok) {
       const params   = new URLSearchParams(window.location.search);
       const redirect = params.get('redirect');
-      window.location.replace(redirect || './dashboard.html');
+      // Hanya ikuti redirect jika berupa nama file .html (bukan path absolut atau URL)
+      const safeRedirect = (redirect && /^[\w\-]+\.html(\?.*)?$/.test(redirect))
+        ? './' + redirect
+        : './dashboard.html';
+      window.location.replace(safeRedirect);
     } else {
       showError(result.error);
       loginBtn.disabled    = false;

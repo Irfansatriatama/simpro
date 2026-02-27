@@ -18,8 +18,12 @@ const Auth = (() => {
 
   function requireAuth() {
     if (!isLoggedIn()) {
-      const currentPath = window.location.pathname + window.location.search + window.location.hash;
-      window.location.href = './login.html?redirect=' + encodeURIComponent(currentPath);
+      // Simpan hanya nama file dari pathname agar kompatibel file://
+      const pathParts = window.location.pathname.split('/');
+      const currentFile = pathParts[pathParts.length - 1] || 'dashboard.html';
+      const currentSearch = window.location.search;
+      const redirectTarget = currentFile + currentSearch + window.location.hash;
+      window.location.href = './login.html?redirect=' + encodeURIComponent(redirectTarget);
     }
   }
 

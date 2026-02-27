@@ -12,7 +12,7 @@
 | Info | Detail |
 |------|--------|
 | **Versi Base** | v1.0.0 (simpro_fase16.zip) |
-| **Fase Bug Saat Ini** | BUG-2 |
+| **Fase Bug Saat Ini** | BUG-3 |
 | **Total Fase Bug** | 7 Fase |
 | **Prioritas** | Kritis — aplikasi tidak bisa digunakan |
 
@@ -391,7 +391,7 @@ BUG-7  ← User & Setting    : members, settings, profile + README final
 | Fase | Nama | Status | Tanggal | Catatan |
 |------|------|--------|---------|---------|
 | BUG-1 | Foundation: Fix Semua Path & Nav Links | ✅ Selesai | 2026-02-27 | Semua path HTML, shell.js, auth.js, dan semua JS pages diperbaiki ke relative path |
-| BUG-2 | Auth: Login, Register & Logout | ⏳ Belum dimulai | — | — |
+| BUG-2 | Auth: Login, Register & Logout | ✅ Selesai | 2026-02-27 | Fix link navigasi login↔register, fix redirect file:// aman di auth.js & login.js |
 | BUG-3 | Shell & Dashboard | ⏳ Belum dimulai | — | — |
 | BUG-4 | Project & Task | ⏳ Belum dimulai | — | — |
 | BUG-5 | Board & Sprint | ⏳ Belum dimulai | — | — |
