@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — SIMPRO</title>
+  <script>
+    (function() {
+      const t = localStorage.getItem('sp_theme');
+      if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/tokens.css">
+  <link rel="stylesheet" href="/assets/css/reset.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    body { min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: var(--color-bg); }
+    .login-wrap { width: 100%; max-width: 400px; padding: var(--sp-4); }
+    .login-card { background: var(--color-surface); border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl); padding: var(--sp-8); box-shadow: var(--shadow-md); }
+    .login-logo { display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-8); }
+    .login-logo-mark { width: 36px; height: 36px; background: var(--color-accent); border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 18px; flex-shrink: 0; }
+    .login-logo-text { font-size: var(--text-lg); font-weight: 700; color: var(--color-text); letter-spacing: -0.02em; }
+    .login-logo-sub { font-size: var(--text-xs); color: var(--color-text-3); }
+    .login-title { font-size: var(--text-xl); font-weight: 700; color: var(--color-text);
+      letter-spacing: -0.02em; margin-bottom: var(--sp-1); }
+    .login-subtitle { font-size: var(--text-sm); color: var(--color-text-2); margin-bottom: var(--sp-6); }
+    .login-form { display: flex; flex-direction: column; gap: var(--sp-4); }
+    .login-footer { margin-top: var(--sp-5); text-align: center; font-size: var(--text-sm); color: var(--color-text-3); }
+    .login-footer a { color: var(--color-accent); cursor: pointer; }
+    .login-footer a:hover { text-decoration: underline; }
+    .error-banner { background: var(--color-danger-bg); border: 1px solid var(--color-danger);
+      border-radius: var(--radius-md); padding: var(--sp-3); font-size: var(--text-sm);
+      color: var(--color-danger); display: none; }
+    .error-banner.visible { display: block; }
+    .default-accounts { margin-top: var(--sp-6); padding: var(--sp-4); background: var(--color-surface-2);
+      border-radius: var(--radius-md); font-size: var(--text-xs); color: var(--color-text-2); }
+    .default-accounts strong { display: block; color: var(--color-text-3); text-transform: uppercase;
+      letter-spacing: 0.05em; font-size: 10px; margin-bottom: var(--sp-2); }
+    .account-row { display: flex; justify-content: space-between; padding: 2px 0;
+      font-family: var(--font-mono); font-size: var(--text-xs); cursor: pointer;
+      border-radius: var(--radius-sm); padding: 3px 4px; transition: background var(--transition); }
+    .account-row:hover { background: var(--color-border); }
+    .account-row span { color: var(--color-text-3); }
+  </style>
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="login-logo-mark">S</div>
+        <div>
+          <div class="login-logo-text">SIMPRO</div>
+          <div class="login-logo-sub">Project Management Office</div>
+        </div>
+      </div>
+
+      <h1 class="login-title">Selamat datang</h1>
+      <p class="login-subtitle">Masuk ke workspace kamu</p>
+
+      <div id="error-banner" class="error-banner"></div>
+
+      <form id="login-form" class="login-form" novalidate>
+        <div class="form-group">
+          <label class="form-label required" for="email">Email</label>
+          <input type="email" id="email" class="form-input" placeholder="email@contoh.com" autocomplete="email" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label required" for="password">Password</label>
+          <input type="password" id="password" class="form-input" placeholder="••••••••" autocomplete="current-password" required>
+        </div>
+        <button type="submit" id="login-btn" class="btn btn-primary btn-lg" style="width:100%; justify-content:center;">
+          Masuk
+        </button>
+      </form>
+
+      <div class="login-footer">
+        Belum punya akun? <a id="goto-register" href="/pages/register.html">Daftar sekarang</a>
+      </div>
+
+      <div class="default-accounts">
+        <strong>Akun Demo (klik untuk isi otomatis)</strong>
+        <div class="account-row" data-email="admin@simpro.id" data-pass="admin123">
+          Admin <span>admin@simpro.id / admin123</span>
+        </div>
+        <div class="account-row" data-email="pm@simpro.id" data-pass="pm123">
+          PM <span>pm@simpro.id / pm123</span>
+        </div>
+        <div class="account-row" data-email="dev@simpro.id" data-pass="dev123">
+          Developer <span>dev@simpro.id / dev123</span>
+        </div>
+        <div class="account-row" data-email="viewer@simpro.id" data-pass="viewer123">
+          Viewer <span>viewer@simpro.id / viewer123</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/assets/js/core/utils.js"></script>
+  <script src="/assets/js/core/storage.js"></script>
+  <script src="/assets/js/core/auth.js"></script>
+  <script>
+    (async function() {
+      await Storage.seed();
+
+      // Already logged in → redirect
+      if (Auth.isLoggedIn()) {
+        window.location.replace('/pages/dashboard.html');
+        return;
+      }
+
+      const form = document.getElementById('login-form');
+      const errorBanner = document.getElementById('error-banner');
+      const loginBtn = document.getElementById('login-btn');
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+
+        if (!email || !password) {
+          errorBanner.textContent = 'Email dan password wajib diisi';
+          errorBanner.classList.add('visible');
+          return;
+        }
+
+        loginBtn.disabled = true;
+        loginBtn.textContent = 'Memuat…';
+        errorBanner.classList.remove('visible');
+
+        const result = await Auth.login(email, password);
+
+        if (result.ok) {
+          const params = new URLSearchParams(window.location.search);
+          const redirect = params.get('redirect');
+          window.location.replace(redirect || '/pages/dashboard.html');
+        } else {
+          errorBanner.textContent = result.error;
+          errorBanner.classList.add('visible');
+          loginBtn.disabled = false;
+          loginBtn.textContent = 'Masuk';
+        }
+      });
+
+      // Quick-fill demo accounts
+      document.querySelectorAll('.account-row').forEach(row => {
+        row.addEventListener('click', () => {
+          document.getElementById('email').value = row.dataset.email;
+          document.getElementById('password').value = row.dataset.pass;
+          errorBanner.classList.remove('visible');
+        });
+      });
+
+      if (window.lucide) lucide.createIcons();
+    })();
+  </script>
+</body>
+</html>

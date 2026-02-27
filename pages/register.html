@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daftar — SIMPRO</title>
+  <script>
+    (function() {
+      const t = localStorage.getItem('sp_theme');
+      if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/tokens.css">
+  <link rel="stylesheet" href="/assets/css/reset.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+  <style>
+    body { min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: var(--color-bg); }
+    .reg-wrap { width: 100%; max-width: 400px; padding: var(--sp-4); }
+    .reg-card { background: var(--color-surface); border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl); padding: var(--sp-8); box-shadow: var(--shadow-md); }
+    .reg-logo { display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-8); }
+    .reg-logo-mark { width: 36px; height: 36px; background: var(--color-accent); border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 18px; }
+    .reg-logo-text { font-size: var(--text-lg); font-weight: 700; color: var(--color-text); letter-spacing: -0.02em; }
+    .reg-title { font-size: var(--text-xl); font-weight: 700; color: var(--color-text);
+      letter-spacing: -0.02em; margin-bottom: var(--sp-1); }
+    .reg-subtitle { font-size: var(--text-sm); color: var(--color-text-2); margin-bottom: var(--sp-6); }
+    .reg-form { display: flex; flex-direction: column; gap: var(--sp-4); }
+    .reg-footer { margin-top: var(--sp-5); text-align: center; font-size: var(--text-sm); color: var(--color-text-3); }
+    .reg-footer a { color: var(--color-accent); cursor: pointer; }
+    .error-banner { background: var(--color-danger-bg); border: 1px solid var(--color-danger);
+      border-radius: var(--radius-md); padding: var(--sp-3); font-size: var(--text-sm);
+      color: var(--color-danger); display: none; }
+    .error-banner.visible { display: block; }
+  </style>
+</head>
+<body>
+  <div class="reg-wrap">
+    <div class="reg-card">
+      <div class="reg-logo">
+        <div class="reg-logo-mark">S</div>
+        <div class="reg-logo-text">SIMPRO</div>
+      </div>
+
+      <h1 class="reg-title">Buat akun baru</h1>
+      <p class="reg-subtitle">Bergabung dengan workspace SIMPRO</p>
+
+      <div id="error-banner" class="error-banner"></div>
+
+      <form id="reg-form" class="reg-form" novalidate>
+        <div class="form-group">
+          <label class="form-label required" for="name">Nama Lengkap</label>
+          <input type="text" id="name" class="form-input" placeholder="Nama kamu" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label required" for="email">Email</label>
+          <input type="email" id="email" class="form-input" placeholder="email@contoh.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label required" for="password">Password</label>
+          <input type="password" id="password" class="form-input" placeholder="Min. 6 karakter" required>
+          <span class="form-hint">Minimal 6 karakter</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label required" for="password2">Konfirmasi Password</label>
+          <input type="password" id="password2" class="form-input" placeholder="Ulangi password" required>
+        </div>
+        <button type="submit" id="reg-btn" class="btn btn-primary btn-lg" style="width:100%; justify-content:center;">
+          Buat Akun
+        </button>
+      </form>
+
+      <div class="reg-footer">
+        Sudah punya akun? <a href="/pages/login.html">Masuk</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="/assets/js/core/utils.js"></script>
+  <script src="/assets/js/core/storage.js"></script>
+  <script src="/assets/js/core/auth.js"></script>
+  <script>
+    (async function() {
+      await Storage.seed();
+
+      if (Auth.isLoggedIn()) {
+        window.location.replace('/pages/dashboard.html');
+        return;
+      }
+
+      const settings = Storage.get('sp_settings') || {};
+      if (!settings.allowRegistration) {
+        document.getElementById('reg-form').innerHTML = '<p style="color:var(--color-text-2);font-size:var(--text-sm)">Pendaftaran akun baru saat ini dinonaktifkan. Hubungi administrator.</p>';
+        return;
+      }
+
+      const form = document.getElementById('reg-form');
+      const errorBanner = document.getElementById('error-banner');
+      const regBtn = document.getElementById('reg-btn');
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('name').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const password2 = document.getElementById('password2').value;
+
+        if (!name || !email || !password) {
+          errorBanner.textContent = 'Semua field wajib diisi';
+          errorBanner.classList.add('visible');
+          return;
+        }
+        if (password.length < 6) {
+          errorBanner.textContent = 'Password minimal 6 karakter';
+          errorBanner.classList.add('visible');
+          return;
+        }
+        if (password !== password2) {
+          errorBanner.textContent = 'Konfirmasi password tidak cocok';
+          errorBanner.classList.add('visible');
+          return;
+        }
+
+        const users = Storage.get('sp_users') || [];
+        if (users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
+          errorBanner.textContent = 'Email sudah terdaftar';
+          errorBanner.classList.add('visible');
+          return;
+        }
+
+        regBtn.disabled = true;
+        regBtn.textContent = 'Memuat…';
+        errorBanner.classList.remove('visible');
+
+        const hashed = await Utils.hashPassword(password);
+        const newUser = {
+          id: Utils.generateId('user'),
+          name, email,
+          password: hashed,
+          role: 'developer',
+          avatar: null, bio: '',
+          isActive: true,
+          createdAt: Utils.nowISO(),
+          lastLoginAt: null,
+        };
+
+        Storage.update('sp_users', arr => [...(arr || []), newUser]);
+        const result = await Auth.login(email, password);
+        if (result.ok) {
+          window.location.replace('/pages/dashboard.html');
+        } else {
+          regBtn.disabled = false;
+          regBtn.textContent = 'Buat Akun';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

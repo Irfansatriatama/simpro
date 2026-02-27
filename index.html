@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIMPRO</title>
+  <script>
+    (function() {
+      const t = localStorage.getItem('sp_theme');
+      if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    })();
+  </script>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/assets/icons/icon-192.png" type="image/png">
+  <link rel="stylesheet" href="/assets/css/tokens.css">
+  <link rel="stylesheet" href="/assets/css/reset.css">
+  <style>
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .loader { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .loader-mark { width: 36px; height: 36px; background: var(--color-accent); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 16px; }
+    .loader-text { font-size: 13px; color: var(--color-text-3); font-family: var(--font-sans); }
+    .loader-spin { width: 20px; height: 20px; border: 2px solid var(--color-border);
+      border-top-color: var(--color-accent); border-radius: 50%; animation: spin 600ms linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="loader">
+    <div class="loader-mark">S</div>
+    <div class="loader-spin"></div>
+    <div class="loader-text">Memuat SIMPRO…</div>
+  </div>
+
+  <script src="/assets/js/core/utils.js"></script>
+  <script src="/assets/js/core/storage.js"></script>
+  <script>
+    (async function() {
+      // Ensure seed data exists
+      await Storage.seed();
+
+      const session = Storage.get('sp_session');
+      if (session && session.userId) {
+        window.location.replace('/pages/dashboard.html');
+      } else {
+        window.location.replace('/pages/login.html');
+      }
+    })();
+  </script>
+</body>
+</html>

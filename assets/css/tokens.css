@@ -1,0 +1,98 @@
+/* SIMPRO Design Tokens */
+:root {
+  /* Backgrounds */
+  --color-bg:            #F7F8FA;
+  --color-surface:       #FFFFFF;
+  --color-surface-2:     #F0F1F3;
+  --color-border:        #E2E4E9;
+  --color-border-strong: #C8CBD3;
+
+  /* Text */
+  --color-text:          #1A1D23;
+  --color-text-2:        #5C6070;
+  --color-text-3:        #9BA0AD;
+
+  /* Accent */
+  --color-accent:        #3B5BDB;
+  --color-accent-hover:  #3451C7;
+  --color-accent-light:  #EEF2FF;
+
+  /* Semantic */
+  --color-success:       #2F9E44;
+  --color-success-bg:    #EBFBEE;
+  --color-warning:       #E67700;
+  --color-warning-bg:    #FFF9DB;
+  --color-danger:        #C92A2A;
+  --color-danger-bg:     #FFF5F5;
+  --color-info:          #1971C2;
+  --color-info-bg:       #E7F5FF;
+
+  /* Priority colors */
+  --color-critical:      #C92A2A;
+  --color-high:          #E67700;
+  --color-medium:        #3B5BDB;
+  --color-low:           #5C6070;
+
+  /* Task type colors */
+  --color-story:         #3B5BDB;
+  --color-bug:           #C92A2A;
+  --color-task:          #2F9E44;
+  --color-epic:          #7048E8;
+
+  /* Spacing */
+  --sp-1:  4px;
+  --sp-2:  8px;
+  --sp-3:  12px;
+  --sp-4:  16px;
+  --sp-5:  20px;
+  --sp-6:  24px;
+  --sp-8:  32px;
+  --sp-10: 40px;
+
+  /* Typography */
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --text-xs:   11px;
+  --text-sm:   13px;
+  --text-base: 14px;
+  --text-md:   15px;
+  --text-lg:   17px;
+  --text-xl:   20px;
+  --text-2xl:  24px;
+
+  /* Border radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.05);
+  --shadow-md: 0 2px 8px rgba(0,0,0,.08);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,.10);
+
+  /* Transitions */
+  --transition: 150ms ease;
+
+  /* Layout */
+  --sidebar-width: 240px;
+  --topbar-height: 52px;
+}
+
+[data-theme="dark"] {
+  --color-bg:            #0F1117;
+  --color-surface:       #161B22;
+  --color-surface-2:     #1C2330;
+  --color-border:        #2D333B;
+  --color-border-strong: #3D444D;
+  --color-text:          #E6EDF3;
+  --color-text-2:        #8B949E;
+  --color-text-3:        #484F58;
+  --color-accent:        #4C6EF5;
+  --color-accent-hover:  #5C7EFF;
+  --color-accent-light:  #1A2040;
+  --color-success-bg:    #0D2818;
+  --color-warning-bg:    #2D1E00;
+  --color-danger-bg:     #2D0A0A;
+  --color-info-bg:       #071B2E;
+}
