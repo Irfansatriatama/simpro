@@ -30,9 +30,9 @@ Aplikasi web manajemen proyek tim berbasis browser — task tracking, sprint pla
 |------|--------|
 | **Nama Proyek** | SIMPRO |
 | **Kepanjangan** | Simple Project Management Office |
-| **Versi App** | 0.6.0 |
-| **Fase Saat Ini** | FASE 6 — Kanban Board ✅ |
-| **Fase Berikutnya** | FASE 7 — Sprint Planning & Backlog |
+| **Versi App** | 0.7.0 |
+| **Fase Saat Ini** | FASE 7 — Sprint Planning & Backlog ✅ |
+| **Fase Berikutnya** | FASE 8 — Sprint Active View |
 | **Tech Stack** | HTML5 + CSS3 + JavaScript ES6+ (Vanilla, no framework) |
 | **Storage** | `localStorage` 100% — tanpa server, tanpa database |
 | **PWA** | Aktif sejak Fase 1 (manifest.json + sw.js) |
@@ -1334,16 +1334,36 @@ Log ini diupdate **setiap akhir fase** oleh Claude. Mencatat apa yang sudah dike
 ---
 
 #### FASE 7 — Sprint Planning & Backlog
-**Versi:** v0.7.0 | **Tanggal:** — | **Status:** Belum dikerjakan
+**Versi:** v0.7.0 | **Tanggal:** 2026-02-27 | **Status:** ✅ Selesai
 
 **File Ditambahkan:**
-*(diisi setelah fase selesai)*
+- `assets/css/sprint.css` — Layout backlog page, sprint section, task row, drag ghost, complete modal, summary stats
+- `assets/js/modules/sprint.js` — create, getByProject, getById, getActive, update, remove, start, complete, addTask, removeTask, getSprintStats
+- `assets/js/pages/backlog.js` — Halaman backlog penuh dengan sprint management
+- `pages/backlog.html` — HTML halaman backlog
 
 **File Diubah:**
-*(diisi setelah fase selesai)*
+- `sw.js` — Versi cache → v0.7.0, tambah sprint.css, sprint.js, backlog.js, backlog.html
+- `README_SIMPRO.md` — Update status versi, log fase
+
+**Fitur yang Diimplementasikan:**
+- Layout: panel sprint (active + planned) dan backlog section, masing-masing collapsible
+- Sprint header: nama, goal, status badge, tanggal, SP stats (done/total), tombol aksi role-aware
+- Task row: drag handle, key (monospace), type icon, title, priority dot, assignee avatars, SP badge
+- Drag & drop task antar sprint dan ke/dari backlog via Pointer Events (handle-based)
+- Start Sprint: validasi 1 aktif per project, konfirmasi modal dengan task stats
+- Complete Sprint: modal pilih nasib task belum done (backlog / sprint lain), summary stats (selesai, carry over, velocity)
+- Hapus Sprint: task otomatis kembali ke backlog
+- Edit Sprint: modal ubah nama, goal, tanggal
+- Tambah task ke sprint dari backlog: multi-select checkbox modal
+- Buat task baru via TaskModal global (toolbar & backlog footer)
+- Role guard: Developer/Viewer tidak bisa manage sprint (drag, start, complete, edit, hapus)
 
 **Catatan Teknis:**
-*(diisi setelah fase selesai)*
+- `Sprint.complete()` menangani perpindahan undone tasks dan update velocity atomik
+- Drag & drop via `setPointerCapture` pada handle element, state global `_drag`
+- Collapse state via class toggle, lucide.createIcons() di-call ulang setelah toggle
+- Semua modal menggunakan `App.createModal()` pattern dari app.js
 
 ---
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'simpro-v0.6.0';
+const CACHE_NAME = 'simpro-v0.7.0';
 const SHELL_FILES = [
   '/index.html',
   '/404.html',
@@ -11,6 +11,7 @@ const SHELL_FILES = [
   '/assets/css/projects.css',
   '/assets/css/task.css',
   '/assets/css/kanban.css',
+  '/assets/css/sprint.css',
   '/assets/js/core/utils.js',
   '/assets/js/core/storage.js',
   '/assets/js/core/app.js',
@@ -23,7 +24,10 @@ const SHELL_FILES = [
   '/assets/js/modules/label.js',
   '/assets/js/modules/task-modal.js',
   '/assets/js/modules/kanban.js',
+  '/assets/js/modules/sprint.js',
   '/assets/js/pages/board.js',
+  '/assets/js/pages/backlog.js',
+  '/pages/backlog.html',
   '/assets/js/pages/projects.js',
   '/assets/js/pages/project-detail.js',
   '/assets/js/pages/task-detail.js',
