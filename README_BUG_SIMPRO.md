@@ -392,7 +392,7 @@ BUG-7  ← User & Setting    : members, settings, profile + README final
 |------|------|--------|---------|---------|
 | BUG-1 | Foundation: Fix Semua Path & Nav Links | ✅ Selesai | 2026-02-27 | Semua path HTML, shell.js, auth.js, dan semua JS pages diperbaiki ke relative path |
 | BUG-2 | Auth: Login, Register & Logout | ✅ Selesai | 2026-02-27 | Fix link navigasi login↔register, fix redirect file:// aman di auth.js & login.js |
-| BUG-3 | Shell & Dashboard | ⏳ Belum dimulai | — | — |
+| BUG-3 | Shell & Dashboard | ✅ Selesai | 2026-02-27 | Fix urutan init dashboard (Page.init sebelum lucide), fix manifest path di semua pages, fix sw.js register path di app.js |
 | BUG-4 | Project & Task | ⏳ Belum dimulai | — | — |
 | BUG-5 | Board & Sprint | ⏳ Belum dimulai | — | — |
 | BUG-6 | Data & Laporan | ⏳ Belum dimulai | — | — |
