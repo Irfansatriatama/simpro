@@ -11,6 +11,10 @@ import {
   toggleDiscussionPinAction,
   updateDiscussionReplyAction,
 } from '@/app/actions/discussions';
+import {
+  FilterField,
+  FilterPanelSheet,
+} from '@/components/filters/filter-panel-sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -57,6 +61,8 @@ export function DiscussionClient(props: {
   );
   const [replyDraft, setReplyDraft] = useState<Record<string, string>>({});
 
+  const filterActiveCount = typeF === 'all' ? 0 : 1;
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return threads.filter((t) => {
@@ -96,8 +102,8 @@ export function DiscussionClient(props: {
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative min-w-[200px] flex-1 sm:max-w-xs">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="relative min-w-0 flex-1 sm:max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
@@ -107,18 +113,25 @@ export function DiscussionClient(props: {
             aria-label="Cari diskusi"
           />
         </div>
-        <SelectNative
-          value={typeF}
-          onChange={(e) => setTypeF(e.target.value)}
-          className="w-full sm:w-48"
-          aria-label="Filter tipe diskusi"
+        <FilterPanelSheet
+          title="Filter diskusi"
+          activeCount={filterActiveCount}
         >
-          <option value="all">Semua tipe</option>
-          <option value="general">Umum</option>
-          <option value="announcement">Pengumuman</option>
-          <option value="question">Pertanyaan</option>
-          <option value="decision">Keputusan</option>
-        </SelectNative>
+          <FilterField label="Tipe topik">
+            <SelectNative
+              value={typeF}
+              onChange={(e) => setTypeF(e.target.value)}
+              className="w-full"
+              aria-label="Filter tipe diskusi"
+            >
+              <option value="all">Semua tipe</option>
+              <option value="general">Umum</option>
+              <option value="announcement">Pengumuman</option>
+              <option value="question">Pertanyaan</option>
+              <option value="decision">Keputusan</option>
+            </SelectNative>
+          </FilterField>
+        </FilterPanelSheet>
       </div>
 
       <div className="space-y-4">

@@ -113,6 +113,9 @@ export default async function BacklogPage({
           dependencyTask: { select: { id: true, title: true } },
         },
       },
+      _count: {
+        select: { comments: true, checklist: true, attachments: true },
+      },
     },
   });
 
@@ -162,6 +165,9 @@ export default async function BacklogPage({
       id: d.dependencyTask.id,
       title: d.dependencyTask.title,
     })),
+    commentCount: t._count.comments,
+    checklistCount: t._count.checklist,
+    attachmentCount: t._count.attachments,
   }));
 
   const dependencyOptions = rawTasks.map((t) => ({
@@ -180,6 +186,7 @@ export default async function BacklogPage({
       dependencyOptions={dependencyOptions}
       canEdit={canEdit}
       currentUserId={userId}
+      canModerateComments={role === 'admin' || role === 'pm'}
     />
   );
 }

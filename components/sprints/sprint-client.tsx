@@ -6,6 +6,10 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState, useTransition } from 'react';
 
 import { deleteSprintAction } from '@/app/actions/sprints';
+import {
+  FilterField,
+  FilterPanelSheet,
+} from '@/components/filters/filter-panel-sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SelectNative } from '@/components/ui/select-native';
@@ -85,6 +89,8 @@ export function SprintClient(props: {
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [editing, setEditing] = useState<SprintRow | null>(null);
 
+  const filterActiveCount = statusFilter === 'all' ? 0 : 1;
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return sprints.filter((s) => {
@@ -129,8 +135,8 @@ export function SprintClient(props: {
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative min-w-[200px] flex-1 sm:max-w-xs">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="relative min-w-0 flex-1 sm:max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
@@ -140,21 +146,28 @@ export function SprintClient(props: {
             aria-label="Cari sprint"
           />
         </div>
-        <SelectNative
-          value={statusFilter}
-          onChange={(e) =>
-            setStatusFilter(e.target.value as StatusFilter)
-          }
-          className="w-full sm:w-48"
-          aria-label="Filter status sprint"
+        <FilterPanelSheet
+          title="Filter sprint"
+          activeCount={filterActiveCount}
         >
-          <option value="all">Semua status</option>
-          {SPRINT_STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {SPRINT_STATUS_LABEL[s]}
-            </option>
-          ))}
-        </SelectNative>
+          <FilterField label="Status sprint">
+            <SelectNative
+              value={statusFilter}
+              onChange={(e) =>
+                setStatusFilter(e.target.value as StatusFilter)
+              }
+              className="w-full"
+              aria-label="Filter status sprint"
+            >
+              <option value="all">Semua status</option>
+              {SPRINT_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {SPRINT_STATUS_LABEL[s]}
+                </option>
+              ))}
+            </SelectNative>
+          </FilterField>
+        </FilterPanelSheet>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-card">

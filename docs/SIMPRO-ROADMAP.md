@@ -69,7 +69,10 @@ Angka phase di bawah **khusus untuk SIMPRO**; tidak sama dengan “Fase 1–6”
 | **17** | Selesai | **Catatan pribadi** (`/notes`): milik pengguna + dibagikan (`NoteShare` view/edit), semat, tag & warna, autosave isi, riwayat audit pemilik; server actions + `requireSessionUser` |
 | **18** | Selesai | **Pengaturan** (`/settings`): tabel `Settings` key–value, admin/PM — nama sistem, zona waktu, format tanggal, mata uang/tarif/pajak default; `getOrgSettings` + judul app di `(app)/layout`; tab Tentang (versi/stack) |
 | **19** | Selesai | **Notifikasi**: model `Notification`, bell + dropdown di topbar, `/notifications` (filter belum dibaca), tandai dibaca / semua; `notifyUsers` + pemicu tugas (baru/ditugaskan) & diskusi/balasan |
-| **20+** | Berikutnya | Polish (lebih banyak pemicu notifikasi, real-time opsional), burndown/velocity, dll. — `_reference/README.md` & baris **N** roadmap |
+| **20** | Selesai | **Dashboard** (`/dashboard`): ringkasan proyek yang diakses, tugas terbuka untuk pengguna (bukan done/cancelled), notifikasi belum dibaca, daftar proyek terbaru & tugas; pintasan per peran (manajemen, anggota admin) |
+| **21** | Selesai | **Prioritas P1–P3 (awal)**: skala prioritas di §6 roadmap; **Panduan** `/guide` & `/project-guide` (admin/PM); **Pencarian** `/search` + form GET di topbar (proyek+tugas); **Laporan maint.** `/projects/[id]/maintenance-report` (tabel + cetak) |
+| **22** | Selesai | **P4 (tugas)**: komentar, checklist (urut/centang/ubah teks), lampiran URL di dialog **Edit** backlog; `fetchTaskExtrasAction` + mutasi di `app/actions/task-extras.ts`, `requireBacklogAccess` di `lib/backlog-access.ts`, `revalidatePath` backlog/board; badge jumlah di tabel; notifikasi ke penerima & pelapor saat komentar baru; hapus komentar: penulis atau admin/PM |
+| **22+** | Berikutnya | Sisa **P4** (lampiran diskusi/maintenance/meeting), polish notifikasi, burndown/velocity sprint, real-time opsional — `_reference/README.md` & baris **N** roadmap |
 | **N** | Akhir | Polish (burndown/velocity sprint, dll.), aksesibilitas, performa, PDF/export jika perlu, hardening production, dokumentasi handoff |
 
 Sesuaikan isi phase 7+ dengan prioritas bisnis; dokumen ini bisa dipecah jadi checklist per phase saat mulai mengerjakan.
@@ -85,7 +88,21 @@ Sesuaikan isi phase 7+ dengan prioritas bisnis; dokumen ini bisa dipecah jadi ch
 
 ---
 
-## 6. Riwayat dokumen
+## 6. Skala prioritas backlog (disepakati untuk iterasi)
+
+| Prioritas | Fokus | Contoh pekerjaan |
+|-----------|--------|------------------|
+| **P1** | Pengalaman & orientasi pengguna | Panduan isi nyata (`/guide`, `/project-guide`) |
+| **P2** | Produktivitas harian | Pencarian global (proyek + tugas) sesuai akses |
+| **P3** | Kelengkapan modul yang sudah ada tautan | Laporan maintenance proyek, pemicu notifikasi tambahan |
+| **P4** | Paritas schema / referensi | Komentar/checklist/lampiran tugas, lampiran diskusi/maintenance/meeting |
+| **P5** | Polish & operasional | Burndown/velocity, a11y/performa, export/hardening, real-time opsional |
+
+Urutan kerja: **P1 → P2 → P3 → P4 → P5** kecuali ada risiko bisnis yang mengubah urutan.
+
+---
+
+## 7. Riwayat dokumen
 
 - Dibuat untuk menyatukan Trackly + realitas SIMPRO **full-stack Next tanpa Nest**.  
 - `implementation_plan.md` tetap di `_reference/` sebagai arsip; roadmap aktif = **file ini**.

@@ -1,6 +1,15 @@
 'use client';
 
-import { FileText, Pin, Plus, Search, Share2, Trash2 } from 'lucide-react';
+import {
+  FileText,
+  FolderInput,
+  FolderOpen,
+  Pin,
+  Plus,
+  Search,
+  Share2,
+  Trash2,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {
   useCallback,
@@ -13,8 +22,10 @@ import {
 
 import {
   createNoteAction,
+  createNoteFolderAction,
   deleteNoteAction,
-  listNoteAuditsAction,
+  deleteNoteFolderAction,
+  listNoteAuditsFormAction,
   shareNoteAction,
   toggleNotePinAction,
   unshareNoteAction,
@@ -34,9 +45,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SelectNative } from '@/components/ui/select-native';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  FilterField,
+  FilterPanelSheet,
+} from '@/components/filters/filter-panel-sheet';
+import { NoteEditorToolbar } from '@/components/notes/note-editor-toolbar';
 import { NOTE_AUDIT_LABEL, NOTE_COLORS } from '@/lib/note-constants';
 import type {
   NoteClientRow,
+  NoteFolderRow,
   NoteShareTargetUser,
 } from '@/lib/note-types';
 import { cn } from '@/lib/utils';
@@ -64,18 +81,25 @@ function previewLine(note: NoteClientRow): string {
 export function NotesClient(props: {
   notes: NoteClientRow[];
   shareTargets: NoteShareTargetUser[];
+  folders: NoteFolderRow[];
 }) {
-  const { notes: initialNotes, shareTargets } = props;
+  const { notes: initialNotes, shareTargets, folders: initialFolders } = props;
   const router = useRouter();
   const [notes, setNotes] = useState(initialNotes);
+  const [folders, setFolders] = useState(initialFolders);
   const [selectedId, setSelectedId] = useState<string | null>(
     initialNotes[0]?.id ?? null,
   );
   const [search, setSearch] = useState('');
+  const [folderListFilter, setFolderListFilter] = useState<
+    'all' | 'none' | string
+  >('all');
+  const [newFolderName, setNewFolderName] = useState('');
   const [localTitle, setLocalTitle] = useState('');
   const [localContent, setLocalContent] = useState('');
   const [tagsInput, setTagsInput] = useState('');
   const [colorPick, setColorPick] = useState<string>('#ffffff');
+  const [folderPick, setFolderPick] = useState<string>('none');
   const [shareOpen, setShareOpen] = useState(false);
   const [shareUserId, setShareUserId] = useState('');
   const [sharePerm, setSharePerm] = useState<'view' | 'edit'>('view');
@@ -86,6 +110,13 @@ export function NotesClient(props: {
   const [pending, startTransition] = useTransition();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastNoteSyncKey = useRef<string | null>(null);
+  const notesRef = useRef(notes);
+  const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
+  notesRef.current = notes;
+
+  useEffect(() => {
+    setFolders(initialFolders);
+  }, [initialFolders]);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>(
     'idle',
   );
@@ -117,11 +148,13 @@ export function NotesClient(props: {
     setLocalContent(n.content);
     setTagsInput(n.tags.join(', '));
     setColorPick(n.color ?? '#ffffff');
+    setFolderPick(n.folderId ?? 'none');
   }, [selectedId, notes]);
 
   const flushSave = useCallback(() => {
-    if (!selectedId || !selected) return;
-    if (selected.access === 'shared_view') return;
+    if (!selectedId) return;
+    const row = notesRef.current.find((x) => x.id === selectedId);
+    if (!row || row.access === 'shared_view') return;
     const fd = new FormData();
     fd.set('id', selectedId);
     fd.set('title', localTitle);
@@ -151,11 +184,12 @@ export function NotesClient(props: {
       setSaveState('saved');
       setTimeout(() => setSaveState('idle'), 1200);
     });
-  }, [selectedId, selected, localTitle, localContent]);
+  }, [selectedId, localTitle, localContent]);
 
   useEffect(() => {
-    if (!selectedId || !selected) return;
-    if (selected.access === 'shared_view') return;
+    if (!selectedId) return;
+    const row = notesRef.current.find((x) => x.id === selectedId);
+    if (!row || row.access === 'shared_view') return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       flushSave();
@@ -163,24 +197,37 @@ export function NotesClient(props: {
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, [localTitle, localContent, selectedId, selected, flushSave]);
+  }, [localTitle, localContent, selectedId, flushSave]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return notes;
     return notes.filter((n) => {
+      if (folderListFilter === 'none') {
+        if (n.folderId) return false;
+      } else if (folderListFilter !== 'all') {
+        if (n.folderId !== folderListFilter) return false;
+      }
+      if (!q) return true;
       const blob = [
         n.title,
         n.content,
         n.tags.join(' '),
         n.ownerName,
+        n.folderName,
       ]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
       return blob.includes(q);
     });
-  }, [notes, search]);
+  }, [notes, search, folderListFilter]);
+
+  const listFilterActiveCount = useMemo(() => {
+    let n = 0;
+    if (search.trim()) n++;
+    if (folderListFilter !== 'all') n++;
+    return n;
+  }, [search, folderListFilter]);
 
   function onCreate() {
     startTransition(async () => {
@@ -196,27 +243,40 @@ export function NotesClient(props: {
 
   function onTogglePin() {
     if (!selected || selected.access !== 'owner') return;
+    const id = selected.id;
+    const nextPinned = !selected.pinned;
+    setNotes((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, pinned: nextPinned } : n)),
+    );
     const fd = new FormData();
-    fd.set('id', selected.id);
+    fd.set('id', id);
     startTransition(async () => {
       const r = await toggleNotePinAction(fd);
-      if (!r.ok) window.alert(r.error);
-      else router.refresh();
+      if (!r.ok) {
+        window.alert(r.error);
+        router.refresh();
+        return;
+      }
+      router.refresh();
     });
   }
 
   function onDelete() {
     if (!selected || selected.access !== 'owner') return;
     if (!window.confirm('Hapus catatan ini?')) return;
+    const deadId = selected.id;
     startTransition(async () => {
       const fd = new FormData();
-      fd.set('id', selected.id);
+      fd.set('id', deadId);
       const r = await deleteNoteAction(fd);
       if (!r.ok) {
         window.alert(r.error);
         return;
       }
-      setSelectedId(null);
+      const rest = notesRef.current.filter((n) => n.id !== deadId);
+      setNotes(rest);
+      setSelectedId(rest[0]?.id ?? null);
+      lastNoteSyncKey.current = null;
       router.refresh();
     });
   }
@@ -228,6 +288,7 @@ export function NotesClient(props: {
     fd.set('id', selected.id);
     fd.set('tags', tagsInput);
     fd.set('color', colorPick === '#ffffff' ? 'none' : colorPick);
+    fd.set('folderId', folderPick === 'none' ? 'none' : folderPick);
     startTransition(async () => {
       const r = await updateNoteMetaAction(fd);
       if (!r.ok) window.alert(r.error);
@@ -267,13 +328,46 @@ export function NotesClient(props: {
   function loadAudits() {
     if (!selected || selected.access !== 'owner') return;
     startTransition(async () => {
-      const r = await listNoteAuditsAction(selected.id);
+      const fd = new FormData();
+      fd.set('noteId', selected.id);
+      const r = await listNoteAuditsFormAction(fd);
       if (!r.ok || !r.data) {
         window.alert(r.ok ? 'Kosong.' : r.error);
         return;
       }
       setAudits(r.data.entries);
       setAuditOpen(true);
+    });
+  }
+
+  function onCreateFolderSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const name = newFolderName.trim();
+    if (!name) return;
+    const fd = new FormData();
+    fd.set('name', name);
+    startTransition(async () => {
+      const r = await createNoteFolderAction(fd);
+      if (!r.ok) window.alert(r.error);
+      else {
+        setNewFolderName('');
+        router.refresh();
+      }
+    });
+  }
+
+  function onDeleteFolder(folderId: string, folderName: string) {
+    if (!window.confirm(`Hapus folder "${folderName}"? Catatan di dalamnya tidak dihapus.`))
+      return;
+    const fd = new FormData();
+    fd.set('id', folderId);
+    startTransition(async () => {
+      const r = await deleteNoteFolderAction(fd);
+      if (!r.ok) window.alert(r.error);
+      else {
+        if (folderListFilter === folderId) setFolderListFilter('all');
+        router.refresh();
+      }
     });
   }
 
@@ -301,15 +395,42 @@ export function NotesClient(props: {
             Catatan baru
           </Button>
         </div>
-        <div className="relative mb-3">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari…"
-            className="pl-9"
-            aria-label="Cari catatan"
-          />
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <FilterPanelSheet
+            title="Cari & filter daftar"
+            activeCount={listFilterActiveCount}
+            triggerClassName="flex-1 sm:flex-none"
+          >
+            <FilterField label="Cari">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Judul, isi, tag…"
+                  className="pl-9"
+                  aria-label="Cari catatan"
+                />
+              </div>
+            </FilterField>
+            <FilterField label="Folder">
+              <SelectNative
+                value={folderListFilter}
+                onChange={(e) =>
+                  setFolderListFilter(e.target.value as 'all' | 'none' | string)
+                }
+                className="w-full"
+              >
+                <option value="all">Semua catatan</option>
+                <option value="none">Tanpa folder</option>
+                {folders.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.name}
+                  </option>
+                ))}
+              </SelectNative>
+            </FilterField>
+          </FilterPanelSheet>
         </div>
         <ul className="flex max-h-[50vh] flex-col gap-1 overflow-y-auto lg:max-h-none lg:flex-1">
           {filtered.length === 0 ? (
@@ -357,6 +478,12 @@ export function NotesClient(props: {
                           {n.sharedWith.length}
                         </span>
                       ) : null}
+                      {n.folderName ? (
+                        <span className="inline-flex items-center gap-0.5 text-muted-foreground">
+                          <FolderOpen className="h-3 w-3" />
+                          {n.folderName}
+                        </span>
+                      ) : null}
                     </div>
                   </button>
                 </li>
@@ -364,6 +491,61 @@ export function NotesClient(props: {
             })
           )}
         </ul>
+        <div className="mt-4 border-t border-border pt-4">
+          <p className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <FolderInput className="h-3.5 w-3.5" />
+            Kelola folder
+          </p>
+          <form
+            onSubmit={onCreateFolderSubmit}
+            className="mb-3 flex gap-2"
+          >
+            <Input
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              placeholder="Nama folder baru"
+              maxLength={80}
+              className="flex-1 text-sm"
+              disabled={pending}
+            />
+            <Button type="submit" size="sm" disabled={pending}>
+              Tambah
+            </Button>
+          </form>
+          {folders.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              Belum ada folder. Buat untuk mengelompokkan catatan Anda.
+            </p>
+          ) : (
+            <ul className="space-y-1 text-sm">
+              {folders.map((f) => (
+                <li
+                  key={f.id}
+                  className="flex items-center justify-between gap-2 rounded-md border border-border/80 px-2 py-1.5"
+                >
+                  <button
+                    type="button"
+                    className="min-w-0 flex-1 truncate text-left hover:text-primary"
+                    onClick={() => setFolderListFilter(f.id)}
+                  >
+                    {f.name}
+                  </button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+                    aria-label={`Hapus folder ${f.name}`}
+                    onClick={() => onDeleteFolder(f.id, f.name)}
+                    disabled={pending}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </aside>
 
       <section className="flex min-h-[320px] flex-1 flex-col border-border lg:border-l lg:pl-4">
@@ -444,10 +626,19 @@ export function NotesClient(props: {
               disabled={readOnly}
               className="text-lg font-medium"
             />
+            {!readOnly ? (
+              <NoteEditorToolbar
+                disabled={readOnly}
+                value={localContent}
+                onChange={setLocalContent}
+                textareaRef={contentTextareaRef}
+              />
+            ) : null}
             <Textarea
+              ref={contentTextareaRef}
               value={localContent}
               onChange={(e) => setLocalContent(e.target.value)}
-              placeholder="Tulis di sini… (teks biasa / Markdown bebas)"
+              placeholder="Tulis di sini… (Markdown: gunakan toolbar di atas)"
               disabled={readOnly}
               className="min-h-[240px] flex-1 resize-y font-mono text-sm lg:min-h-[360px]"
             />
@@ -458,9 +649,24 @@ export function NotesClient(props: {
                 className="space-y-3 rounded-lg border border-border bg-card p-4"
               >
                 <p className="text-sm font-medium text-foreground">
-                  Tag &amp; warna
+                  Folder, tag &amp; warna
                 </p>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid gap-2">
+                    <Label htmlFor="note-folder">Folder</Label>
+                    <SelectNative
+                      id="note-folder"
+                      value={folderPick}
+                      onChange={(e) => setFolderPick(e.target.value)}
+                    >
+                      <option value="none">Tanpa folder</option>
+                      {folders.map((f) => (
+                        <option key={f.id} value={f.id}>
+                          {f.name}
+                        </option>
+                      ))}
+                    </SelectNative>
+                  </div>
                   <div className="grid gap-2">
                     <Label htmlFor="note-tags">Tag (pisahkan koma)</Label>
                     <Input
@@ -505,42 +711,51 @@ export function NotesClient(props: {
           </DialogHeader>
           {selected && selected.access === 'owner' ? (
             <>
-              <form onSubmit={onShare} className="grid gap-3">
-                <div className="grid gap-2">
-                  <Label htmlFor="share-user">Pengguna</Label>
-                  <SelectNative
-                    id="share-user"
-                    value={shareUserId}
-                    onChange={(e) => setShareUserId(e.target.value)}
-                    required
-                  >
-                    <option value="">— Pilih —</option>
-                    {shareTargets.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name} ({u.username})
-                      </option>
-                    ))}
-                  </SelectNative>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="share-perm">Izin</Label>
-                  <SelectNative
-                    id="share-perm"
-                    value={sharePerm}
-                    onChange={(e) =>
-                      setSharePerm(e.target.value as 'view' | 'edit')
-                    }
-                  >
-                    <option value="view">Hanya lihat</option>
-                    <option value="edit">Lihat &amp; ubah</option>
-                  </SelectNative>
-                </div>
-                <DialogFooter>
-                  <Button type="submit" disabled={pending || !shareUserId}>
-                    Bagikan
-                  </Button>
-                </DialogFooter>
-              </form>
+              {shareTargets.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Tidak ada pengguna aktif lain di sistem untuk dibagikan.
+                  Undang anggota tim terlebih dahulu.
+                </p>
+              ) : (
+                <form onSubmit={onShare} className="grid gap-3">
+                  <div className="grid gap-2">
+                    <Label htmlFor="share-user">Pengguna</Label>
+                    <SelectNative
+                      id="share-user"
+                      value={shareUserId}
+                      onChange={(e) => setShareUserId(e.target.value)}
+                      required
+                      className="w-full"
+                    >
+                      <option value="">— Pilih —</option>
+                      {shareTargets.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.name} ({u.username})
+                        </option>
+                      ))}
+                    </SelectNative>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="share-perm">Izin</Label>
+                    <SelectNative
+                      id="share-perm"
+                      value={sharePerm}
+                      onChange={(e) =>
+                        setSharePerm(e.target.value as 'view' | 'edit')
+                      }
+                      className="w-full"
+                    >
+                      <option value="view">Hanya lihat</option>
+                      <option value="edit">Lihat &amp; ubah</option>
+                    </SelectNative>
+                  </div>
+                  <DialogFooter>
+                    <Button type="submit" disabled={pending || !shareUserId}>
+                      Bagikan
+                    </Button>
+                  </DialogFooter>
+                </form>
+              )}
               {selected.sharedWith.length > 0 ? (
                 <div className="mt-4 border-t border-border pt-4">
                   <p className="mb-2 text-sm font-medium">Sudah dibagikan</p>

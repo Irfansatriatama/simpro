@@ -7,6 +7,12 @@ export type NoteShareRow = {
   permission: string;
 };
 
+export type NoteFolderRow = {
+  id: string;
+  name: string;
+  sortOrder: number;
+};
+
 /** Satu baris untuk klien daftar + editor. */
 export type NoteClientRow = {
   id: string;
@@ -16,6 +22,8 @@ export type NoteClientRow = {
   pinned: boolean;
   color: string | null;
   tags: string[];
+  folderId: string | null;
+  folderName: string | null;
   updatedAt: string;
   createdAt: string;
   access: NoteAccessRole;

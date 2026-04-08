@@ -4,6 +4,10 @@ import { UserRole, UserStatus } from '@prisma/client';
 import { Plus, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import {
+  FilterField,
+  FilterPanelSheet,
+} from '@/components/filters/filter-panel-sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SelectNative } from '@/components/ui/select-native';
@@ -42,6 +46,13 @@ export function MembersClient(props: {
   const [pwUserId, setPwUserId] = useState<string | null>(null);
   const [pwLabel, setPwLabel] = useState('');
 
+  const filterActiveCount = useMemo(() => {
+    let n = 0;
+    if (roleFilter !== 'all') n++;
+    if (statusFilter !== 'all') n++;
+    return n;
+  }, [roleFilter, statusFilter]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return members.filter((m) => {
@@ -79,7 +90,7 @@ export function MembersClient(props: {
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-        <div className="relative min-w-[200px] flex-1 sm:max-w-xs">
+        <div className="relative min-w-0 flex-1 sm:max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
@@ -89,34 +100,43 @@ export function MembersClient(props: {
             aria-label="Cari anggota"
           />
         </div>
-        <SelectNative
-          value={roleFilter}
-          onChange={(e) =>
-            setRoleFilter(e.target.value as 'all' | UserRole)
-          }
-          className="w-full sm:w-44"
-          aria-label="Filter peran"
+        <FilterPanelSheet
+          title="Filter anggota"
+          activeCount={filterActiveCount}
         >
-          <option value="all">Semua peran</option>
-          <option value={UserRole.admin}>Administrator</option>
-          <option value={UserRole.pm}>Project Manager</option>
-          <option value={UserRole.developer}>Developer</option>
-          <option value={UserRole.viewer}>Viewer</option>
-          <option value={UserRole.client}>Klien</option>
-        </SelectNative>
-        <SelectNative
-          value={statusFilter}
-          onChange={(e) =>
-            setStatusFilter(e.target.value as 'all' | UserStatus)
-          }
-          className="w-full sm:w-40"
-          aria-label="Filter status"
-        >
-          <option value="all">Semua status</option>
-          <option value={UserStatus.active}>Aktif</option>
-          <option value={UserStatus.inactive}>Nonaktif</option>
-          <option value={UserStatus.invited}>Diundang</option>
-        </SelectNative>
+          <FilterField label="Peran">
+            <SelectNative
+              value={roleFilter}
+              onChange={(e) =>
+                setRoleFilter(e.target.value as 'all' | UserRole)
+              }
+              className="w-full"
+              aria-label="Filter peran"
+            >
+              <option value="all">Semua peran</option>
+              <option value={UserRole.admin}>Administrator</option>
+              <option value={UserRole.pm}>Project Manager</option>
+              <option value={UserRole.developer}>Developer</option>
+              <option value={UserRole.viewer}>Viewer</option>
+              <option value={UserRole.client}>Klien</option>
+            </SelectNative>
+          </FilterField>
+          <FilterField label="Status akun">
+            <SelectNative
+              value={statusFilter}
+              onChange={(e) =>
+                setStatusFilter(e.target.value as 'all' | UserStatus)
+              }
+              className="w-full"
+              aria-label="Filter status"
+            >
+              <option value="all">Semua status</option>
+              <option value={UserStatus.active}>Aktif</option>
+              <option value={UserStatus.inactive}>Nonaktif</option>
+              <option value={UserStatus.invited}>Diundang</option>
+            </SelectNative>
+          </FilterField>
+        </FilterPanelSheet>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-card">

@@ -129,6 +129,7 @@ model User {
   maintenancePicDevs      MaintenancePicDev[]
   noteSharesReceived      NoteShare[]
   noteAudits              NoteAudit[]
+  noteFolders             NoteFolder[]
 
   @@map("users")
 }
@@ -629,11 +630,26 @@ model Note {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  owner      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  owner      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder     NoteFolder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
   sharedWith NoteShare[]
   audit      NoteAudit[]
 
   @@map("notes")
+}
+
+model NoteFolder {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notes Note[]
+
+  @@index([userId])
+  @@map("note_folders")
 }
 
 model NoteShare {

@@ -6,6 +6,10 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState, useTransition } from 'react';
 
 import { deleteMaintenanceAction } from '@/app/actions/maintenance';
+import {
+  FilterField,
+  FilterPanelSheet,
+} from '@/components/filters/filter-panel-sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SelectNative } from '@/components/ui/select-native';
@@ -73,6 +77,13 @@ export function MaintenanceClient(props: {
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [editing, setEditing] = useState<MaintenanceRow | null>(null);
 
+  const filterActiveCount = useMemo(() => {
+    let n = 0;
+    if (statusF !== 'all') n++;
+    if (typeF !== 'all') n++;
+    return n;
+  }, [statusF, typeF]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rows.filter((r) => {
@@ -119,8 +130,8 @@ export function MaintenanceClient(props: {
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-wrap">
-        <div className="relative min-w-[200px] flex-1 sm:max-w-xs">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="relative min-w-0 flex-1 sm:max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
@@ -130,32 +141,41 @@ export function MaintenanceClient(props: {
             aria-label="Cari maintenance"
           />
         </div>
-        <SelectNative
-          value={statusF}
-          onChange={(e) => setStatusF(e.target.value as StatusFilter)}
-          className="w-full sm:w-44"
-          aria-label="Filter status"
+        <FilterPanelSheet
+          title="Filter maintenance"
+          activeCount={filterActiveCount}
         >
-          <option value="all">Semua status</option>
-          {Object.values(MaintenanceStatus).map((s) => (
-            <option key={s} value={s}>
-              {MAINTENANCE_STATUS_LABEL[s]}
-            </option>
-          ))}
-        </SelectNative>
-        <SelectNative
-          value={typeF}
-          onChange={(e) => setTypeF(e.target.value as TypeFilter)}
-          className="w-full sm:w-48"
-          aria-label="Filter tipe"
-        >
-          <option value="all">Semua tipe</option>
-          {Object.values(MaintenanceType).map((t) => (
-            <option key={t} value={t}>
-              {MAINTENANCE_TYPE_LABEL[t]}
-            </option>
-          ))}
-        </SelectNative>
+          <FilterField label="Status">
+            <SelectNative
+              value={statusF}
+              onChange={(e) => setStatusF(e.target.value as StatusFilter)}
+              className="w-full"
+              aria-label="Filter status"
+            >
+              <option value="all">Semua status</option>
+              {Object.values(MaintenanceStatus).map((s) => (
+                <option key={s} value={s}>
+                  {MAINTENANCE_STATUS_LABEL[s]}
+                </option>
+              ))}
+            </SelectNative>
+          </FilterField>
+          <FilterField label="Tipe">
+            <SelectNative
+              value={typeF}
+              onChange={(e) => setTypeF(e.target.value as TypeFilter)}
+              className="w-full"
+              aria-label="Filter tipe"
+            >
+              <option value="all">Semua tipe</option>
+              {Object.values(MaintenanceType).map((t) => (
+                <option key={t} value={t}>
+                  {MAINTENANCE_TYPE_LABEL[t]}
+                </option>
+              ))}
+            </SelectNative>
+          </FilterField>
+        </FilterPanelSheet>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-card">

@@ -3,6 +3,10 @@
 import { Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import {
+  FilterField,
+  FilterPanelSheet,
+} from '@/components/filters/filter-panel-sheet';
 import { Input } from '@/components/ui/input';
 import { SelectNative } from '@/components/ui/select-native';
 import {
@@ -62,6 +66,13 @@ export function ActivityLogClient(props: { rows: ActivityLogRow[] }) {
     return Array.from(s).sort();
   }, [rows]);
 
+  const filterActiveCount = useMemo(() => {
+    let n = 0;
+    if (entityF !== 'all') n++;
+    if (actionF !== 'all') n++;
+    return n;
+  }, [entityF, actionF]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rows.filter((r) => {
@@ -94,7 +105,7 @@ export function ActivityLogClient(props: { rows: ActivityLogRow[] }) {
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-        <div className="relative min-w-[200px] flex-1 sm:max-w-xs">
+        <div className="relative min-w-0 flex-1 sm:max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
@@ -104,32 +115,41 @@ export function ActivityLogClient(props: { rows: ActivityLogRow[] }) {
             aria-label="Cari log"
           />
         </div>
-        <SelectNative
-          value={entityF}
-          onChange={(e) => setEntityF(e.target.value)}
-          className="w-full sm:w-44"
-          aria-label="Filter jenis entitas"
+        <FilterPanelSheet
+          title="Filter log"
+          activeCount={filterActiveCount}
         >
-          <option value="all">Semua entitas</option>
-          {entityOptions.map((e) => (
-            <option key={e} value={e}>
-              {activityEntityLabel(e)}
-            </option>
-          ))}
-        </SelectNative>
-        <SelectNative
-          value={actionF}
-          onChange={(e) => setActionF(e.target.value)}
-          className="w-full sm:w-44"
-          aria-label="Filter aksi"
-        >
-          <option value="all">Semua aksi</option>
-          {actionOptions.map((a) => (
-            <option key={a} value={a}>
-              {activityActionLabel(a)}
-            </option>
-          ))}
-        </SelectNative>
+          <FilterField label="Jenis entitas">
+            <SelectNative
+              value={entityF}
+              onChange={(e) => setEntityF(e.target.value)}
+              className="w-full"
+              aria-label="Filter jenis entitas"
+            >
+              <option value="all">Semua entitas</option>
+              {entityOptions.map((e) => (
+                <option key={e} value={e}>
+                  {activityEntityLabel(e)}
+                </option>
+              ))}
+            </SelectNative>
+          </FilterField>
+          <FilterField label="Aksi">
+            <SelectNative
+              value={actionF}
+              onChange={(e) => setActionF(e.target.value)}
+              className="w-full"
+              aria-label="Filter aksi"
+            >
+              <option value="all">Semua aksi</option>
+              {actionOptions.map((a) => (
+                <option key={a} value={a}>
+                  {activityActionLabel(a)}
+                </option>
+              ))}
+            </SelectNative>
+          </FilterField>
+        </FilterPanelSheet>
       </div>
 
       <ul className="space-y-3">

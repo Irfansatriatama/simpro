@@ -26,6 +26,8 @@ import type {
 } from '@/lib/backlog-types';
 import { PRIORITY_LABEL, TASK_STATUS_LABEL, TASK_TYPE_LABEL } from '@/lib/task-labels';
 
+import { TaskEditExtras } from './task-edit-extras';
+
 type Mode = 'create' | 'edit';
 
 type DepPick = { id: string; title: string };
@@ -44,6 +46,8 @@ export function TaskFormDialog(props: {
   canEdit: boolean;
   /** Untuk mode create: pelapor default (biasanya pengguna saat ini). */
   defaultReporterId: string;
+  currentUserId: string;
+  canModerateComments: boolean;
 }) {
   const {
     open,
@@ -58,6 +62,8 @@ export function TaskFormDialog(props: {
     dependencyOptions,
     canEdit,
     defaultReporterId,
+    currentUserId,
+    canModerateComments,
   } = props;
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -97,7 +103,9 @@ export function TaskFormDialog(props: {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent
+        className={`max-h-[92vh] overflow-y-auto ${mode === 'edit' ? 'sm:max-w-3xl' : 'sm:max-w-2xl'}`}
+      >
         <DialogHeader>
           <DialogTitle>
             {mode === 'create' ? 'Tugas baru' : 'Edit tugas'}
@@ -374,6 +382,16 @@ export function TaskFormDialog(props: {
             </Button>
           </DialogFooter>
         </form>
+
+        {mode === 'edit' && task ? (
+          <TaskEditExtras
+            open={open}
+            projectId={projectId}
+            taskId={task.id}
+            currentUserId={currentUserId}
+            canModerateComments={canModerateComments}
+          />
+        ) : null}
       </DialogContent>
     </Dialog>
   );

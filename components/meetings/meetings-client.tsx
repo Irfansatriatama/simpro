@@ -4,6 +4,10 @@ import { CalendarPlus, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
+import {
+  FilterField,
+  FilterPanelSheet,
+} from '@/components/filters/filter-panel-sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SelectNative } from '@/components/ui/select-native';
@@ -46,6 +50,13 @@ export function MeetingsClient(props: {
   const [statusF, setStatusF] = useState<string>('all');
   const [formOpen, setFormOpen] = useState(false);
 
+  const filterActiveCount = useMemo(() => {
+    let n = 0;
+    if (typeF !== 'all') n++;
+    if (statusF !== 'all') n++;
+    return n;
+  }, [typeF, statusF]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rows.filter((r) => {
@@ -79,7 +90,7 @@ export function MeetingsClient(props: {
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-        <div className="relative min-w-[200px] flex-1 sm:max-w-xs">
+        <div className="relative min-w-0 flex-1 sm:max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
@@ -89,93 +100,83 @@ export function MeetingsClient(props: {
             aria-label="Cari meeting"
           />
         </div>
-        <SelectNative
-          value={typeF}
-          onChange={(e) => setTypeF(e.target.value)}
-          className="w-full sm:w-44"
+        <FilterPanelSheet
+          title="Filter meeting"
+          activeCount={filterActiveCount}
         >
-          <option value="all">Semua tipe</option>
-          {MEETING_TYPES.map((t) => (
-            <option key={t} value={t}>
-              {MEETING_TYPE_LABEL[t]}
-            </option>
-          ))}
-        </SelectNative>
-        <SelectNative
-          value={statusF}
-          onChange={(e) => setStatusF(e.target.value)}
-          className="w-full sm:w-44"
-        >
-          <option value="all">Semua status</option>
-          {MEETING_STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {MEETING_STATUS_LABEL[s]}
-            </option>
-          ))}
-        </SelectNative>
+          <FilterField label="Tipe">
+            <SelectNative
+              value={typeF}
+              onChange={(e) => setTypeF(e.target.value)}
+              className="w-full"
+            >
+              <option value="all">Semua tipe</option>
+              {MEETING_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {MEETING_TYPE_LABEL[t]}
+                </option>
+              ))}
+            </SelectNative>
+          </FilterField>
+          <FilterField label="Status">
+            <SelectNative
+              value={statusF}
+              onChange={(e) => setStatusF(e.target.value)}
+              className="w-full"
+            >
+              <option value="all">Semua status</option>
+              {MEETING_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {MEETING_STATUS_LABEL[s]}
+                </option>
+              ))}
+            </SelectNative>
+          </FilterField>
+        </FilterPanelSheet>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-card">
-        <table className="w-full min-w-[720px] text-left text-sm">
-          <thead className="border-b border-border bg-surface/80 text-xs uppercase text-muted-foreground">
-            <tr>
-              <th className="px-3 py-2 font-medium">Judul</th>
-              <th className="px-3 py-2 font-medium">Waktu</th>
-              <th className="px-3 py-2 font-medium">Tipe</th>
-              <th className="px-3 py-2 font-medium">Status</th>
-              <th className="px-3 py-2 font-medium">Proyek</th>
-              <th className="px-3 py-2 font-medium">Dibuat oleh</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {filtered.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={6}
-                  className="px-3 py-10 text-center text-muted-foreground"
-                >
-                  Tidak ada meeting yang cocok.
-                </td>
-              </tr>
-            ) : (
-              filtered.map((r) => (
-                <tr key={r.id} className="hover:bg-surface/40">
-                  <td className="px-3 py-2">
-                    <Link
-                      href={`/meetings/${r.id}`}
-                      className="font-medium text-primary hover:underline"
-                    >
-                      {r.title}
-                    </Link>
-                    {r.location ? (
-                      <p className="text-xs text-muted-foreground">
-                        {r.location}
-                      </p>
-                    ) : null}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
-                    {fmtWhen(r.date)}
-                  </td>
-                  <td className="px-3 py-2">
-                    {MEETING_TYPE_LABEL[r.type as keyof typeof MEETING_TYPE_LABEL] ??
-                      r.type}
-                  </td>
-                  <td className="px-3 py-2">
-                    {MEETING_STATUS_LABEL[
-                      r.status as keyof typeof MEETING_STATUS_LABEL
-                    ] ?? r.status}
-                  </td>
-                  <td className="max-w-[180px] truncate px-3 py-2 text-xs text-muted-foreground">
-                    {r.projectCodes || '—'}
-                  </td>
-                  <td className="px-3 py-2 text-muted-foreground">
-                    {r.creatorName}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {filtered.length === 0 ? (
+          <p className="col-span-full rounded-lg border border-dashed border-border bg-card py-12 text-center text-sm text-muted-foreground">
+            Tidak ada meeting yang cocok.
+          </p>
+        ) : (
+          filtered.map((r) => (
+            <Link
+              key={r.id}
+              href={`/meetings/${r.id}`}
+              className="group flex flex-col rounded-lg border border-border bg-card p-4 shadow-card transition-shadow hover:shadow-md"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <h2 className="font-semibold text-foreground group-hover:text-primary">
+                  {r.title}
+                </h2>
+                <span className="shrink-0 rounded-md bg-surface px-2 py-0.5 text-xs text-muted-foreground">
+                  {MEETING_STATUS_LABEL[
+                    r.status as keyof typeof MEETING_STATUS_LABEL
+                  ] ?? r.status}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {MEETING_TYPE_LABEL[
+                  r.type as keyof typeof MEETING_TYPE_LABEL
+                ] ?? r.type}
+              </p>
+              <p className="mt-3 text-sm text-muted-foreground">
+                {fmtWhen(r.date)}
+              </p>
+              {r.location ? (
+                <p className="mt-1 text-sm text-foreground">{r.location}</p>
+              ) : null}
+              <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">
+                {r.projectCodes || 'Tanpa proyek terhubung'}
+              </p>
+              <p className="mt-2 border-t border-border pt-2 text-xs text-muted-foreground">
+                {r.creatorName}
+              </p>
+            </Link>
+          ))
+        )}
       </div>
 
       <MeetingFormDialog

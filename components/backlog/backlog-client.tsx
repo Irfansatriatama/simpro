@@ -1,9 +1,20 @@
 'use client';
 
 import { Priority, TaskStatus, TaskType } from '@prisma/client';
-import { Layers, Plus, Search } from 'lucide-react';
+import {
+  Layers,
+  ListChecks,
+  MessageSquare,
+  Paperclip,
+  Plus,
+  Search,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import {
+  FilterField,
+  FilterPanelSheet,
+} from '@/components/filters/filter-panel-sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SelectNative } from '@/components/ui/select-native';
@@ -34,6 +45,7 @@ export function BacklogClient(props: {
   dependencyOptions: DepPick[];
   canEdit: boolean;
   currentUserId: string;
+  canModerateComments: boolean;
 }) {
   const {
     projectId,
@@ -45,6 +57,7 @@ export function BacklogClient(props: {
     dependencyOptions,
     canEdit,
     currentUserId,
+    canModerateComments,
   } = props;
 
   const [search, setSearch] = useState('');
@@ -76,6 +89,16 @@ export function BacklogClient(props: {
       return matchQ && matchS && matchTy && matchP && matchSp && matchE;
     });
   }, [tasks, search, statusF, typeF, priorityF, sprintF, epicF]);
+
+  const backlogFilterActiveCount = useMemo(() => {
+    let n = 0;
+    if (statusF !== 'all') n++;
+    if (typeF !== 'all') n++;
+    if (priorityF !== 'all') n++;
+    if (sprintF !== 'all') n++;
+    if (epicF !== 'all') n++;
+    return n;
+  }, [statusF, typeF, priorityF, sprintF, epicF]);
 
   const grouped = useMemo(() => {
     if (!groupEpic) return null;
@@ -134,6 +157,38 @@ export function BacklogClient(props: {
               <tr key={t.id} className="hover:bg-surface/40">
                 <td className="max-w-[220px] px-3 py-2">
                   <p className="font-medium text-foreground">{t.title}</p>
+                  {t.commentCount + t.checklistCount + t.attachmentCount >
+                  0 ? (
+                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                      {t.commentCount > 0 ? (
+                        <span
+                          className="inline-flex items-center gap-0.5"
+                          title="Komentar"
+                        >
+                          <MessageSquare className="h-3.5 w-3.5 shrink-0" />
+                          {t.commentCount}
+                        </span>
+                      ) : null}
+                      {t.checklistCount > 0 ? (
+                        <span
+                          className="inline-flex items-center gap-0.5"
+                          title="Checklist"
+                        >
+                          <ListChecks className="h-3.5 w-3.5 shrink-0" />
+                          {t.checklistCount}
+                        </span>
+                      ) : null}
+                      {t.attachmentCount > 0 ? (
+                        <span
+                          className="inline-flex items-center gap-0.5"
+                          title="Lampiran"
+                        >
+                          <Paperclip className="h-3.5 w-3.5 shrink-0" />
+                          {t.attachmentCount}
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : null}
                   {t.dependsOn.length > 0 ? (
                     <p className="mt-0.5 text-xs text-muted-foreground">
                       Tergantung:{' '}
@@ -235,8 +290,8 @@ export function BacklogClient(props: {
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center">
-        <div className="relative min-w-[180px] flex-1 lg:max-w-xs">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="relative min-w-0 flex-1 sm:max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
@@ -245,72 +300,87 @@ export function BacklogClient(props: {
             className="pl-9"
           />
         </div>
-        <SelectNative
-          value={statusF}
-          onChange={(e) =>
-            setStatusF(e.target.value as 'all' | TaskStatus)
-          }
-          className="w-full lg:w-40"
+        <FilterPanelSheet
+          title="Filter backlog"
+          activeCount={backlogFilterActiveCount}
         >
-          <option value="all">Semua status</option>
-          {Object.values(TaskStatus).map((s) => (
-            <option key={s} value={s}>
-              {TASK_STATUS_LABEL[s]}
-            </option>
-          ))}
-        </SelectNative>
-        <SelectNative
-          value={typeF}
-          onChange={(e) => setTypeF(e.target.value as 'all' | TaskType)}
-          className="w-full lg:w-36"
-        >
-          <option value="all">Semua tipe</option>
-          {Object.values(TaskType).map((ty) => (
-            <option key={ty} value={ty}>
-              {TASK_TYPE_LABEL[ty]}
-            </option>
-          ))}
-        </SelectNative>
-        <SelectNative
-          value={priorityF}
-          onChange={(e) =>
-            setPriorityF(e.target.value as 'all' | Priority)
-          }
-          className="w-full lg:w-36"
-        >
-          <option value="all">Semua prioritas</option>
-          {Object.values(Priority).map((p) => (
-            <option key={p} value={p}>
-              {PRIORITY_LABEL[p]}
-            </option>
-          ))}
-        </SelectNative>
-        <SelectNative
-          value={sprintF}
-          onChange={(e) => setSprintF(e.target.value)}
-          className="w-full lg:w-44"
-        >
-          <option value="all">Semua sprint</option>
-          <option value="none">Tanpa sprint</option>
-          {sprints.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </SelectNative>
-        <SelectNative
-          value={epicF}
-          onChange={(e) => setEpicF(e.target.value)}
-          className="w-full lg:w-44"
-        >
-          <option value="all">Semua epic</option>
-          <option value="none">Tanpa epic</option>
-          {epics.map((e) => (
-            <option key={e.id} value={e.id}>
-              {e.title.length > 40 ? `${e.title.slice(0, 40)}…` : e.title}
-            </option>
-          ))}
-        </SelectNative>
+          <FilterField label="Status">
+            <SelectNative
+              value={statusF}
+              onChange={(e) =>
+                setStatusF(e.target.value as 'all' | TaskStatus)
+              }
+              className="w-full"
+            >
+              <option value="all">Semua status</option>
+              {Object.values(TaskStatus).map((s) => (
+                <option key={s} value={s}>
+                  {TASK_STATUS_LABEL[s]}
+                </option>
+              ))}
+            </SelectNative>
+          </FilterField>
+          <FilterField label="Tipe">
+            <SelectNative
+              value={typeF}
+              onChange={(e) => setTypeF(e.target.value as 'all' | TaskType)}
+              className="w-full"
+            >
+              <option value="all">Semua tipe</option>
+              {Object.values(TaskType).map((ty) => (
+                <option key={ty} value={ty}>
+                  {TASK_TYPE_LABEL[ty]}
+                </option>
+              ))}
+            </SelectNative>
+          </FilterField>
+          <FilterField label="Prioritas">
+            <SelectNative
+              value={priorityF}
+              onChange={(e) =>
+                setPriorityF(e.target.value as 'all' | Priority)
+              }
+              className="w-full"
+            >
+              <option value="all">Semua prioritas</option>
+              {Object.values(Priority).map((p) => (
+                <option key={p} value={p}>
+                  {PRIORITY_LABEL[p]}
+                </option>
+              ))}
+            </SelectNative>
+          </FilterField>
+          <FilterField label="Sprint">
+            <SelectNative
+              value={sprintF}
+              onChange={(e) => setSprintF(e.target.value)}
+              className="w-full"
+            >
+              <option value="all">Semua sprint</option>
+              <option value="none">Tanpa sprint</option>
+              {sprints.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </SelectNative>
+          </FilterField>
+          <FilterField label="Epic">
+            <SelectNative
+              value={epicF}
+              onChange={(e) => setEpicF(e.target.value)}
+              className="w-full"
+            >
+              <option value="all">Semua epic</option>
+              <option value="none">Tanpa epic</option>
+              {epics.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.title.length > 40 ? `${e.title.slice(0, 40)}…` : e.title}
+                </option>
+              ))}
+            </SelectNative>
+          </FilterField>
+        </FilterPanelSheet>
       </div>
 
       {groupEpic && grouped ? (
@@ -342,6 +412,8 @@ export function BacklogClient(props: {
           dependencyOptions={dependencyOptions}
           canEdit={canEdit}
           defaultReporterId={currentUserId}
+          currentUserId={currentUserId}
+          canModerateComments={canModerateComments}
         />
       ) : null}
     </div>

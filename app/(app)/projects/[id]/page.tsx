@@ -169,11 +169,6 @@ export default async function ProjectOverviewPage({
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <div
-          className="h-2 rounded-full lg:col-span-3"
-          style={{ backgroundColor: project.coverColor }}
-        />
-
         <div className="space-y-4 lg:col-span-2">
           <section className="rounded-lg border border-border bg-card p-4 shadow-card">
             <h2 className="text-sm font-semibold text-foreground">Ringkasan</h2>

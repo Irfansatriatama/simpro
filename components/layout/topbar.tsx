@@ -1,6 +1,6 @@
 'use client';
 
-import { Menu, Search } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import Link from 'next/link';
 
 import { signOutAction } from '@/app/actions/auth';
@@ -14,7 +14,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
 import type { AppRole } from '@/lib/nav-config';
 import type { NotificationDTO } from '@/lib/notification-types';
 import { cn } from '@/lib/utils';
@@ -58,29 +57,21 @@ export function Topbar({
   const roleLabel = ROLE_LABELS[role] ?? role;
 
   return (
-    <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-card/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-card/80 md:px-4">
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="md:hidden"
-        onClick={onMenuClick}
-        aria-label="Buka menu"
-      >
-        <Menu className="h-5 w-5" />
-      </Button>
-
-      <div className="relative hidden min-w-0 flex-1 md:block md:max-w-md">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          readOnly
-          placeholder="Cari proyek, tugas, catatan…"
-          className="h-9 cursor-default bg-surface pl-9"
-          aria-label="Pencarian (segera hadir)"
-        />
+    <header className="sticky top-0 z-40 flex h-14 w-full shrink-0 items-center justify-between gap-3 border-b border-border bg-card/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-card/80 md:px-4">
+      <div className="flex min-w-0 items-center gap-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="md:hidden"
+          onClick={onMenuClick}
+          aria-label="Buka menu"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
       </div>
 
-      <div className="flex flex-1 items-center justify-end gap-1 md:flex-none">
+      <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-2">
         <NotificationBell
           preview={notificationPreview}
           unreadCount={unreadNotificationCount}

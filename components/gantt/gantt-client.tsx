@@ -1,9 +1,13 @@
 'use client';
 
-import { Crosshair, Filter } from 'lucide-react';
+import { Crosshair } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
+import {
+  FilterField,
+  FilterPanelSheet,
+} from '@/components/filters/filter-panel-sheet';
 import { Button } from '@/components/ui/button';
 import { SelectNative } from '@/components/ui/select-native';
 import {
@@ -275,6 +279,8 @@ export function GanttClient(props: {
     el.scrollLeft = Math.max(0, todayLeft - vw / 2 + dayW);
   }, [todayLeft, dayW]);
 
+  const ganttSprintFilterActive = sprintFilter === 'all' ? 0 : 1;
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -315,28 +321,29 @@ export function GanttClient(props: {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-muted-foreground" aria-hidden />
-          <span className="text-xs font-medium text-muted-foreground">
-            Sprint
-          </span>
-          <SelectNative
-            value={sprintFilter}
-            onChange={(e) =>
-              setSprintFilter(e.target.value as GanttSprintFilter)
-            }
-            className="min-w-[200px] text-sm"
-            aria-label="Filter sprint Gantt"
-          >
-            <option value="all">Semua sprint</option>
-            <option value="none">Tanpa sprint</option>
-            {sprints.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </SelectNative>
-        </div>
+        <FilterPanelSheet
+          title="Filter Gantt"
+          activeCount={ganttSprintFilterActive}
+        >
+          <FilterField label="Sprint">
+            <SelectNative
+              value={sprintFilter}
+              onChange={(e) =>
+                setSprintFilter(e.target.value as GanttSprintFilter)
+              }
+              className="w-full text-sm"
+              aria-label="Filter sprint Gantt"
+            >
+              <option value="all">Semua sprint</option>
+              <option value="none">Tanpa sprint</option>
+              {sprints.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </SelectNative>
+          </FilterField>
+        </FilterPanelSheet>
 
         <Button
           type="button"

@@ -6,6 +6,10 @@ import {
   ProjectStatus,
 } from '@prisma/client';
 import { Plus, Search } from 'lucide-react';
+import {
+  FilterField,
+  FilterPanelSheet,
+} from '@/components/filters/filter-panel-sheet';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
@@ -44,6 +48,15 @@ export function ProjectsClient(props: {
   const [clientFilter, setClientFilter] = useState<string>('all');
 
   const [formOpen, setFormOpen] = useState(false);
+
+  const filterActiveCount = useMemo(() => {
+    let n = 0;
+    if (statusFilter !== 'all') n++;
+    if (phaseFilter !== 'all') n++;
+    if (priorityFilter !== 'all') n++;
+    if (clientFilter !== 'all') n++;
+    return n;
+  }, [statusFilter, phaseFilter, priorityFilter, clientFilter]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -90,8 +103,8 @@ export function ProjectsClient(props: {
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
-        <div className="relative min-w-[200px] flex-1 lg:max-w-xs">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="relative min-w-0 flex-1 sm:max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
@@ -101,71 +114,84 @@ export function ProjectsClient(props: {
             aria-label="Cari proyek"
           />
         </div>
-        <SelectNative
-          value={statusFilter}
-          onChange={(e) =>
-            setStatusFilter(e.target.value as 'all' | ProjectStatus)
-          }
-          className="w-full lg:w-44"
-          aria-label="Filter status"
+        <FilterPanelSheet
+          title="Filter proyek"
+          activeCount={filterActiveCount}
         >
-          <option value="all">Semua status</option>
-          {Object.values(ProjectStatus).map((s) => (
-            <option key={s} value={s}>
-              {PROJECT_STATUS_LABEL[s]}
-            </option>
-          ))}
-        </SelectNative>
-        <SelectNative
-          value={phaseFilter}
-          onChange={(e) => {
-            const v = e.target.value;
-            if (v === 'all') setPhaseFilter('all');
-            else if (v === 'none') setPhaseFilter('none');
-            else setPhaseFilter(v as ProjectPhase);
-          }}
-          className="w-full lg:w-44"
-          aria-label="Filter fase"
-        >
-          <option value="all">Semua fase</option>
-          <option value="none">Tanpa fase</option>
-          {Object.values(ProjectPhase).map((ph) => (
-            <option key={ph} value={ph}>
-              {PROJECT_PHASE_LABEL[ph]}
-            </option>
-          ))}
-        </SelectNative>
-        <SelectNative
-          value={priorityFilter}
-          onChange={(e) =>
-            setPriorityFilter(e.target.value as 'all' | Priority)
-          }
-          className="w-full lg:w-40"
-          aria-label="Filter prioritas"
-        >
-          <option value="all">Semua prioritas</option>
-          {Object.values(Priority).map((pr) => (
-            <option key={pr} value={pr}>
-              {PRIORITY_LABEL[pr]}
-            </option>
-          ))}
-        </SelectNative>
-        {clients.length > 0 ? (
-          <SelectNative
-            value={clientFilter}
-            onChange={(e) => setClientFilter(e.target.value)}
-            className="w-full lg:w-48"
-            aria-label="Filter klien"
-          >
-            <option value="all">Semua klien</option>
-            <option value="none">Tanpa klien</option>
-            {clients.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.companyName}
-              </option>
-            ))}
-          </SelectNative>
-        ) : null}
+          <FilterField label="Status">
+            <SelectNative
+              value={statusFilter}
+              onChange={(e) =>
+                setStatusFilter(e.target.value as 'all' | ProjectStatus)
+              }
+              className="w-full"
+              aria-label="Filter status"
+            >
+              <option value="all">Semua status</option>
+              {Object.values(ProjectStatus).map((s) => (
+                <option key={s} value={s}>
+                  {PROJECT_STATUS_LABEL[s]}
+                </option>
+              ))}
+            </SelectNative>
+          </FilterField>
+          <FilterField label="Fase">
+            <SelectNative
+              value={phaseFilter}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === 'all') setPhaseFilter('all');
+                else if (v === 'none') setPhaseFilter('none');
+                else setPhaseFilter(v as ProjectPhase);
+              }}
+              className="w-full"
+              aria-label="Filter fase"
+            >
+              <option value="all">Semua fase</option>
+              <option value="none">Tanpa fase</option>
+              {Object.values(ProjectPhase).map((ph) => (
+                <option key={ph} value={ph}>
+                  {PROJECT_PHASE_LABEL[ph]}
+                </option>
+              ))}
+            </SelectNative>
+          </FilterField>
+          <FilterField label="Prioritas">
+            <SelectNative
+              value={priorityFilter}
+              onChange={(e) =>
+                setPriorityFilter(e.target.value as 'all' | Priority)
+              }
+              className="w-full"
+              aria-label="Filter prioritas"
+            >
+              <option value="all">Semua prioritas</option>
+              {Object.values(Priority).map((pr) => (
+                <option key={pr} value={pr}>
+                  {PRIORITY_LABEL[pr]}
+                </option>
+              ))}
+            </SelectNative>
+          </FilterField>
+          {clients.length > 0 ? (
+            <FilterField label="Klien">
+              <SelectNative
+                value={clientFilter}
+                onChange={(e) => setClientFilter(e.target.value)}
+                className="w-full"
+                aria-label="Filter klien"
+              >
+                <option value="all">Semua klien</option>
+                <option value="none">Tanpa klien</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.companyName}
+                  </option>
+                ))}
+              </SelectNative>
+            </FilterField>
+          ) : null}
+        </FilterPanelSheet>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

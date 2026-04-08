@@ -4,6 +4,10 @@ import { Plus, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
+import {
+  FilterField,
+  FilterPanelSheet,
+} from '@/components/filters/filter-panel-sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SelectNative } from '@/components/ui/select-native';
@@ -22,6 +26,8 @@ export function ClientsClient(props: { clients: ClientRow[] }) {
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [editing, setEditing] = useState<ClientRow | null>(null);
+
+  const filterActiveCount = statusFilter === 'all' ? 0 : 1;
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -65,8 +71,8 @@ export function ClientsClient(props: { clients: ClientRow[] }) {
         </Button>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative min-w-[200px] flex-1 sm:max-w-xs">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="relative min-w-0 flex-1 sm:max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
@@ -76,18 +82,25 @@ export function ClientsClient(props: { clients: ClientRow[] }) {
             aria-label="Cari klien"
           />
         </div>
-        <SelectNative
-          value={statusFilter}
-          onChange={(e) =>
-            setStatusFilter(e.target.value as StatusFilter)
-          }
-          className="w-full sm:w-44"
-          aria-label="Filter status"
+        <FilterPanelSheet
+          title="Filter klien"
+          activeCount={filterActiveCount}
         >
-          <option value="all">Semua status</option>
-          <option value="active">Aktif</option>
-          <option value="inactive">Nonaktif</option>
-        </SelectNative>
+          <FilterField label="Status">
+            <SelectNative
+              value={statusFilter}
+              onChange={(e) =>
+                setStatusFilter(e.target.value as StatusFilter)
+              }
+              className="w-full"
+              aria-label="Filter status"
+            >
+              <option value="all">Semua status</option>
+              <option value="active">Aktif</option>
+              <option value="inactive">Nonaktif</option>
+            </SelectNative>
+          </FilterField>
+        </FilterPanelSheet>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

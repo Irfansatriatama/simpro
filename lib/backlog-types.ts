@@ -35,6 +35,9 @@ export type BacklogTaskRow = {
   assignees: TaskAssigneeRow[];
   /** Tugas ini bergantung pada (prerequisite) */
   dependsOn: TaskDependencyRow[];
+  commentCount: number;
+  checklistCount: number;
+  attachmentCount: number;
 };
 
 export type ProjectMemberPick = {

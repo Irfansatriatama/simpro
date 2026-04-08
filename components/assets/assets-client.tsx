@@ -4,6 +4,10 @@ import { PackagePlus, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
+import {
+  FilterField,
+  FilterPanelSheet,
+} from '@/components/filters/filter-panel-sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SelectNative } from '@/components/ui/select-native';
@@ -44,6 +48,14 @@ export function AssetsClient(props: {
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [editing, setEditing] = useState<AssetRow | null>(null);
+
+  const filterActiveCount = useMemo(() => {
+    let n = 0;
+    if (catF !== 'all') n++;
+    if (statusF !== 'all') n++;
+    if (projectF !== 'all') n++;
+    return n;
+  }, [catF, statusF, projectF]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -95,7 +107,7 @@ export function AssetsClient(props: {
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-        <div className="relative min-w-[200px] flex-1 sm:max-w-xs">
+        <div className="relative min-w-0 flex-1 sm:max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
@@ -105,46 +117,57 @@ export function AssetsClient(props: {
             aria-label="Cari aset"
           />
         </div>
-        <SelectNative
-          value={catF}
-          onChange={(e) => setCatF(e.target.value)}
-          className="w-full sm:w-44"
-          aria-label="Filter kategori"
+        <FilterPanelSheet
+          title="Filter aset"
+          activeCount={filterActiveCount}
         >
-          <option value="all">Semua kategori</option>
-          {ASSET_CATEGORIES.map((c) => (
-            <option key={c} value={c}>
-              {ASSET_CATEGORY_LABEL[c]}
-            </option>
-          ))}
-        </SelectNative>
-        <SelectNative
-          value={statusF}
-          onChange={(e) => setStatusF(e.target.value)}
-          className="w-full sm:w-44"
-          aria-label="Filter status"
-        >
-          <option value="all">Semua status</option>
-          {ASSET_STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {ASSET_STATUS_LABEL[s]}
-            </option>
-          ))}
-        </SelectNative>
-        <SelectNative
-          value={projectF}
-          onChange={(e) => setProjectF(e.target.value)}
-          className="w-full min-w-[12rem] sm:max-w-xs"
-          aria-label="Filter proyek"
-        >
-          <option value="all">Semua proyek</option>
-          <option value="none">Tanpa proyek</option>
-          {projects.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.code} — {p.name}
-            </option>
-          ))}
-        </SelectNative>
+          <FilterField label="Kategori">
+            <SelectNative
+              value={catF}
+              onChange={(e) => setCatF(e.target.value)}
+              className="w-full"
+              aria-label="Filter kategori"
+            >
+              <option value="all">Semua kategori</option>
+              {ASSET_CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {ASSET_CATEGORY_LABEL[c]}
+                </option>
+              ))}
+            </SelectNative>
+          </FilterField>
+          <FilterField label="Status">
+            <SelectNative
+              value={statusF}
+              onChange={(e) => setStatusF(e.target.value)}
+              className="w-full"
+              aria-label="Filter status"
+            >
+              <option value="all">Semua status</option>
+              {ASSET_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {ASSET_STATUS_LABEL[s]}
+                </option>
+              ))}
+            </SelectNative>
+          </FilterField>
+          <FilterField label="Proyek">
+            <SelectNative
+              value={projectF}
+              onChange={(e) => setProjectF(e.target.value)}
+              className="w-full"
+              aria-label="Filter proyek"
+            >
+              <option value="all">Semua proyek</option>
+              <option value="none">Tanpa proyek</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.code} — {p.name}
+                </option>
+              ))}
+            </SelectNative>
+          </FilterField>
+        </FilterPanelSheet>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-card">

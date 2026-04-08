@@ -1,5 +1,7 @@
-import { PlaceholderPage } from '@/components/placeholder-page';
+import { UserGuideContent } from '@/components/guide/user-guide-content';
+
+export const dynamic = 'force-dynamic';
 
 export default function GuidePage() {
-  return <PlaceholderPage title="User guide" />;
+  return <UserGuideContent />;
 }

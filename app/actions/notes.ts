@@ -5,6 +5,11 @@ import {
   isNoteColorHex,
   isNoteSharePerm,
 } from '@/lib/note-constants';
+import {
+  createNoteFolderRow,
+  deleteNoteFolderRow,
+  noteFolderExistsForUser,
+} from '@/lib/note-folder-db';
 import { requireSessionUser } from '@/lib/require-session';
 import { prisma } from '@/lib/prisma';
 import { UserStatus } from '@prisma/client';
@@ -168,10 +173,18 @@ export async function updateNoteMetaAction(
         ? colorRaw
         : null;
 
+  const folderIdRaw = trim(formData.get('folderId'));
+  let folderId: string | null = null;
+  if (folderIdRaw && folderIdRaw !== 'none') {
+    const ok = await noteFolderExistsForUser(folderIdRaw, s.userId);
+    if (!ok) return { ok: false, error: 'Folder tidak valid.' };
+    folderId = folderIdRaw;
+  }
+
   try {
     await prisma.note.update({
       where: { id },
-      data: { tags, color },
+      data: { tags, color, folderId },
     });
     await audit(id, s.userId, 'meta');
     revalidatePath('/notes');
@@ -179,6 +192,41 @@ export async function updateNoteMetaAction(
   } catch {
     return { ok: false, error: 'Gagal menyimpan tag atau warna.' };
   }
+}
+
+export async function createNoteFolderAction(
+  formData: FormData,
+): Promise<NoteActionOk> {
+  const s = await requireSessionUser();
+  if (!s) return { ok: false, error: 'Silakan masuk lagi.' };
+
+  const name = trim(formData.get('name'));
+  if (!name || name.length > 80) {
+    return { ok: false, error: 'Nama folder 1–80 karakter.' };
+  }
+
+  const newId = await createNoteFolderRow(s.userId, name);
+  if (!newId) return { ok: false, error: 'Gagal membuat folder.' };
+  revalidatePath('/notes');
+  return { ok: true, id: newId };
+}
+
+export async function deleteNoteFolderAction(
+  formData: FormData,
+): Promise<NoteActionOk> {
+  const s = await requireSessionUser();
+  if (!s) return { ok: false, error: 'Silakan masuk lagi.' };
+
+  const id = trim(formData.get('id'));
+  if (!id) return { ok: false, error: 'Folder tidak valid.' };
+
+  const exists = await noteFolderExistsForUser(id, s.userId);
+  if (!exists) return { ok: false, error: 'Folder tidak ditemukan.' };
+
+  const ok = await deleteNoteFolderRow(id, s.userId);
+  if (!ok) return { ok: false, error: 'Gagal menghapus folder.' };
+  revalidatePath('/notes');
+  return { ok: true };
 }
 
 export async function deleteNoteAction(
@@ -283,6 +331,15 @@ export type NoteAuditEntry = {
   actorName: string;
   createdAt: string;
 };
+
+/** Varian FormData untuk pemanggilan dari klien (lebih andal dengan server actions). */
+export async function listNoteAuditsFormAction(
+  formData: FormData,
+): Promise<NoteActionOk<{ entries: NoteAuditEntry[] }>> {
+  const noteId = trim(formData.get('noteId'));
+  if (!noteId) return { ok: false, error: 'Catatan tidak valid.' };
+  return listNoteAuditsAction(noteId);
+}
 
 export async function listNoteAuditsAction(
   noteId: string,

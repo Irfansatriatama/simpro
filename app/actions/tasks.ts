@@ -6,10 +6,7 @@ import {
   TaskStatus,
   TaskType,
 } from '@prisma/client';
-import { headers } from 'next/headers';
-import { auth } from '@/lib/auth';
-import { projectViewWhere } from '@/lib/project-access';
-import { getUserRole } from '@/lib/session-user';
+import { requireBacklogAccess } from '@/lib/backlog-access';
 import { prisma } from '@/lib/prisma';
 import { ACTIVITY_ACTION, ACTIVITY_ENTITY } from '@/lib/activity-log-constants';
 import { recordActivityLog } from '@/lib/activity-log-record';
@@ -18,29 +15,11 @@ import {
   notifyUsers,
 } from '@/lib/notification-dispatch';
 import { boardColumnIdForStatus } from '@/lib/board-columns';
-import { canEditTasksInProject } from '@/lib/task-access';
 
 export type TaskActionResult = { ok: true } | { ok: false; error: string };
 
 function trim(s: FormDataEntryValue | null): string {
   return String(s ?? '').trim();
-}
-
-async function requireBacklogAccess(projectId: string) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user?.id) return null;
-  const userId = session.user.id;
-  const role = getUserRole(session);
-  const project = await prisma.project.findFirst({
-    where: projectViewWhere(userId, role, projectId),
-    select: { id: true },
-  });
-  if (!project) return null;
-  const member = await prisma.projectMember.findUnique({
-    where: { projectId_userId: { projectId, userId } },
-  });
-  const canEdit = canEditTasksInProject(role, !!member);
-  return { userId, role, canEdit };
 }
 
 function parseOptDate(s: string): Date | null {
