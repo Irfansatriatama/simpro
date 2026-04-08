@@ -56,8 +56,9 @@ Angka phase di bawah **khusus untuk SIMPRO**; tidak sama dengan “Fase 1–6”
 | **4** | Selesai | **Anggota** (`/members`): CRUD admin, password reset, kebijakan admin terakhir |
 | **5** | Selesai | **Klien** (`/clients`, `/clients/[id]`): CRUD admin/PM, daftar proyek terhubung |
 | **6** | Selesai | **Proyek** (`/projects`, `/projects/[id]`): daftar + filter, detail ringkasan, CRUD (admin/PM), anggota + peran, sub-nav ke modul proyek |
-| **7** | Berikutnya | Sub-modul proyek (mis. backlog, board) — urutan mengikuti `_reference/README.md` |
-| **8+** | Direncanakan | Sprint, gantt, maintenance, reports, discussion, log, meetings, assets, notifikasi, notes, settings |
+| **7** | Selesai | **Backlog** (`/projects/[id]/backlog`): CRUD tugas, filter, epic/sprint, penerima tugas, dependensi, grup per epic |
+| **8** | Berikutnya | **Board** (Kanban) dan modul proyek lain — urutan mengikuti `_reference/README.md` |
+| **9+** | Direncanakan | Sprint, gantt, maintenance, reports, discussion, log, meetings, assets, notifikasi, notes, settings |
 | **N** | Akhir | Polish, aksesibilitas, performa, PDF/export jika perlu, hardening production, dokumentasi handoff |
 
 Sesuaikan isi phase 7+ dengan prioritas bisnis; dokumen ini bisa dipecah jadi checklist per phase saat mulai mengerjakan.
