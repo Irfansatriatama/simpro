@@ -66,7 +66,8 @@ Angka phase di bawah **khusus untuk SIMPRO**; tidak sama dengan “Fase 1–6”
 | **14** | Selesai | **Log aktivitas** (`/projects/[id]/log`): daftar `ActivityLog` (400 terbaru), filter & JSON `changes`/`metadata`; pencatatan dari server actions tugas (buat/ubah/hapus), board (pindah kolom), sprint, maintenance, diskusi + balasan + sematan |
 | **15** | Selesai | **Meetings** (`/meetings`, `/meetings/[id]`): CRUD admin/PM, agenda, peserta & proyek, activity log (proyek pertama atau global) |
 | **16** | Selesai | **Aset** (`/assets`, `/assets/[id]`): inventaris global, kategori/status Trackly, taut proyek & PJ, garansi/harga; server actions + log proyek bila `projectId` ada |
-| **17+** | Berikutnya | Notifikasi, catatan pribadi (`/notes`), pengaturan — urutan mengikuti `_reference/README.md` |
+| **17** | Selesai | **Catatan pribadi** (`/notes`): milik pengguna + dibagikan (`NoteShare` view/edit), semat, tag & warna, autosave isi, riwayat audit pemilik; server actions + `requireSessionUser` |
+| **18+** | Berikutnya | Notifikasi, **Pengaturan** (`/settings`) — urutan mengikuti `_reference/README.md` |
 | **N** | Akhir | Polish (burndown/velocity sprint, dll.), aksesibilitas, performa, PDF/export jika perlu, hardening production, dokumentasi handoff |
 
 Sesuaikan isi phase 7+ dengan prioritas bisnis; dokumen ini bisa dipecah jadi checklist per phase saat mulai mengerjakan.
