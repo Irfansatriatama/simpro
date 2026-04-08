@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, Menu, Search } from 'lucide-react';
+import { Menu, Search } from 'lucide-react';
 import Link from 'next/link';
 
 import { signOutAction } from '@/app/actions/auth';
@@ -16,7 +16,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import type { AppRole } from '@/lib/nav-config';
+import type { NotificationDTO } from '@/lib/notification-types';
 import { cn } from '@/lib/utils';
+
+import { NotificationBell } from './notification-bell';
 
 const ROLE_LABELS: Record<AppRole, string> = {
   admin: 'Administrator',
@@ -38,6 +41,8 @@ export type TopbarProps = {
   userEmail: string | null;
   userImage: string | null;
   role: AppRole;
+  notificationPreview: NotificationDTO[];
+  unreadNotificationCount: number;
   onMenuClick: () => void;
 };
 
@@ -46,6 +51,8 @@ export function Topbar({
   userEmail,
   userImage,
   role,
+  notificationPreview,
+  unreadNotificationCount,
   onMenuClick,
 }: TopbarProps) {
   const roleLabel = ROLE_LABELS[role] ?? role;
@@ -74,16 +81,10 @@ export function Topbar({
       </div>
 
       <div className="flex flex-1 items-center justify-end gap-1 md:flex-none">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="text-muted-foreground"
-          aria-label="Notifikasi"
-          title="Notifikasi (segera hadir)"
-        >
-          <Bell className="h-5 w-5" />
-        </Button>
+        <NotificationBell
+          preview={notificationPreview}
+          unreadCount={unreadNotificationCount}
+        />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

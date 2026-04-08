@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import {
+  Bell,
   BookOpen,
   Building2,
   Calendar,
@@ -37,6 +38,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { href: '/projects', label: 'Projects', icon: FolderKanban },
+      { href: '/notifications', label: 'Notifikasi', icon: Bell },
     ],
   },
   {

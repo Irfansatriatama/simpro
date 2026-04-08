@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import type { AppRole } from '@/lib/nav-config';
+import type { NotificationDTO } from '@/lib/notification-types';
 
 import { cn } from '@/lib/utils';
 
@@ -17,6 +18,8 @@ export type AppShellProps = {
   userEmail: string | null;
   userImage: string | null;
   role: AppRole;
+  notificationPreview: NotificationDTO[];
+  unreadNotificationCount: number;
   children: React.ReactNode;
 };
 
@@ -26,6 +29,8 @@ export function AppShell({
   userEmail,
   userImage,
   role,
+  notificationPreview,
+  unreadNotificationCount,
   children,
 }: AppShellProps) {
   const [collapsed, setCollapsed] = useState(false);
@@ -90,6 +95,8 @@ export function AppShell({
             userEmail={userEmail}
             userImage={userImage}
             role={role}
+            notificationPreview={notificationPreview}
+            unreadNotificationCount={unreadNotificationCount}
             onMenuClick={() => setMobileOpen(true)}
           />
           <main className="flex-1 p-4 md:p-6">{children}</main>

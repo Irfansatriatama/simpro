@@ -1,7 +1,9 @@
 import { AppShell } from '@/components/layout/app-shell';
 import { auth } from '@/lib/auth';
 import { getOrgSettings } from '@/lib/org-settings';
+import { toNotificationDTO } from '@/lib/notification-serialize';
 import { getUserRole } from '@/lib/session-user';
+import { prisma } from '@/lib/prisma';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
@@ -16,7 +18,20 @@ export default async function AppShellLayout({
   if (!session) redirect('/login');
 
   const user = session.user;
-  const org = await getOrgSettings();
+  const userId = user.id;
+
+  const [org, previewRows, unreadNotificationCount] = await Promise.all([
+    getOrgSettings(),
+    prisma.notification.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    }),
+    prisma.notification.count({
+      where: { userId, read: false },
+    }),
+  ]);
+
   const appName = org.systemName.trim() || 'SIMPRO';
 
   return (
@@ -26,6 +41,8 @@ export default async function AppShellLayout({
       userEmail={user.email ?? null}
       userImage={user.image ?? null}
       role={getUserRole(session)}
+      notificationPreview={previewRows.map(toNotificationDTO)}
+      unreadNotificationCount={unreadNotificationCount}
     >
       {children}
     </AppShell>

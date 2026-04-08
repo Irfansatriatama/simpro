@@ -13,6 +13,10 @@ import { getUserRole } from '@/lib/session-user';
 import { prisma } from '@/lib/prisma';
 import { ACTIVITY_ACTION, ACTIVITY_ENTITY } from '@/lib/activity-log-constants';
 import { recordActivityLog } from '@/lib/activity-log-record';
+import {
+  actorNotificationProfile,
+  notifyUsers,
+} from '@/lib/notification-dispatch';
 import { boardColumnIdForStatus } from '@/lib/board-columns';
 import { canEditTasksInProject } from '@/lib/task-access';
 
@@ -190,6 +194,30 @@ export async function createTaskAction(
       actorId: ctx.userId,
     });
 
+    if (assigneeIds.length > 0) {
+      const actor = await actorNotificationProfile(ctx.userId);
+      const proj = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: { code: true, name: true },
+      });
+      const projectName = proj
+        ? `${proj.code} — ${proj.name}`.slice(0, 200)
+        : null;
+      await notifyUsers({
+        recipientUserIds: assigneeIds,
+        actorId: ctx.userId,
+        actorName: actor.name,
+        actorAvatar: actor.image,
+        entityType: ACTIVITY_ENTITY.task,
+        entityId: created.id,
+        entityName: created.title,
+        action: ACTIVITY_ACTION.created,
+        message: `${actor.name} menugaskan Anda pada tugas "${created.title}".`,
+        projectId,
+        projectName,
+      });
+    }
+
     revalidatePath(`/projects/${projectId}/backlog`);
     revalidatePath(`/projects/${projectId}/board`);
     revalidatePath(`/projects/${projectId}`);
@@ -289,6 +317,12 @@ export async function updateTaskAction(
     }
   }
 
+  const prevAssigneeRows = await prisma.taskAssignee.findMany({
+    where: { taskId },
+    select: { userId: true },
+  });
+  const prevAssigneeSet = new Set(prevAssigneeRows.map((r) => r.userId));
+
   try {
     await prisma.$transaction(async (tx) => {
       await tx.task.update({
@@ -348,6 +382,31 @@ export async function updateTaskAction(
       action: ACTIVITY_ACTION.updated,
       actorId: ctx.userId,
     });
+
+    const newlyAssigned = assigneeIds.filter((id) => !prevAssigneeSet.has(id));
+    if (newlyAssigned.length > 0) {
+      const actor = await actorNotificationProfile(ctx.userId);
+      const proj = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: { code: true, name: true },
+      });
+      const projectName = proj
+        ? `${proj.code} — ${proj.name}`.slice(0, 200)
+        : null;
+      await notifyUsers({
+        recipientUserIds: newlyAssigned,
+        actorId: ctx.userId,
+        actorName: actor.name,
+        actorAvatar: actor.image,
+        entityType: ACTIVITY_ENTITY.task,
+        entityId: taskId,
+        entityName: title,
+        action: 'assigned',
+        message: `${actor.name} menambahkan Anda sebagai penerima tugas "${title}".`,
+        projectId,
+        projectName,
+      });
+    }
 
     revalidatePath(`/projects/${projectId}/backlog`);
     revalidatePath(`/projects/${projectId}/board`);

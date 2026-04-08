@@ -7,6 +7,11 @@ import { ACTIVITY_ACTION, ACTIVITY_ENTITY } from '@/lib/activity-log-constants';
 import { recordActivityLog } from '@/lib/activity-log-record';
 import { isDiscussionType } from '@/lib/discussion-constants';
 import {
+  actorNotificationProfile,
+  notifyUsers,
+  projectNotifyContext,
+} from '@/lib/notification-dispatch';
+import {
   canManageProjects,
   projectViewWhere,
 } from '@/lib/project-access';
@@ -97,6 +102,26 @@ export async function createDiscussionAction(
       action: ACTIVITY_ACTION.created,
       actorId: ctx.userId,
     });
+
+    const actor = await actorNotificationProfile(ctx.userId);
+    const { projectName, memberIds } = await projectNotifyContext(projectId);
+    const preview =
+      title?.trim() ||
+      (content.length > 120 ? `${content.slice(0, 120)}…` : content);
+    await notifyUsers({
+      recipientUserIds: memberIds,
+      actorId: ctx.userId,
+      actorName: actor.name,
+      actorAvatar: actor.image,
+      entityType: ACTIVITY_ENTITY.discussion,
+      entityId: d.id,
+      entityName: label,
+      action: ACTIVITY_ACTION.created,
+      message: `${actor.name} memulai diskusi: ${preview}`,
+      projectId,
+      projectName,
+    });
+
     revalidateDiscussion(projectId);
     return { ok: true };
   } catch {
@@ -271,9 +296,14 @@ export async function createDiscussionReplyAction(
 
   const thread = await prisma.discussion.findFirst({
     where: { id: discussionId, projectId },
-    select: { id: true },
+    select: { id: true, authorId: true, title: true, content: true },
   });
   if (!thread) return { ok: false, error: 'Diskusi tidak ditemukan.' };
+
+  const prevReplies = await prisma.discussionReply.findMany({
+    where: { discussionId },
+    select: { authorId: true },
+  });
 
   const content = trim(formData.get('content'));
   if (content.length < 1) {
@@ -297,6 +327,44 @@ export async function createDiscussionReplyAction(
       actorId: ctx.userId,
       metadata: { discussionId },
     });
+
+    const recipients = new Set<string>();
+    if (thread.authorId !== ctx.userId) {
+      recipients.add(thread.authorId);
+    }
+    for (const pr of prevReplies) {
+      if (pr.authorId !== ctx.userId) {
+        recipients.add(pr.authorId);
+      }
+    }
+    if (recipients.size > 0) {
+      const actor = await actorNotificationProfile(ctx.userId);
+      const proj = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: { code: true, name: true },
+      });
+      const projectName = proj
+        ? `${proj.code} — ${proj.name}`.slice(0, 200)
+        : null;
+      const threadLabel =
+        thread.title?.trim() ||
+        thread.content?.slice(0, 80) ||
+        'Diskusi';
+      await notifyUsers({
+        recipientUserIds: Array.from(recipients),
+        actorId: ctx.userId,
+        actorName: actor.name,
+        actorAvatar: actor.image,
+        entityType: ACTIVITY_ENTITY.discussion_reply,
+        entityId: r.id,
+        entityName: content.slice(0, 120),
+        action: ACTIVITY_ACTION.created,
+        message: `${actor.name} membalas diskusi "${threadLabel}".`,
+        projectId,
+        projectName,
+      });
+    }
+
     revalidateDiscussion(projectId);
     return { ok: true };
   } catch {
