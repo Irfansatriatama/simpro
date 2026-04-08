@@ -60,7 +60,8 @@ Angka phase di bawah **khusus untuk SIMPRO**; tidak sama dengan “Fase 1–6”
 | **8** | Selesai | **Board** (`/projects/[id]/board`): Kanban kolom tetap, DnD `@dnd-kit`, `Task.columnId` + sinkron `status` dengan backlog, server action + `revalidatePath` |
 | **9** | Selesai | **Sprint** (`/projects/[id]/sprint`): CRUD sprint (nama, goal, tanggal, status, retro), hapus melepaskan tugas dari sprint, akses edit sama backlog |
 | **10** | Selesai | **Gantt** (`/projects/[id]/gantt`): linimasa tugas (mulai/jatuh tempo), filter sprint, zoom hari/minggu/bulan, grup per sprint, garis hari ini; baca saja (tanpa drag/export PNG seperti referensi) |
-| **11+** | Berikutnya | Maintenance, reports, discussion, log, meetings, assets, notifikasi, notes, settings — urutan mengikuti `_reference/README.md` |
+| **11** | Selesai | **Maintenance** (`/projects/[id]/maintenance`): CRUD tiket (tipe/status/prioritas/severity, tanggal, jam & biaya, PIC dev lewat `MaintenancePicDev`), filter & tabel; `revalidatePath` termasuk ringkasan proyek + laporan maintenance |
+| **12+** | Berikutnya | Reports, discussion, log, meetings, assets, notifikasi, notes, settings — urutan mengikuti `_reference/README.md` |
 | **N** | Akhir | Polish (burndown/velocity sprint, dll.), aksesibilitas, performa, PDF/export jika perlu, hardening production, dokumentasi handoff |
 
 Sesuaikan isi phase 7+ dengan prioritas bisnis; dokumen ini bisa dipecah jadi checklist per phase saat mulai mengerjakan.
