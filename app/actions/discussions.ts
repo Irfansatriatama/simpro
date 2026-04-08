@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
+import { ACTIVITY_ACTION, ACTIVITY_ENTITY } from '@/lib/activity-log-constants';
+import { recordActivityLog } from '@/lib/activity-log-record';
 import { isDiscussionType } from '@/lib/discussion-constants';
 import {
   canManageProjects,
@@ -76,7 +78,7 @@ export async function createDiscussionAction(
   const pinned = ctx.canModerate && trim(formData.get('pinned')) === '1';
 
   try {
-    await prisma.discussion.create({
+    const d = await prisma.discussion.create({
       data: {
         projectId,
         title,
@@ -85,6 +87,15 @@ export async function createDiscussionAction(
         authorId: ctx.userId,
         pinned,
       },
+    });
+    const label = title?.trim() || content.slice(0, 120);
+    await recordActivityLog({
+      projectId,
+      entityType: ACTIVITY_ENTITY.discussion,
+      entityId: d.id,
+      entityName: label,
+      action: ACTIVITY_ACTION.created,
+      actorId: ctx.userId,
     });
     revalidateDiscussion(projectId);
     return { ok: true };
@@ -140,6 +151,15 @@ export async function updateDiscussionAction(
         ...(pinned !== undefined ? { pinned } : {}),
       },
     });
+    const label = title?.trim() || content.slice(0, 120);
+    await recordActivityLog({
+      projectId,
+      entityType: ACTIVITY_ENTITY.discussion,
+      entityId: discussionId,
+      entityName: label,
+      action: ACTIVITY_ACTION.updated,
+      actorId: ctx.userId,
+    });
     revalidateDiscussion(projectId);
     return { ok: true };
   } catch {
@@ -161,15 +181,26 @@ export async function deleteDiscussionAction(
 
   const existing = await prisma.discussion.findFirst({
     where: { id: discussionId, projectId },
-    select: { id: true, authorId: true },
+    select: { id: true, authorId: true, title: true, content: true },
   });
   if (!existing) return { ok: false, error: 'Diskusi tidak ditemukan.' };
   if (!canEditOthersContent(ctx, existing.authorId)) {
     return { ok: false, error: 'Anda tidak dapat menghapus diskusi ini.' };
   }
 
+  const label =
+    existing.title?.trim() || existing.content.slice(0, 120);
+
   try {
     await prisma.discussion.delete({ where: { id: discussionId } });
+    await recordActivityLog({
+      projectId,
+      entityType: ACTIVITY_ENTITY.discussion,
+      entityId: discussionId,
+      entityName: label,
+      action: ACTIVITY_ACTION.deleted,
+      actorId: ctx.userId,
+    });
     revalidateDiscussion(projectId);
     return { ok: true };
   } catch {
@@ -194,14 +225,27 @@ export async function toggleDiscussionPinAction(
 
   const existing = await prisma.discussion.findFirst({
     where: { id: discussionId, projectId },
-    select: { id: true, pinned: true },
+    select: { id: true, pinned: true, title: true, content: true },
   });
   if (!existing) return { ok: false, error: 'Diskusi tidak ditemukan.' };
+
+  const nextPinned = !existing.pinned;
+  const label =
+    existing.title?.trim() || existing.content.slice(0, 120);
 
   try {
     await prisma.discussion.update({
       where: { id: discussionId },
-      data: { pinned: !existing.pinned },
+      data: { pinned: nextPinned },
+    });
+    await recordActivityLog({
+      projectId,
+      entityType: ACTIVITY_ENTITY.discussion,
+      entityId: discussionId,
+      entityName: label,
+      action: ACTIVITY_ACTION.pin_toggled,
+      actorId: ctx.userId,
+      metadata: { pinned: nextPinned },
     });
     revalidateDiscussion(projectId);
     return { ok: true };
@@ -237,12 +281,21 @@ export async function createDiscussionReplyAction(
   }
 
   try {
-    await prisma.discussionReply.create({
+    const r = await prisma.discussionReply.create({
       data: {
         discussionId,
         authorId: ctx.userId,
         content,
       },
+    });
+    await recordActivityLog({
+      projectId,
+      entityType: ACTIVITY_ENTITY.discussion_reply,
+      entityId: r.id,
+      entityName: content.slice(0, 120),
+      action: ACTIVITY_ACTION.created,
+      actorId: ctx.userId,
+      metadata: { discussionId },
     });
     revalidateDiscussion(projectId);
     return { ok: true };
@@ -286,6 +339,15 @@ export async function updateDiscussionReplyAction(
       where: { id: replyId },
       data: { content },
     });
+    await recordActivityLog({
+      projectId,
+      entityType: ACTIVITY_ENTITY.discussion_reply,
+      entityId: replyId,
+      entityName: content.slice(0, 120),
+      action: ACTIVITY_ACTION.updated,
+      actorId: ctx.userId,
+      metadata: { discussionId: reply.discussionId },
+    });
     revalidateDiscussion(projectId);
     return { ok: true };
   } catch {
@@ -320,6 +382,15 @@ export async function deleteDiscussionReplyAction(
 
   try {
     await prisma.discussionReply.delete({ where: { id: replyId } });
+    await recordActivityLog({
+      projectId,
+      entityType: ACTIVITY_ENTITY.discussion_reply,
+      entityId: replyId,
+      entityName: reply.content.slice(0, 120),
+      action: ACTIVITY_ACTION.deleted,
+      actorId: ctx.userId,
+      metadata: { discussionId: reply.discussionId },
+    });
     revalidateDiscussion(projectId);
     return { ok: true };
   } catch {

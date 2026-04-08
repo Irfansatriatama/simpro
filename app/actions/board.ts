@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { TaskType } from '@prisma/client';
 import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
+import { ACTIVITY_ACTION, ACTIVITY_ENTITY } from '@/lib/activity-log-constants';
+import { recordActivityLog } from '@/lib/activity-log-record';
 import { boardColumnById } from '@/lib/board-columns';
 import { projectViewWhere } from '@/lib/project-access';
 import { prisma } from '@/lib/prisma';
@@ -60,6 +62,21 @@ export async function moveTaskOnBoardAction(payload: {
     data: {
       columnId: col.id,
       status: col.status,
+    },
+  });
+
+  await recordActivityLog({
+    projectId,
+    entityType: ACTIVITY_ENTITY.task,
+    entityId: taskId,
+    entityName: task.title,
+    action: ACTIVITY_ACTION.board_moved,
+    actorId: ctx.userId,
+    metadata: {
+      fromColumnId: currentCol,
+      toColumnId: col.id,
+      fromStatus: task.status,
+      toStatus: col.status,
     },
   });
 

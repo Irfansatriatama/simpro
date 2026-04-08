@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
+import { ACTIVITY_ACTION, ACTIVITY_ENTITY } from '@/lib/activity-log-constants';
+import { recordActivityLog } from '@/lib/activity-log-record';
 import { isSprintStatus } from '@/lib/sprint-constants';
 import { projectViewWhere } from '@/lib/project-access';
 import { prisma } from '@/lib/prisma';
@@ -81,7 +83,7 @@ export async function createSprintAction(
     statusRaw === 'completed' ? new Date() : null;
 
   try {
-    await prisma.sprint.create({
+    const s = await prisma.sprint.create({
       data: {
         projectId,
         name,
@@ -92,6 +94,14 @@ export async function createSprintAction(
         retro: trim(formData.get('retro')) || null,
         completedAt,
       },
+    });
+    await recordActivityLog({
+      projectId,
+      entityType: ACTIVITY_ENTITY.sprint,
+      entityId: s.id,
+      entityName: s.name,
+      action: ACTIVITY_ACTION.created,
+      actorId: ctx.userId,
     });
     revalidateProjectSprintPaths(projectId);
     return { ok: true };
@@ -153,6 +163,14 @@ export async function updateSprintAction(
         completedAt,
       },
     });
+    await recordActivityLog({
+      projectId,
+      entityType: ACTIVITY_ENTITY.sprint,
+      entityId: sprintId,
+      entityName: name,
+      action: ACTIVITY_ACTION.updated,
+      actorId: ctx.userId,
+    });
     revalidateProjectSprintPaths(projectId);
     return { ok: true };
   } catch {
@@ -173,7 +191,10 @@ export async function deleteSprintAction(
   if (!ctx) return { ok: false, error: 'Tidak punya akses proyek.' };
   if (!ctx.canEdit) return { ok: false, error: 'Anda tidak dapat menghapus sprint.' };
 
-  const existing = await loadSprintInProject(sprintId, projectId);
+  const existing = await prisma.sprint.findFirst({
+    where: { id: sprintId, projectId },
+    select: { id: true, name: true },
+  });
   if (!existing) return { ok: false, error: 'Sprint tidak ditemukan.' };
 
   try {
@@ -184,6 +205,14 @@ export async function deleteSprintAction(
       }),
       prisma.sprint.delete({ where: { id: sprintId } }),
     ]);
+    await recordActivityLog({
+      projectId,
+      entityType: ACTIVITY_ENTITY.sprint,
+      entityId: sprintId,
+      entityName: existing.name,
+      action: ACTIVITY_ACTION.deleted,
+      actorId: ctx.userId,
+    });
     revalidateProjectSprintPaths(projectId);
     return { ok: true };
   } catch {

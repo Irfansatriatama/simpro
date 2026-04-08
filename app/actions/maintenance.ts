@@ -14,6 +14,8 @@ import {
   isMaintenanceType,
   isSeverity,
 } from '@/lib/maintenance-labels';
+import { ACTIVITY_ACTION, ACTIVITY_ENTITY } from '@/lib/activity-log-constants';
+import { recordActivityLog } from '@/lib/activity-log-record';
 import { projectViewWhere } from '@/lib/project-access';
 import { prisma } from '@/lib/prisma';
 import { getUserRole } from '@/lib/session-user';
@@ -198,8 +200,8 @@ export async function createMaintenanceAction(
   }
 
   try {
-    await prisma.$transaction(async (tx) => {
-      const m = await tx.maintenance.create({
+    const m = await prisma.$transaction(async (tx) => {
+      const row = await tx.maintenance.create({
         data: {
           projectId,
           title: payload.title,
@@ -224,11 +226,20 @@ export async function createMaintenanceAction(
       if (payload.picDevIds.length > 0) {
         await tx.maintenancePicDev.createMany({
           data: payload.picDevIds.map((userId) => ({
-            maintenanceId: m.id,
+            maintenanceId: row.id,
             userId,
           })),
         });
       }
+      return row;
+    });
+    await recordActivityLog({
+      projectId,
+      entityType: ACTIVITY_ENTITY.maintenance,
+      entityId: m.id,
+      entityName: m.title,
+      action: ACTIVITY_ACTION.created,
+      actorId: ctx.userId,
     });
     revalidateMaintenancePaths(projectId);
     return { ok: true };
@@ -313,6 +324,14 @@ export async function updateMaintenanceAction(
         });
       }
     });
+    await recordActivityLog({
+      projectId,
+      entityType: ACTIVITY_ENTITY.maintenance,
+      entityId: maintenanceId,
+      entityName: payload.title,
+      action: ACTIVITY_ACTION.updated,
+      actorId: ctx.userId,
+    });
     revalidateMaintenancePaths(projectId);
     return { ok: true };
   } catch {
@@ -337,7 +356,7 @@ export async function deleteMaintenanceAction(
 
   const existing = await prisma.maintenance.findFirst({
     where: { id: maintenanceId, projectId },
-    select: { id: true },
+    select: { id: true, title: true },
   });
   if (!existing) {
     return { ok: false, error: 'Tiket tidak ditemukan.' };
@@ -345,6 +364,14 @@ export async function deleteMaintenanceAction(
 
   try {
     await prisma.maintenance.delete({ where: { id: maintenanceId } });
+    await recordActivityLog({
+      projectId,
+      entityType: ACTIVITY_ENTITY.maintenance,
+      entityId: maintenanceId,
+      entityName: existing.title,
+      action: ACTIVITY_ACTION.deleted,
+      actorId: ctx.userId,
+    });
     revalidateMaintenancePaths(projectId);
     return { ok: true };
   } catch {

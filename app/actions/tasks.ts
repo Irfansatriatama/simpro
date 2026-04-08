@@ -11,6 +11,8 @@ import { auth } from '@/lib/auth';
 import { projectViewWhere } from '@/lib/project-access';
 import { getUserRole } from '@/lib/session-user';
 import { prisma } from '@/lib/prisma';
+import { ACTIVITY_ACTION, ACTIVITY_ENTITY } from '@/lib/activity-log-constants';
+import { recordActivityLog } from '@/lib/activity-log-record';
 import { boardColumnIdForStatus } from '@/lib/board-columns';
 import { canEditTasksInProject } from '@/lib/task-access';
 
@@ -130,7 +132,7 @@ export async function createTaskAction(
   const dependencyIds = readMulti(formData, 'dependencyIds');
 
   try {
-    await prisma.$transaction(async (tx) => {
+    const created = await prisma.$transaction(async (tx) => {
       const t = await tx.task.create({
         data: {
           projectId,
@@ -175,6 +177,17 @@ export async function createTaskAction(
           },
         });
       }
+
+      return { id: t.id, title: t.title };
+    });
+
+    await recordActivityLog({
+      projectId,
+      entityType: ACTIVITY_ENTITY.task,
+      entityId: created.id,
+      entityName: created.title,
+      action: ACTIVITY_ACTION.created,
+      actorId: ctx.userId,
     });
 
     revalidatePath(`/projects/${projectId}/backlog`);
@@ -327,6 +340,15 @@ export async function updateTaskAction(
       }
     });
 
+    await recordActivityLog({
+      projectId,
+      entityType: ACTIVITY_ENTITY.task,
+      entityId: taskId,
+      entityName: title,
+      action: ACTIVITY_ACTION.updated,
+      actorId: ctx.userId,
+    });
+
     revalidatePath(`/projects/${projectId}/backlog`);
     revalidatePath(`/projects/${projectId}/board`);
     revalidatePath(`/projects/${projectId}`);
@@ -357,6 +379,14 @@ export async function deleteTaskAction(
   if (!existing) return { ok: false, error: 'Tugas tidak ditemukan.' };
 
   await prisma.task.delete({ where: { id: taskId } });
+  await recordActivityLog({
+    projectId,
+    entityType: ACTIVITY_ENTITY.task,
+    entityId: taskId,
+    entityName: existing.title,
+    action: ACTIVITY_ACTION.deleted,
+    actorId: ctx.userId,
+  });
   revalidatePath(`/projects/${projectId}/backlog`);
   revalidatePath(`/projects/${projectId}/board`);
   revalidatePath(`/projects/${projectId}`);
