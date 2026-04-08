@@ -64,7 +64,9 @@ Angka phase di bawah **khusus untuk SIMPRO**; tidak sama dengan “Fase 1–6”
 | **12** | Selesai | **Laporan** (`/projects/[id]/reports`): dashboard agregat (kemajuan tugas, beban tim, ringkasan sprint, maintenance, aset, alokasi waktu tercatat); filter tanggal via query; hanya **admin/PM**; cetak/PDF lewat browser; tanpa Chart.js / penyimpanan snapshot ke tabel `Report` (bisa ditambah) |
 | **13** | Selesai | **Diskusi** (`/projects/[id]/discussion`): thread + balasan, tipe (umum/pengumuman/pertanyaan/keputusan), sematkan (admin/PM), CRUD dengan server actions; baca untuk semua akses proyek; tulis seperti tugas (`canEditTasksInProject`) |
 | **14** | Selesai | **Log aktivitas** (`/projects/[id]/log`): daftar `ActivityLog` (400 terbaru), filter & JSON `changes`/`metadata`; pencatatan dari server actions tugas (buat/ubah/hapus), board (pindah kolom), sprint, maintenance, diskusi + balasan + sematan |
-| **15+** | Berikutnya | Meetings, assets, notifikasi, notes, settings — urutan mengikuti `_reference/README.md` |
+| **15** | Selesai | **Meetings** (`/meetings`, `/meetings/[id]`): CRUD admin/PM, agenda, peserta & proyek, activity log (proyek pertama atau global) |
+| **16** | Selesai | **Aset** (`/assets`, `/assets/[id]`): inventaris global, kategori/status Trackly, taut proyek & PJ, garansi/harga; server actions + log proyek bila `projectId` ada |
+| **17+** | Berikutnya | Notifikasi, catatan pribadi (`/notes`), pengaturan — urutan mengikuti `_reference/README.md` |
 | **N** | Akhir | Polish (burndown/velocity sprint, dll.), aksesibilitas, performa, PDF/export jika perlu, hardening production, dokumentasi handoff |
 
 Sesuaikan isi phase 7+ dengan prioritas bisnis; dokumen ini bisa dipecah jadi checklist per phase saat mulai mengerjakan.

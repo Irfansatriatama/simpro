@@ -6,6 +6,8 @@ const ENTITY_LABEL: Record<string, string> = {
   [ACTIVITY_ENTITY.maintenance]: 'Maintenance',
   [ACTIVITY_ENTITY.discussion]: 'Diskusi',
   [ACTIVITY_ENTITY.discussion_reply]: 'Balasan diskusi',
+  [ACTIVITY_ENTITY.meeting]: 'Meeting',
+  [ACTIVITY_ENTITY.asset]: 'Aset',
 };
 
 const ACTION_LABEL: Record<string, string> = {

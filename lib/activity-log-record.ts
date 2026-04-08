@@ -2,7 +2,8 @@ import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 
 export type RecordActivityLogInput = {
-  projectId: string;
+  /** Opsional: meeting global tanpa proyek boleh null */
+  projectId?: string | null;
   entityType: string;
   entityId: string;
   entityName: string;
@@ -32,7 +33,7 @@ export async function recordActivityLog(
 
     await prisma.activityLog.create({
       data: {
-        projectId: input.projectId,
+        projectId: input.projectId ?? null,
         entityType: input.entityType,
         entityId: input.entityId,
         entityName: input.entityName.slice(0, 500),
@@ -50,7 +51,9 @@ export async function recordActivityLog(
       },
     });
 
-    revalidatePath(`/projects/${input.projectId}/log`);
+    if (input.projectId) {
+      revalidatePath(`/projects/${input.projectId}/log`);
+    }
   } catch {
     /* abaikan */
   }

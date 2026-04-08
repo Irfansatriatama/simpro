@@ -5,6 +5,8 @@ export const ACTIVITY_ENTITY = {
   maintenance: 'maintenance',
   discussion: 'discussion',
   discussion_reply: 'discussion_reply',
+  meeting: 'meeting',
+  asset: 'asset',
 } as const;
 
 /** Nilai `action` umum (bebas string lain tetap ditampilkan mentah). */
