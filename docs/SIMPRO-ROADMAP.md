@@ -67,7 +67,8 @@ Angka phase di bawah **khusus untuk SIMPRO**; tidak sama dengan “Fase 1–6”
 | **15** | Selesai | **Meetings** (`/meetings`, `/meetings/[id]`): CRUD admin/PM, agenda, peserta & proyek, activity log (proyek pertama atau global) |
 | **16** | Selesai | **Aset** (`/assets`, `/assets/[id]`): inventaris global, kategori/status Trackly, taut proyek & PJ, garansi/harga; server actions + log proyek bila `projectId` ada |
 | **17** | Selesai | **Catatan pribadi** (`/notes`): milik pengguna + dibagikan (`NoteShare` view/edit), semat, tag & warna, autosave isi, riwayat audit pemilik; server actions + `requireSessionUser` |
-| **18+** | Berikutnya | Notifikasi, **Pengaturan** (`/settings`) — urutan mengikuti `_reference/README.md` |
+| **18** | Selesai | **Pengaturan** (`/settings`): tabel `Settings` key–value, admin/PM — nama sistem, zona waktu, format tanggal, mata uang/tarif/pajak default; `getOrgSettings` + judul app di `(app)/layout`; tab Tentang (versi/stack) |
+| **19+** | Berikutnya | **Notifikasi** (model `Notification`, bell, pusat notifikasi) — mengikuti `_reference/README.md` |
 | **N** | Akhir | Polish (burndown/velocity sprint, dll.), aksesibilitas, performa, PDF/export jika perlu, hardening production, dokumentasi handoff |
 
 Sesuaikan isi phase 7+ dengan prioritas bisnis; dokumen ini bisa dipecah jadi checklist per phase saat mulai mengerjakan.
