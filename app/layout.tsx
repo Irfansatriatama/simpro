@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import NextTopLoader from 'nextjs-toploader';
 import './globals.css';
 import { APP_TAGLINE } from '@/lib/shared';
 
@@ -17,7 +18,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <NextTopLoader
+          color="#2563eb"
+          height={3}
+          showSpinner={false}
+          shadow="0 0 12px rgba(37, 99, 235, 0.35)"
+        />
+        {children}
+      </body>
     </html>
   );
 }

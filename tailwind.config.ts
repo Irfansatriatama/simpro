@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss';
+import tailwindcssAnimate from 'tailwindcss-animate';
 
 const config: Config = {
   darkMode: ['class'],
@@ -21,6 +22,7 @@ const config: Config = {
         border: '#E2E8F0',
         foreground: '#0F172A',
         muted: '#64748B',
+        'muted-foreground': '#64748B',
       },
       borderRadius: {
         sm: '6px',
@@ -32,7 +34,7 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [tailwindcssAnimate],
 };
 
 export default config;
