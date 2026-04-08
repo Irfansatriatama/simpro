@@ -55,8 +55,9 @@ Angka phase di bawah **khusus untuk SIMPRO**; tidak sama dengan “Fase 1–6”
 | **3** | Selesai | App shell: sidebar, topbar, navigasi peran, pola UI |
 | **4** | Selesai | **Anggota** (`/members`): CRUD admin, password reset, kebijakan admin terakhir |
 | **5** | Selesai | **Klien** (`/clients`, `/clients/[id]`): CRUD admin/PM, daftar proyek terhubung |
-| **6** | Berikutnya | **Proyek** (`/projects`, `/projects/[id]`): list, detail, anggota proyek, filter — inti PMIS |
-| **7+** | Direncanakan | Sub-modul proyek: backlog, board, sprint, gantt, maintenance, reports, discussion, log, meetings, assets, notifikasi, notes, settings — urutan bisa disesuaikan beban; rujuk `_reference/README.md` untuk kelengkapan fitur |
+| **6** | Selesai | **Proyek** (`/projects`, `/projects/[id]`): daftar + filter, detail ringkasan, CRUD (admin/PM), anggota + peran, sub-nav ke modul proyek |
+| **7** | Berikutnya | Sub-modul proyek (mis. backlog, board) — urutan mengikuti `_reference/README.md` |
+| **8+** | Direncanakan | Sprint, gantt, maintenance, reports, discussion, log, meetings, assets, notifikasi, notes, settings |
 | **N** | Akhir | Polish, aksesibilitas, performa, PDF/export jika perlu, hardening production, dokumentasi handoff |
 
 Sesuaikan isi phase 7+ dengan prioritas bisnis; dokumen ini bisa dipecah jadi checklist per phase saat mulai mengerjakan.
