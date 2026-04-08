@@ -1,0 +1,70 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { TaskType } from '@prisma/client';
+import { headers } from 'next/headers';
+import { auth } from '@/lib/auth';
+import { boardColumnById } from '@/lib/board-columns';
+import { projectViewWhere } from '@/lib/project-access';
+import { prisma } from '@/lib/prisma';
+import { getUserRole } from '@/lib/session-user';
+import { canEditTasksInProject } from '@/lib/task-access';
+
+import type { TaskActionResult } from '@/app/actions/tasks';
+
+async function requireBacklogAccess(projectId: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user?.id) return null;
+  const userId = session.user.id;
+  const role = getUserRole(session);
+  const project = await prisma.project.findFirst({
+    where: projectViewWhere(userId, role, projectId),
+    select: { id: true },
+  });
+  if (!project) return null;
+  const member = await prisma.projectMember.findUnique({
+    where: { projectId_userId: { projectId, userId } },
+  });
+  const canEdit = canEditTasksInProject(role, !!member);
+  return { userId, role, canEdit };
+}
+
+export async function moveTaskOnBoardAction(payload: {
+  projectId: string;
+  taskId: string;
+  columnId: string;
+}): Promise<TaskActionResult> {
+  const { projectId, taskId, columnId } = payload;
+  const ctx = await requireBacklogAccess(projectId);
+  if (!ctx) return { ok: false, error: 'Tidak punya akses proyek.' };
+  if (!ctx.canEdit) return { ok: false, error: 'Anda tidak dapat mengubah board.' };
+
+  const col = boardColumnById(columnId);
+  if (!col) return { ok: false, error: 'Kolom tidak valid.' };
+
+  const task = await prisma.task.findFirst({
+    where: { id: taskId, projectId },
+  });
+  if (!task) return { ok: false, error: 'Tugas tidak ditemukan.' };
+  if (task.type === TaskType.epic) {
+    return { ok: false, error: 'Epic tidak ditampilkan di board.' };
+  }
+
+  const currentCol = task.columnId;
+  if (currentCol === columnId && task.status === col.status) {
+    return { ok: true };
+  }
+
+  await prisma.task.update({
+    where: { id: taskId },
+    data: {
+      columnId: col.id,
+      status: col.status,
+    },
+  });
+
+  revalidatePath(`/projects/${projectId}/board`);
+  revalidatePath(`/projects/${projectId}/backlog`);
+  revalidatePath(`/projects/${projectId}`);
+  return { ok: true };
+}

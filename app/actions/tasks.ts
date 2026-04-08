@@ -11,6 +11,7 @@ import { auth } from '@/lib/auth';
 import { projectViewWhere } from '@/lib/project-access';
 import { getUserRole } from '@/lib/session-user';
 import { prisma } from '@/lib/prisma';
+import { boardColumnIdForStatus } from '@/lib/board-columns';
 import { canEditTasksInProject } from '@/lib/task-access';
 
 export type TaskActionResult = { ok: true } | { ok: false; error: string };
@@ -150,6 +151,7 @@ export async function createTaskAction(
             0,
             Math.round(Number(trim(formData.get('timeLogged')) || '0')) || 0,
           ),
+          columnId: boardColumnIdForStatus(status),
         },
       });
 
@@ -176,6 +178,7 @@ export async function createTaskAction(
     });
 
     revalidatePath(`/projects/${projectId}/backlog`);
+    revalidatePath(`/projects/${projectId}/board`);
     revalidatePath(`/projects/${projectId}`);
     return { ok: true };
   } catch (e) {
@@ -295,6 +298,7 @@ export async function updateTaskAction(
             0,
             Math.round(Number(trim(formData.get('timeLogged')) || '0')) || 0,
           ),
+          columnId: boardColumnIdForStatus(status),
         },
       });
 
@@ -324,6 +328,7 @@ export async function updateTaskAction(
     });
 
     revalidatePath(`/projects/${projectId}/backlog`);
+    revalidatePath(`/projects/${projectId}/board`);
     revalidatePath(`/projects/${projectId}`);
     return { ok: true };
   } catch (e) {
@@ -353,6 +358,7 @@ export async function deleteTaskAction(
 
   await prisma.task.delete({ where: { id: taskId } });
   revalidatePath(`/projects/${projectId}/backlog`);
+  revalidatePath(`/projects/${projectId}/board`);
   revalidatePath(`/projects/${projectId}`);
   return { ok: true };
 }
