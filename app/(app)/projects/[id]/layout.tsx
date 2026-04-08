@@ -3,7 +3,7 @@ import { redirect, notFound } from 'next/navigation';
 
 import { ProjectSubnav } from '@/components/projects/project-subnav';
 import { auth } from '@/lib/auth';
-import { projectViewWhere } from '@/lib/project-access';
+import { canManageProjects, projectViewWhere } from '@/lib/project-access';
 import { prisma } from '@/lib/prisma';
 import { getUserRole } from '@/lib/session-user';
 import { headers } from 'next/headers';
@@ -46,7 +46,10 @@ export default async function ProjectIdLayout({
           </h1>
         </div>
       </div>
-      <ProjectSubnav projectId={project.id} />
+      <ProjectSubnav
+        projectId={project.id}
+        showReportsLink={canManageProjects(role)}
+      />
       <div className="pb-8">{children}</div>
     </div>
   );

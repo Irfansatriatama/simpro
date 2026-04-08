@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 
 import { cn } from '@/lib/utils';
 
-const ITEMS: { suffix: string; label: string }[] = [
+const ITEMS: { suffix: string; label: string; reportsOnly?: boolean }[] = [
   { suffix: '', label: 'Ringkasan' },
   { suffix: '/backlog', label: 'Backlog' },
   { suffix: '/board', label: 'Board' },
@@ -13,21 +13,29 @@ const ITEMS: { suffix: string; label: string }[] = [
   { suffix: '/gantt', label: 'Gantt' },
   { suffix: '/maintenance', label: 'Maintenance' },
   { suffix: '/maintenance-report', label: 'Laporan maint.' },
-  { suffix: '/reports', label: 'Laporan' },
+  { suffix: '/reports', label: 'Laporan', reportsOnly: true },
   { suffix: '/discussion', label: 'Diskusi' },
   { suffix: '/log', label: 'Log' },
 ];
 
-export function ProjectSubnav({ projectId }: { projectId: string }) {
+export function ProjectSubnav(props: {
+  projectId: string;
+  showReportsLink?: boolean;
+}) {
+  const { projectId, showReportsLink = false } = props;
   const pathname = usePathname() ?? '';
   const base = `/projects/${projectId}`;
+
+  const visible = ITEMS.filter(
+    (item) => !item.reportsOnly || showReportsLink,
+  );
 
   return (
     <nav
       className="flex gap-1 overflow-x-auto border-b border-border"
       aria-label="Sub-navigasi proyek"
     >
-      {ITEMS.map(({ suffix, label }) => {
+      {visible.map(({ suffix, label }) => {
         const href = `${base}${suffix}`;
         const active =
           suffix === ''
