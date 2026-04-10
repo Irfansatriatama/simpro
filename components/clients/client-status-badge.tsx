@@ -10,6 +10,10 @@ const META: Record<string, { label: string; className: string }> = {
     label: 'Nonaktif',
     className: 'bg-border text-muted-foreground',
   },
+  prospect: {
+    label: 'Prospek',
+    className: 'bg-amber-500/15 text-amber-800 dark:text-amber-400',
+  },
 };
 
 export function ClientStatusBadge({ status }: { status: string }) {

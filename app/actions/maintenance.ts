@@ -6,6 +6,8 @@ import {
   MaintenanceType,
   Priority,
   Severity,
+  TaskStatus,
+  TaskType,
 } from '@prisma/client';
 import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
@@ -19,7 +21,13 @@ import { recordActivityLog } from '@/lib/activity-log-record';
 import { projectViewWhere } from '@/lib/project-access';
 import { prisma } from '@/lib/prisma';
 import { getUserRole } from '@/lib/session-user';
+import { boardColumnIdForStatus } from '@/lib/board-columns';
+import { maintenanceCompletedLike } from '@/lib/maintenance-complete';
 import { canEditTasksInProject } from '@/lib/task-access';
+import {
+  actorNotificationProfile,
+  notifyUsers,
+} from '@/lib/notification-dispatch';
 
 export type MaintenanceActionResult =
   | { ok: true }
@@ -106,12 +114,6 @@ async function assertPicDevsInProject(
   return null;
 }
 
-function resolvedLike(status: MaintenanceStatus): boolean {
-  return (
-    status === MaintenanceStatus.resolved ||
-    status === MaintenanceStatus.closed
-  );
-}
 
 function readMaintenancePayload(
   formData: FormData,
@@ -127,7 +129,7 @@ function readMaintenancePayload(
   }
 
   const statusRaw =
-    trim(formData.get('status')) || MaintenanceStatus.open;
+    trim(formData.get('status')) || MaintenanceStatus.backlog;
   if (!isMaintenanceStatus(statusRaw)) {
     return { ok: false, error: 'Status tidak valid.' };
   }
@@ -193,7 +195,7 @@ export async function createMaintenanceAction(
   let resolvedDate: Date | null = parseOptDate(
     trim(formData.get('resolvedDate')),
   );
-  if (!resolvedLike(payload.status)) {
+  if (!maintenanceCompletedLike(payload.status)) {
     resolvedDate = null;
   } else if (!resolvedDate) {
     resolvedDate = new Date();
@@ -278,13 +280,13 @@ export async function updateMaintenanceAction(
   if (picErr) return picErr;
 
   let resolvedDate: Date | null = existing.resolvedDate;
-  if (resolvedLike(payload.status)) {
+  if (maintenanceCompletedLike(payload.status)) {
     resolvedDate = resolvedDate ?? new Date();
   } else {
     resolvedDate = null;
   }
   const manualResolved = parseOptDate(trim(formData.get('resolvedDate')));
-  if (manualResolved && resolvedLike(payload.status)) {
+  if (manualResolved && maintenanceCompletedLike(payload.status)) {
     resolvedDate = manualResolved;
   }
 
@@ -336,6 +338,187 @@ export async function updateMaintenanceAction(
     return { ok: true };
   } catch {
     return { ok: false, error: 'Gagal memperbarui tiket maintenance.' };
+  }
+}
+
+export async function moveMaintenanceStatusAction(payload: {
+  projectId: string;
+  maintenanceId: string;
+  status: MaintenanceStatus;
+}): Promise<MaintenanceActionResult> {
+  const { projectId, maintenanceId, status } = payload;
+  if (!projectId || !maintenanceId) {
+    return { ok: false, error: 'Data tidak valid.' };
+  }
+  if (!Object.values(MaintenanceStatus).includes(status)) {
+    return { ok: false, error: 'Status tidak valid.' };
+  }
+
+  const ctx = await requireMaintenanceAccess(projectId);
+  if (!ctx) return { ok: false, error: 'Tidak punya akses proyek.' };
+  if (!ctx.canEdit) {
+    return { ok: false, error: 'Anda tidak dapat memindahkan tiket.' };
+  }
+
+  const existing = await prisma.maintenance.findFirst({
+    where: { id: maintenanceId, projectId },
+    select: { id: true, title: true, resolvedDate: true, status: true },
+  });
+  if (!existing) {
+    return { ok: false, error: 'Tiket tidak ditemukan.' };
+  }
+
+  let resolvedDate: Date | null = existing.resolvedDate;
+  if (ctx.role === 'developer') {
+    const pics = await prisma.maintenancePicDev.findMany({
+      where: { maintenanceId },
+      select: { userId: true },
+    });
+    const allowed =
+      pics.length === 0 || pics.some((p) => p.userId === ctx.userId);
+    if (!allowed) {
+      return {
+        ok: false,
+        error: 'Hanya PIC developer pada tiket ini yang dapat memindahkan status.',
+      };
+    }
+  }
+
+  if (maintenanceCompletedLike(status)) {
+    resolvedDate = resolvedDate ?? new Date();
+  } else {
+    resolvedDate = null;
+  }
+
+  try {
+    await prisma.maintenance.update({
+      where: { id: maintenanceId },
+      data: { status, resolvedDate },
+    });
+    await recordActivityLog({
+      projectId,
+      entityType: ACTIVITY_ENTITY.maintenance,
+      entityId: maintenanceId,
+      entityName: existing.title,
+      action: ACTIVITY_ACTION.updated,
+      actorId: ctx.userId,
+      metadata: { field: 'status', from: existing.status, to: status },
+    });
+    revalidateMaintenancePaths(projectId);
+    return { ok: true };
+  } catch {
+    return { ok: false, error: 'Gagal memperbarui status.' };
+  }
+}
+
+export type CreateTaskFromMaintenanceResult =
+  | { ok: true; taskId: string }
+  | { ok: false; error: string };
+
+export async function createTaskFromMaintenanceAction(payload: {
+  projectId: string;
+  maintenanceId: string;
+}): Promise<CreateTaskFromMaintenanceResult> {
+  const { projectId, maintenanceId } = payload;
+  if (!projectId || !maintenanceId) {
+    return { ok: false, error: 'Data tidak valid.' };
+  }
+
+  const ctx = await requireMaintenanceAccess(projectId);
+  if (!ctx) return { ok: false, error: 'Tidak punya akses proyek.' };
+  if (!ctx.canEdit) {
+    return { ok: false, error: 'Anda tidak dapat membuat tugas dari tiket ini.' };
+  }
+
+  const m = await prisma.maintenance.findFirst({
+    where: { id: maintenanceId, projectId },
+    include: {
+      picDevs: { select: { userId: true } },
+      project: { select: { code: true, name: true } },
+    },
+  });
+  if (!m) return { ok: false, error: 'Tiket maintenance tidak ditemukan.' };
+
+  if (ctx.role === 'developer') {
+    const allowed =
+      m.picDevs.length === 0 ||
+      m.picDevs.some((p) => p.userId === ctx.userId);
+    if (!allowed) {
+      return { ok: false, error: 'Anda bukan PIC pada tiket ini.' };
+    }
+  }
+
+  const title = `[Maint] ${m.title}`.slice(0, 500);
+  const descParts = [
+    m.description?.trim(),
+    `Tiket maintenance: ${m.id}`,
+    `Status tiket: ${m.status}`,
+  ].filter(Boolean);
+  const description = descParts.join('\n\n').slice(0, 8000) || null;
+
+  const assigneeIds = m.picDevs.map((p) => p.userId);
+
+  try {
+    const created = await prisma.$transaction(async (tx) => {
+      const t = await tx.task.create({
+        data: {
+          projectId,
+          maintenanceId,
+          title,
+          description,
+          type: TaskType.bug,
+          status: TaskStatus.backlog,
+          priority: m.priority,
+          reporterId: ctx.userId,
+          dueDate: m.dueDate,
+          columnId: boardColumnIdForStatus(TaskStatus.backlog),
+        },
+      });
+      if (assigneeIds.length) {
+        await tx.taskAssignee.createMany({
+          data: assigneeIds.map((userId) => ({ taskId: t.id, userId })),
+          skipDuplicates: true,
+        });
+      }
+      return t;
+    });
+
+    await recordActivityLog({
+      projectId,
+      entityType: ACTIVITY_ENTITY.task,
+      entityId: created.id,
+      entityName: created.title,
+      action: ACTIVITY_ACTION.created,
+      actorId: ctx.userId,
+      metadata: { fromMaintenanceId: maintenanceId },
+    });
+
+    if (assigneeIds.length > 0) {
+      const actor = await actorNotificationProfile(ctx.userId);
+      const projectName = m.project
+        ? `${m.project.code} — ${m.project.name}`.slice(0, 200)
+        : null;
+      await notifyUsers({
+        recipientUserIds: assigneeIds,
+        actorId: ctx.userId,
+        actorName: actor.name,
+        actorAvatar: actor.image,
+        entityType: ACTIVITY_ENTITY.task,
+        entityId: created.id,
+        entityName: created.title,
+        action: ACTIVITY_ACTION.created,
+        message: `${actor.name} menugaskan Anda pada tugas "${created.title}".`,
+        projectId,
+        projectName,
+      });
+    }
+
+    revalidatePath(`/projects/${projectId}/backlog`);
+    revalidatePath(`/projects/${projectId}/board`);
+    revalidateMaintenancePaths(projectId);
+    return { ok: true, taskId: created.id };
+  } catch {
+    return { ok: false, error: 'Gagal membuat tugas backlog.' };
   }
 }
 

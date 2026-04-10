@@ -343,3 +343,39 @@ export async function updateProjectMemberRoleAction(
   revalidatePath(`/projects/${projectId}`);
   return { ok: true };
 }
+
+export async function deleteProjectAction(
+  formData: FormData,
+): Promise<ProjectActionResult> {
+  const ctx = await sessionCtx();
+  if (!ctx) return { ok: false, error: 'Belum masuk.' };
+  if (!canManageProjects(ctx.role)) {
+    return { ok: false, error: 'Hanya admin atau PM yang dapat menghapus proyek.' };
+  }
+
+  const id = trim(formData.get('id'));
+  if (!id) return { ok: false, error: 'Proyek tidak valid.' };
+
+  const exists = await prisma.project.findFirst({
+    where: projectViewWhere(ctx.userId, ctx.role, id),
+  });
+  if (!exists) return { ok: false, error: 'Proyek tidak ditemukan.' };
+
+  try {
+    await prisma.$transaction([
+      prisma.project.updateMany({
+        where: { parentId: id },
+        data: { parentId: null },
+      }),
+      prisma.project.delete({ where: { id } }),
+    ]);
+    revalidatePath('/projects');
+    return { ok: true };
+  } catch {
+    return {
+      ok: false,
+      error:
+        'Gagal menghapus proyek. Pastikan tidak ada data terkait yang memblokir.',
+    };
+  }
+}

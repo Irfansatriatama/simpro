@@ -48,7 +48,6 @@ export const NAV_SECTIONS: NavSection[] = [
         href: '/meetings',
         label: 'Meetings',
         icon: Calendar,
-        managementOnly: true,
       },
       { href: '/notes', label: 'Catatan pribadi', icon: FileText },
       {

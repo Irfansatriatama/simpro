@@ -1,20 +1,39 @@
 'use client';
 
-import { Search } from 'lucide-react';
+import {
+  Activity,
+  CheckCircle,
+  ChevronDown,
+  Edit2,
+  MessageCircle,
+  PlayCircle,
+  PlusCircle,
+  RefreshCw,
+  Search,
+  Trash2,
+  Upload,
+  UserCheck,
+  UserMinus,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import {
   FilterField,
   FilterPanelSheet,
 } from '@/components/filters/filter-panel-sheet';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { SelectNative } from '@/components/ui/select-native';
-import {
-  activityActionLabel,
-  activityEntityLabel,
-} from '@/lib/activity-log-labels';
 import type { ActivityLogRow } from '@/lib/activity-log-types';
+import {
+  activityActionLabel as actionLbl,
+  activityEntityLabel as entityLbl,
+} from '@/lib/activity-log-labels';
 import { cn } from '@/lib/utils';
+
+const INITIAL_VISIBLE = 5;
+const LOAD_MORE_STEP = 10;
 
 function fmtWhen(iso: string): string {
   try {
@@ -30,31 +49,230 @@ function fmtWhen(iso: string): string {
   }
 }
 
-function JsonBlock(props: { label: string; value: unknown }) {
-  const { label, value } = props;
-  if (value == null) return null;
-  const text =
-    typeof value === 'string'
-      ? value
-      : JSON.stringify(value, null, 2);
-  if (text === '{}' || text === '[]' || text === 'null') return null;
-  return (
-    <details className="mt-2 rounded-md border border-border bg-surface/50 text-xs">
-      <summary className="cursor-pointer px-2 py-1 font-medium text-muted-foreground">
-        {label}
-      </summary>
-      <pre className="max-h-40 overflow-auto border-t border-border p-2 text-[11px] leading-relaxed">
-        {text}
+function formatRelativeId(iso: string): string {
+  const d = new Date(iso);
+  const diff = Date.now() - d.getTime();
+  const sec = Math.floor(diff / 1000);
+  if (sec < 45) return 'Baru saja';
+  if (sec < 3600) return `${Math.floor(sec / 60)} menit lalu`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)} jam lalu`;
+  if (sec < 604800) return `${Math.floor(sec / 86400)} hari lalu`;
+  return d.toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function toTitleCase(s: string): string {
+  return s
+    .replace(/_/g, ' ')
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+}
+
+type NormalizedChange = {
+  field: string;
+  oldVal: unknown;
+  newVal: unknown;
+};
+
+function normalizeChanges(raw: unknown): NormalizedChange[] {
+  if (!Array.isArray(raw)) return [];
+  const out: NormalizedChange[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const o = item as Record<string, unknown>;
+    const field = String(o.field ?? o.Field ?? '');
+    const oldVal = o.old_value ?? o.oldValue ?? o.before;
+    const newVal = o.new_value ?? o.newValue ?? o.after;
+    out.push({ field: field || '—', oldVal, newVal });
+  }
+  return out;
+}
+
+function renderDiffCell(v: unknown): React.ReactNode {
+  if (v === null || v === undefined || v === '') {
+    return <span className="text-muted-foreground">—</span>;
+  }
+  if (Array.isArray(v)) {
+    return String(v.join(', '));
+  }
+  if (typeof v === 'object') {
+    return (
+      <pre className="max-w-[200px] overflow-auto whitespace-pre-wrap text-[11px]">
+        {JSON.stringify(v)}
       </pre>
-    </details>
+    );
+  }
+  return String(v);
+}
+
+const ACTION_COLORS: Record<string, string> = {
+  created: '#16a34a',
+  updated: '#2563eb',
+  deleted: '#dc2626',
+  status_changed: '#d97706',
+  assigned: '#0891b2',
+  unassigned: '#7c3aed',
+  commented: '#2563eb',
+  uploaded: '#0891b2',
+  sprint_started: '#16a34a',
+  sprint_completed: '#16a34a',
+  member_added: '#0891b2',
+  member_removed: '#dc2626',
+  board_moved: '#7c3aed',
+};
+
+function ActionIcon({ action }: { action: string }) {
+  const cls = 'h-3 w-3 text-white';
+  switch (action) {
+    case 'created':
+      return <PlusCircle className={cls} aria-hidden />;
+    case 'updated':
+      return <Edit2 className={cls} aria-hidden />;
+    case 'deleted':
+      return <Trash2 className={cls} aria-hidden />;
+    case 'status_changed':
+      return <RefreshCw className={cls} aria-hidden />;
+    case 'assigned':
+    case 'member_added':
+      return <UserCheck className={cls} aria-hidden />;
+    case 'unassigned':
+    case 'member_removed':
+      return <UserMinus className={cls} aria-hidden />;
+    case 'commented':
+      return <MessageCircle className={cls} aria-hidden />;
+    case 'uploaded':
+      return <Upload className={cls} aria-hidden />;
+    case 'sprint_started':
+      return <PlayCircle className={cls} aria-hidden />;
+    case 'sprint_completed':
+      return <CheckCircle className={cls} aria-hidden />;
+    default:
+      return <Activity className={cls} aria-hidden />;
+  }
+}
+
+function LogActionLine({ row }: { row: ActivityLogRow }) {
+  const actor = row.actorName || 'Seseorang';
+  const entity = row.entityName || row.entityId || '—';
+  const etLabel = entityLbl(row.entityType);
+
+  const parts: Record<string, React.ReactNode> = {
+    created: (
+      <>
+        <strong>{actor}</strong> membuat {etLabel}{' '}
+        <strong>{entity}</strong>
+      </>
+    ),
+    updated: (
+      <>
+        <strong>{actor}</strong> memperbarui {etLabel}{' '}
+        <strong>{entity}</strong>
+      </>
+    ),
+    deleted: (
+      <>
+        <strong>{actor}</strong> menghapus {etLabel}{' '}
+        <strong>{entity}</strong>
+      </>
+    ),
+    status_changed: (
+      <>
+        <strong>{actor}</strong> mengubah status {etLabel}{' '}
+        <strong>{entity}</strong>
+      </>
+    ),
+    assigned: (
+      <>
+        <strong>{actor}</strong> menetapkan {etLabel}{' '}
+        <strong>{entity}</strong>
+      </>
+    ),
+    unassigned: (
+      <>
+        <strong>{actor}</strong> mencabut penugasan {etLabel}{' '}
+        <strong>{entity}</strong>
+      </>
+    ),
+    commented: (
+      <>
+        <strong>{actor}</strong> berkomentar pada {etLabel}{' '}
+        <strong>{entity}</strong>
+      </>
+    ),
+    uploaded: (
+      <>
+        <strong>{actor}</strong> mengunggah berkas ke {etLabel}{' '}
+        <strong>{entity}</strong>
+      </>
+    ),
+    sprint_started: (
+      <>
+        <strong>{actor}</strong> memulai sprint <strong>{entity}</strong>
+      </>
+    ),
+    sprint_completed: (
+      <>
+        <strong>{actor}</strong> menyelesaikan sprint <strong>{entity}</strong>
+      </>
+    ),
+    member_added: (
+      <>
+        <strong>{actor}</strong> menambah anggota pada <strong>{entity}</strong>
+      </>
+    ),
+    member_removed: (
+      <>
+        <strong>{actor}</strong> menghapus anggota dari{' '}
+        <strong>{entity}</strong>
+      </>
+    ),
+    board_moved: (
+      <>
+        <strong>{actor}</strong> memindahkan {etLabel}{' '}
+        <strong>{entity}</strong> di board
+      </>
+    ),
+  };
+
+  return (
+    <p className="text-sm leading-snug text-foreground">
+      {parts[row.action] ?? (
+        <>
+          <strong>{actor}</strong> melakukan{' '}
+          <em>{actionLbl(row.action)}</em> pada {etLabel}{' '}
+          <strong>{entity}</strong>
+        </>
+      )}
+    </p>
   );
 }
 
-export function ActivityLogClient(props: { rows: ActivityLogRow[] }) {
-  const { rows } = props;
+function initialsFromName(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((n) => n[0]!.toUpperCase())
+    .join('') || '?';
+}
+
+export function ActivityLogClient(props: {
+  rows: ActivityLogRow[];
+  projectName?: string | null;
+}) {
+  const { rows, projectName } = props;
   const [search, setSearch] = useState('');
-  const [entityF, setEntityF] = useState<string>('all');
-  const [actionF, setActionF] = useState<string>('all');
+  const [entityF, setEntityF] = useState('');
+  const [actorF, setActorF] = useState('');
+  const [actionF, setActionF] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
 
   const entityOptions = useMemo(() => {
     const s = new Set(rows.map((r) => r.entityType));
@@ -66,41 +284,95 @@ export function ActivityLogClient(props: { rows: ActivityLogRow[] }) {
     return Array.from(s).sort();
   }, [rows]);
 
-  const filterActiveCount = useMemo(() => {
+  const actorOptions = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const r of rows) {
+      if (r.actorId) m.set(r.actorId, r.actorName || r.actorId);
+    }
+    return Array.from(m.entries()).sort((a, b) =>
+      a[1].localeCompare(b[1], 'id'),
+    );
+  }, [rows]);
+
+  const filterModalCount = useMemo(() => {
     let n = 0;
-    if (entityF !== 'all') n++;
-    if (actionF !== 'all') n++;
+    if (entityF) n++;
+    if (actorF) n++;
+    if (actionF) n++;
+    if (dateFrom) n++;
+    if (dateTo) n++;
     return n;
-  }, [entityF, actionF]);
+  }, [entityF, actorF, actionF, dateFrom, dateTo]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rows.filter((r) => {
-      const blob = [
-        r.entityName,
-        r.actorName,
-        r.entityType,
-        r.action,
-        r.entityId,
-      ]
-        .join(' ')
-        .toLowerCase();
-      const matchQ = !q || blob.includes(q);
-      const matchE = entityF === 'all' || r.entityType === entityF;
-      const matchA = actionF === 'all' || r.action === actionF;
-      return matchQ && matchE && matchA;
+      if (entityF && r.entityType !== entityF) return false;
+      if (actorF && r.actorId !== actorF) return false;
+      if (actionF && r.action !== actionF) return false;
+      if (dateFrom) {
+        const logDate = r.createdAt.slice(0, 10);
+        if (!logDate || logDate < dateFrom) return false;
+      }
+      if (dateTo) {
+        const logDate = r.createdAt.slice(0, 10);
+        if (!logDate || logDate > dateTo) return false;
+      }
+      if (q) {
+        const blob = [
+          r.actorName,
+          r.entityName,
+          r.action,
+          r.entityType,
+          r.entityId,
+        ]
+          .join(' ')
+          .toLowerCase()
+          .replace(/_/g, ' ');
+        if (!blob.includes(q)) return false;
+      }
+      return true;
     });
-  }, [rows, search, entityF, actionF]);
+  }, [rows, search, entityF, actorF, actionF, dateFrom, dateTo]);
+
+  const visible = filtered.slice(0, visibleCount);
+  const remaining = filtered.length - visibleCount;
+
+  function clearFilterKey(
+    key: 'entity' | 'actor' | 'action' | 'dateFrom' | 'dateTo',
+  ) {
+    setVisibleCount(INITIAL_VISIBLE);
+    if (key === 'entity') setEntityF('');
+    if (key === 'actor') setActorF('');
+    if (key === 'action') setActionF('');
+    if (key === 'dateFrom') setDateFrom('');
+    if (key === 'dateTo') setDateTo('');
+  }
+
+  function resetAllFilters() {
+    setEntityF('');
+    setActorF('');
+    setActionF('');
+    setDateFrom('');
+    setDateTo('');
+    setVisibleCount(INITIAL_VISIBLE);
+  }
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-foreground">
+        <h1 className="inline-flex items-center gap-2 text-2xl font-semibold text-foreground">
+          <Activity className="h-7 w-7 text-muted-foreground" aria-hidden />
           Log aktivitas
+          {projectName ? (
+            <span className="text-lg font-normal text-muted-foreground">
+              — {projectName}
+            </span>
+          ) : null}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Riwayat perubahan penting pada proyek (tugas, sprint, maintenance,
-          diskusi, board). Entri baru muncul setelah fitur pencatatan aktif.
+          Riwayat lengkap tindakan pada proyek ini (tugas, sprint, board,
+          diskusi, dan lainnya).
         </p>
       </div>
 
@@ -109,93 +381,330 @@ export function ActivityLogClient(props: { rows: ActivityLogRow[] }) {
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari entitas, aktor, ID…"
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setVisibleCount(INITIAL_VISIBLE);
+            }}
+            placeholder="Cari aktor, entitas, atau aksi…"
             className="pl-9"
             aria-label="Cari log"
           />
         </div>
-        <FilterPanelSheet
-          title="Filter log"
-          activeCount={filterActiveCount}
-        >
-          <FilterField label="Jenis entitas">
-            <SelectNative
-              value={entityF}
-              onChange={(e) => setEntityF(e.target.value)}
+        <div className="relative shrink-0">
+          <FilterPanelSheet
+            title="Filter log"
+            activeCount={filterModalCount}
+            triggerClassName="gap-2"
+          >
+            <FilterField label="Jenis entitas">
+              <SelectNative
+                value={entityF}
+                onChange={(e) => {
+                  setEntityF(e.target.value);
+                  setVisibleCount(INITIAL_VISIBLE);
+                }}
+                aria-label="Jenis entitas"
+              >
+                <option value="">Semua jenis</option>
+                {entityOptions.map((e) => (
+                  <option key={e} value={e}>
+                    {entityLbl(e)}
+                  </option>
+                ))}
+              </SelectNative>
+            </FilterField>
+            <FilterField label="Aktor">
+              <SelectNative
+                value={actorF}
+                onChange={(e) => {
+                  setActorF(e.target.value);
+                  setVisibleCount(INITIAL_VISIBLE);
+                }}
+                aria-label="Aktor"
+              >
+                <option value="">Semua pengguna</option>
+                {actorOptions.map(([id, name]) => (
+                  <option key={id} value={id}>
+                    {name}
+                  </option>
+                ))}
+              </SelectNative>
+            </FilterField>
+            <FilterField label="Aksi">
+              <SelectNative
+                value={actionF}
+                onChange={(e) => {
+                  setActionF(e.target.value);
+                  setVisibleCount(INITIAL_VISIBLE);
+                }}
+                aria-label="Aksi"
+              >
+                <option value="">Semua aksi</option>
+                {actionOptions.map((a) => (
+                  <option key={a} value={a}>
+                    {actionLbl(a)}
+                  </option>
+                ))}
+              </SelectNative>
+            </FilterField>
+            <div className="space-y-2">
+              <Label htmlFor="logDateFrom" className="text-xs">
+                Dari tanggal
+              </Label>
+              <Input
+                id="logDateFrom"
+                type="date"
+                value={dateFrom}
+                onChange={(e) => {
+                  setDateFrom(e.target.value);
+                  setVisibleCount(INITIAL_VISIBLE);
+                }}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="logDateTo" className="text-xs">
+                Sampai tanggal
+              </Label>
+              <Input
+                id="logDateTo"
+                type="date"
+                value={dateTo}
+                onChange={(e) => {
+                  setDateTo(e.target.value);
+                  setVisibleCount(INITIAL_VISIBLE);
+                }}
+              />
+            </div>
+            <Button
+              type="button"
+              variant="outline"
               className="w-full"
-              aria-label="Filter jenis entitas"
+              onClick={resetAllFilters}
             >
-              <option value="all">Semua entitas</option>
-              {entityOptions.map((e) => (
-                <option key={e} value={e}>
-                  {activityEntityLabel(e)}
-                </option>
-              ))}
-            </SelectNative>
-          </FilterField>
-          <FilterField label="Aksi">
-            <SelectNative
-              value={actionF}
-              onChange={(e) => setActionF(e.target.value)}
-              className="w-full"
-              aria-label="Filter aksi"
-            >
-              <option value="all">Semua aksi</option>
-              {actionOptions.map((a) => (
-                <option key={a} value={a}>
-                  {activityActionLabel(a)}
-                </option>
-              ))}
-            </SelectNative>
-          </FilterField>
-        </FilterPanelSheet>
+              Reset filter
+            </Button>
+          </FilterPanelSheet>
+        </div>
       </div>
 
-      <ul className="space-y-3">
+      {(entityF || actorF || actionF || dateFrom || dateTo) && (
+        <div className="flex flex-wrap gap-2">
+          {entityF ? (
+            <FilterChip
+              label={`Entitas: ${entityLbl(entityF)}`}
+              onRemove={() => clearFilterKey('entity')}
+            />
+          ) : null}
+          {actorF ? (
+            <FilterChip
+              label={`Aktor: ${actorOptions.find(([id]) => id === actorF)?.[1] ?? actorF}`}
+              onRemove={() => clearFilterKey('actor')}
+            />
+          ) : null}
+          {actionF ? (
+            <FilterChip
+              label={`Aksi: ${actionLbl(actionF)}`}
+              onRemove={() => clearFilterKey('action')}
+            />
+          ) : null}
+          {dateFrom ? (
+            <FilterChip
+              label={`Dari: ${dateFrom}`}
+              onRemove={() => clearFilterKey('dateFrom')}
+            />
+          ) : null}
+          {dateTo ? (
+            <FilterChip
+              label={`Sampai: ${dateTo}`}
+              onRemove={() => clearFilterKey('dateTo')}
+            />
+          ) : null}
+        </div>
+      )}
+
+      <section className="overflow-hidden rounded-xl border border-border bg-card shadow-card">
         {filtered.length === 0 ? (
-          <li className="rounded-lg border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
-            Tidak ada entri yang cocok.
-          </li>
+          <div className="px-6 py-14 text-center">
+            <Activity
+              className="mx-auto h-10 w-10 text-muted-foreground"
+              aria-hidden
+            />
+            <p className="mt-3 font-medium text-foreground">
+              Tidak ada aktivitas
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {search.trim()
+                ? 'Tidak ada hasil yang cocok dengan pencarian Anda.'
+                : 'Tindakan pada proyek ini akan muncul di sini.'}
+            </p>
+          </div>
         ) : (
-          filtered.map((r, i) => (
-            <li
-              key={r.id}
-              className={cn(
-                'rounded-lg border border-border bg-card p-4 shadow-card',
-                i === 0 && 'ring-1 ring-border/80',
-              )}
-            >
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <p className="text-sm font-medium text-foreground">
-                  <span className="text-primary">
-                    {activityEntityLabel(r.entityType)}
-                  </span>
-                  {' · '}
-                  <span>{activityActionLabel(r.action)}</span>
-                </p>
-                <time
-                  className="text-xs text-muted-foreground tabular-nums"
-                  dateTime={r.createdAt}
+          <>
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3 sm:px-5">
+              <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
+                <Activity className="h-4 w-4" aria-hidden />
+                {filtered.length}{' '}
+                {filtered.length === 1 ? 'entri' : 'entri'}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Menampilkan {Math.min(visibleCount, filtered.length)} dari{' '}
+                {filtered.length}
+              </span>
+            </div>
+            <ul className="relative pl-2">
+              {visible.map((row, idx) => (
+                <LogTimelineEntry
+                  key={row.id}
+                  row={row}
+                  isFirst={idx === 0}
+                />
+              ))}
+            </ul>
+            {remaining > 0 ? (
+              <div className="border-t border-border p-4 text-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full px-5"
+                  onClick={() =>
+                    setVisibleCount((c) => c + LOAD_MORE_STEP)
+                  }
                 >
-                  {fmtWhen(r.createdAt)}
-                </time>
+                  <ChevronDown className="mr-1.5 h-4 w-4" aria-hidden />
+                  Muat {Math.min(remaining, LOAD_MORE_STEP)} lainnya
+                </Button>
               </div>
-              <p className="mt-1 text-sm text-foreground">{r.entityName}</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Oleh {r.actorName}
-                {r.actorId ? (
-                  <span className="ml-1 font-mono opacity-70">
-                    · {r.entityId.slice(0, 8)}…
-                  </span>
-                ) : null}
-              </p>
-              <JsonBlock label="Perubahan (changes)" value={r.changes} />
-              <JsonBlock label="Metadata" value={r.metadata} />
-            </li>
-          ))
+            ) : null}
+          </>
         )}
-      </ul>
+      </section>
     </div>
+  );
+}
+
+function FilterChip({
+  label,
+  onRemove,
+}: {
+  label: string;
+  onRemove: () => void;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/50 py-1 pl-2.5 pr-1 text-xs">
+      <span>{label}</span>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="rounded-full p-0.5 hover:bg-border/80"
+        aria-label="Hapus filter"
+      >
+        ×
+      </button>
+    </span>
+  );
+}
+
+function LogTimelineEntry({
+  row,
+  isFirst,
+}: {
+  row: ActivityLogRow;
+  isFirst: boolean;
+}) {
+  const [showDiff, setShowDiff] = useState(false);
+  const changes = normalizeChanges(row.changes);
+  const hasChanges = changes.length > 0;
+  const dotColor = ACTION_COLORS[row.action] ?? 'var(--muted-foreground)';
+  const meta =
+    row.metadata && typeof row.metadata === 'object' && !Array.isArray(row.metadata)
+      ? (row.metadata as Record<string, unknown>)
+      : null;
+
+  return (
+    <li
+      className={cn(
+        'relative flex gap-3 border-b border-border/60 py-4 pl-8 pr-4 last:border-b-0 sm:pl-10 sm:pr-5',
+        isFirst && 'bg-primary/[0.03]',
+      )}
+    >
+      <div
+        className="absolute left-2 top-5 flex h-6 w-6 items-center justify-center rounded-full sm:left-3"
+        style={{ backgroundColor: dotColor }}
+      >
+        <ActionIcon action={row.action} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-primary text-xs font-semibold text-primary-foreground">
+            {initialsFromName(row.actorName || '?')}
+          </div>
+          <div className="min-w-0 flex-1">
+            <LogActionLine row={row} />
+            <time
+              className="mt-1 block text-xs text-muted-foreground"
+              dateTime={row.createdAt}
+              title={fmtWhen(row.createdAt)}
+            >
+              {formatRelativeId(row.createdAt)}
+            </time>
+          </div>
+        </div>
+
+        {hasChanges ? (
+          <div className="mt-3 pl-12 sm:pl-12">
+            <button
+              type="button"
+              onClick={() => setShowDiff((s) => !s)}
+              className="text-xs font-medium text-primary hover:underline"
+            >
+              {showDiff ? 'Sembunyikan perubahan' : 'Tampilkan perubahan'}
+            </button>
+            {showDiff ? (
+              <div className="mt-2 overflow-x-auto rounded-lg border border-border">
+                <table className="w-full min-w-[320px] text-left text-xs">
+                  <thead className="border-b border-border bg-muted/40">
+                    <tr>
+                      <th className="px-2 py-1.5 font-medium">Bidang</th>
+                      <th className="px-2 py-1.5 font-medium">Sebelum</th>
+                      <th className="px-2 py-1.5 font-medium">Sesudah</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {changes.map((c, i) => (
+                      <tr key={i}>
+                        <td className="px-2 py-1.5 align-top font-medium">
+                          {toTitleCase(c.field)}
+                        </td>
+                        <td className="max-w-[180px] px-2 py-1.5 align-top text-muted-foreground">
+                          {renderDiffCell(c.oldVal)}
+                        </td>
+                        <td className="max-w-[180px] px-2 py-1.5 align-top">
+                          {renderDiffCell(c.newVal)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {meta && Object.keys(meta).length > 0 ? (
+          <p className="mt-2 pl-12 text-xs text-muted-foreground sm:pl-12">
+            {Object.entries(meta).map(([k, v], i) => (
+              <span key={k}>
+                {i > 0 ? ' · ' : null}
+                <span className="font-medium text-foreground/80">
+                  {toTitleCase(k)}
+                </span>
+                : {String(v)}
+              </span>
+            ))}
+          </p>
+        ) : null}
+      </div>
+    </li>
   );
 }

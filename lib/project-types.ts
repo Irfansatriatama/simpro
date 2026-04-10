@@ -4,6 +4,12 @@ import type {
   ProjectStatus,
 } from '@prisma/client';
 
+export type ProjectMemberPreview = {
+  userId: string;
+  name: string;
+  image: string | null;
+};
+
 export type ProjectListRow = {
   id: string;
   code: string;
@@ -16,13 +22,19 @@ export type ProjectListRow = {
   coverColor: string;
   clientId: string | null;
   clientName: string | null;
+  clientLogo: string | null;
   parentId: string | null;
   parentCode: string | null;
   startDate: string | null;
   endDate: string | null;
+  actualEndDate: string | null;
+  budget: number;
+  actualCost: number;
   tags: string[];
   memberCount: number;
+  memberPreview: ProjectMemberPreview[];
   updatedAt: string;
+  createdAt: string;
 };
 
 export type ProjectMemberRow = {

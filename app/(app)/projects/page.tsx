@@ -24,9 +24,16 @@ export default async function ProjectsPage() {
     where: projectListWhere(userId, role),
     orderBy: { updatedAt: 'desc' },
     include: {
-      client: { select: { id: true, companyName: true } },
+      client: { select: { id: true, companyName: true, logo: true } },
       parent: { select: { code: true } },
       _count: { select: { members: true } },
+      members: {
+        take: 4,
+        orderBy: { user: { name: 'asc' } },
+        select: {
+          user: { select: { id: true, name: true, image: true } },
+        },
+      },
     },
   });
 
@@ -42,13 +49,23 @@ export default async function ProjectsPage() {
     coverColor: r.coverColor,
     clientId: r.clientId,
     clientName: r.client?.companyName ?? null,
+    clientLogo: r.client?.logo ?? null,
     parentId: r.parentId,
     parentCode: r.parent?.code ?? null,
     startDate: r.startDate ? r.startDate.toISOString() : null,
     endDate: r.endDate ? r.endDate.toISOString() : null,
+    actualEndDate: r.actualEndDate ? r.actualEndDate.toISOString() : null,
+    budget: r.budget,
+    actualCost: r.actualCost,
     tags: r.tags,
     memberCount: r._count.members,
+    memberPreview: r.members.map((m) => ({
+      userId: m.user.id,
+      name: m.user.name,
+      image: m.user.image,
+    })),
     updatedAt: r.updatedAt.toISOString(),
+    createdAt: r.createdAt.toISOString(),
   }));
 
   const clients = canManage

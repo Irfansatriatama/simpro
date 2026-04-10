@@ -1,3 +1,13 @@
+export type DiscussionAttachmentRow = {
+  id: string;
+  discussionId: string;
+  name: string;
+  url: string;
+  size: number | null;
+  mimeType: string | null;
+  createdAt: string;
+};
+
 export type DiscussionReplyRow = {
   id: string;
   discussionId: string;
@@ -21,4 +31,5 @@ export type DiscussionThreadRow = {
   createdAt: string;
   updatedAt: string;
   replies: DiscussionReplyRow[];
+  attachments: DiscussionAttachmentRow[];
 };

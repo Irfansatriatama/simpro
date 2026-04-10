@@ -110,6 +110,10 @@ export function DiscussionFormDialog(props: {
           </div>
           <div className="grid gap-2">
             <Label htmlFor="d-content">Isi</Label>
+            <p className="text-xs text-muted-foreground">
+              Markdown ringan: judul (#), tebal (**), miring (*), tautan
+              [label](https://…), daftar, kode `inline`.
+            </p>
             <Textarea
               id="d-content"
               name="content"

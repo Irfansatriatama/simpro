@@ -1,9 +1,32 @@
 'use client';
 
-import { Bold, Heading1, Heading2, Italic, List } from 'lucide-react';
+import {
+  Bold,
+  Clock,
+  Code,
+  Heading1,
+  Heading2,
+  Heading3,
+  Italic,
+  List,
+  ListOrdered,
+  Strikethrough,
+} from 'lucide-react';
 import { useLayoutEffect, useRef } from 'react';
 
 import { Button } from '@/components/ui/button';
+
+export type NoteFormatKey =
+  | 'bold'
+  | 'italic'
+  | 'strikethrough'
+  | 'code'
+  | 'h1'
+  | 'h2'
+  | 'h3'
+  | 'ul'
+  | 'ol'
+  | 'timestamp';
 
 function wrapSelection(
   value: string,
@@ -16,6 +39,17 @@ function wrapSelection(
   const chunk = `${wrap}${inner}${wrap}`;
   const next = value.slice(0, start) + chunk + value.slice(end);
   const caret = start + wrap.length + inner.length + wrap.length;
+  return { value: next, start: caret, end: caret };
+}
+
+function insertAtCursor(
+  value: string,
+  start: number,
+  end: number,
+  insert: string,
+): { value: string; start: number; end: number } {
+  const next = value.slice(0, start) + insert + value.slice(end);
+  const caret = start + insert.length;
   return { value: next, start: caret, end: caret };
 }
 
@@ -50,7 +84,10 @@ function bulletLine(
   const lineEndIdx = value.indexOf('\n', end);
   const lineEnd = lineEndIdx === -1 ? value.length : lineEndIdx;
   const line = value.slice(lineStart, lineEnd);
-  const nextLine = line.trim().length === 0 ? '- ' : `- ${line.replace(/^[-*]\s+/, '')}`;
+  const nextLine =
+    line.trim().length === 0
+      ? '- '
+      : `- ${line.replace(/^[-*]\s+/, '').replace(/^\d+\.\s+/, '')}`;
   const next =
     value.slice(0, lineStart) + nextLine + value.slice(lineEnd);
   const delta = nextLine.length - line.length;
@@ -61,19 +98,66 @@ function bulletLine(
   };
 }
 
-type LineTransform = (
+function orderedLine(
   value: string,
   start: number,
   end: number,
-) => { value: string; start: number; end: number };
+): { value: string; start: number; end: number } {
+  const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+  const lineEndIdx = value.indexOf('\n', end);
+  const lineEnd = lineEndIdx === -1 ? value.length : lineEndIdx;
+  const line = value.slice(lineStart, lineEnd);
+  const nextLine =
+    line.trim().length === 0
+      ? '1. '
+      : `1. ${line.replace(/^\d+\.\s+/, '').replace(/^[-*]\s+/, '')}`;
+  const next =
+    value.slice(0, lineStart) + nextLine + value.slice(lineEnd);
+  const delta = nextLine.length - line.length;
+  return {
+    value: next,
+    start: Math.min(start + delta, next.length),
+    end: Math.min(end + delta, next.length),
+  };
+}
 
-const transforms: Record<string, LineTransform> = {
-  bold: (v, a, b) => wrapSelection(v, a, b, '**'),
-  italic: (v, a, b) => wrapSelection(v, a, b, '*'),
-  h1: (v, a, b) => prefixLine(v, a, b, '# '),
-  h2: (v, a, b) => prefixLine(v, a, b, '## '),
-  ul: (v, a, b) => bulletLine(v, a, b),
-};
+/** Untuk pintasan keyboard di textarea. */
+export function applyNoteFormat(
+  key: NoteFormatKey,
+  value: string,
+  start: number,
+  end: number,
+): { value: string; start: number; end: number } {
+  switch (key) {
+    case 'bold':
+      return wrapSelection(value, start, end, '**');
+    case 'italic':
+      return wrapSelection(value, start, end, '*');
+    case 'strikethrough':
+      return wrapSelection(value, start, end, '~~');
+    case 'code':
+      return wrapSelection(value, start, end, '`');
+    case 'h1':
+      return prefixLine(value, start, end, '# ');
+    case 'h2':
+      return prefixLine(value, start, end, '## ');
+    case 'h3':
+      return prefixLine(value, start, end, '### ');
+    case 'ul':
+      return bulletLine(value, start, end);
+    case 'ol':
+      return orderedLine(value, start, end);
+    case 'timestamp': {
+      const stamp = new Date().toLocaleString('id-ID', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      });
+      return insertAtCursor(value, start, end, stamp);
+    }
+    default:
+      return { value, start, end };
+  }
+}
 
 export function NoteEditorToolbar(props: {
   disabled?: boolean;
@@ -93,12 +177,12 @@ export function NoteEditorToolbar(props: {
     el.focus();
   }, [value, textareaRef]);
 
-  function run(key: keyof typeof transforms) {
+  function run(key: NoteFormatKey) {
     const el = textareaRef.current;
     if (!el || disabled) return;
     const start = el.selectionStart;
     const end = el.selectionEnd;
-    const r = transforms[key](value, start, end);
+    const r = applyNoteFormat(key, value, start, end);
     onChange(r.value);
     selRef.current = { start: r.start, end: r.end };
   }
@@ -113,7 +197,7 @@ export function NoteEditorToolbar(props: {
         disabled={disabled}
         onClick={() => run('bold')}
         aria-label="Tebal"
-        title="Tebal"
+        title="Tebal (Ctrl+B)"
       >
         <Bold className="h-4 w-4" />
       </Button>
@@ -125,9 +209,33 @@ export function NoteEditorToolbar(props: {
         disabled={disabled}
         onClick={() => run('italic')}
         aria-label="Miring"
-        title="Miring"
+        title="Miring (Ctrl+I)"
       >
         <Italic className="h-4 w-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="h-8 px-2"
+        disabled={disabled}
+        onClick={() => run('strikethrough')}
+        aria-label="Coret"
+        title="Coret (Ctrl+Shift+X)"
+      >
+        <Strikethrough className="h-4 w-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="h-8 px-2"
+        disabled={disabled}
+        onClick={() => run('code')}
+        aria-label="Kode"
+        title="Kode inline"
+      >
+        <Code className="h-4 w-4" />
       </Button>
       <Button
         type="button"
@@ -159,11 +267,47 @@ export function NoteEditorToolbar(props: {
         size="sm"
         className="h-8 px-2"
         disabled={disabled}
+        onClick={() => run('h3')}
+        aria-label="Judul 3"
+        title="### "
+      >
+        <Heading3 className="h-4 w-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="h-8 px-2"
+        disabled={disabled}
         onClick={() => run('ul')}
         aria-label="Daftar"
         title="Daftar (- )"
       >
         <List className="h-4 w-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="h-8 px-2"
+        disabled={disabled}
+        onClick={() => run('ol')}
+        aria-label="Daftar bernomor"
+        title="Daftar bernomor (1. )"
+      >
+        <ListOrdered className="h-4 w-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="h-8 px-2"
+        disabled={disabled}
+        onClick={() => run('timestamp')}
+        aria-label="Sisipkan tanggal & waktu"
+        title="Tanggal & waktu lokal"
+      >
+        <Clock className="h-4 w-4" />
       </Button>
     </div>
   );

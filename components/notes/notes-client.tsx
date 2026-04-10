@@ -1,14 +1,24 @@
 'use client';
 
 import {
+  BookOpen,
+  Copy,
+  FileDown,
+  FileJson,
   FileText,
+  FileType,
   FolderInput,
   FolderOpen,
+  History,
+  Maximize2,
+  Minimize2,
+  Pencil,
   Pin,
   Plus,
   Search,
   Share2,
   Trash2,
+  Upload,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {
@@ -25,14 +35,26 @@ import {
   createNoteFolderAction,
   deleteNoteAction,
   deleteNoteFolderAction,
+  importMarkdownNoteAction,
+  importNotesJsonAction,
   listNoteAuditsFormAction,
-  shareNoteAction,
+  recordNoteExportAuditAction,
+  recordNoteViewedSharedAction,
+  renameNoteFolderAction,
+  setAllNoteSharesPermissionAction,
+  shareNoteBatchAction,
   toggleNotePinAction,
   unshareNoteAction,
   updateNoteContentAction,
   updateNoteMetaAction,
 } from '@/app/actions/notes';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
@@ -49,7 +71,12 @@ import {
   FilterField,
   FilterPanelSheet,
 } from '@/components/filters/filter-panel-sheet';
-import { NoteEditorToolbar } from '@/components/notes/note-editor-toolbar';
+import {
+  applyNoteFormat,
+  type NoteFormatKey,
+  NoteEditorToolbar,
+} from '@/components/notes/note-editor-toolbar';
+import { NoteMarkdownPreview } from '@/components/notes/note-markdown-preview';
 import { NOTE_AUDIT_LABEL, NOTE_COLORS } from '@/lib/note-constants';
 import type {
   NoteClientRow,
@@ -78,12 +105,27 @@ function previewLine(note: NoteClientRow): string {
   return x.length > 72 ? `${x.slice(0, 72)}…` : x;
 }
 
+function triggerDownload(filename: string, blob: Blob) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export function NotesClient(props: {
   notes: NoteClientRow[];
   shareTargets: NoteShareTargetUser[];
   folders: NoteFolderRow[];
+  currentUserId: string;
 }) {
-  const { notes: initialNotes, shareTargets, folders: initialFolders } = props;
+  const {
+    notes: initialNotes,
+    shareTargets,
+    folders: initialFolders,
+    currentUserId,
+  } = props;
   const router = useRouter();
   const [notes, setNotes] = useState(initialNotes);
   const [folders, setFolders] = useState(initialFolders);
@@ -101,17 +143,27 @@ export function NotesClient(props: {
   const [colorPick, setColorPick] = useState<string>('#ffffff');
   const [folderPick, setFolderPick] = useState<string>('none');
   const [shareOpen, setShareOpen] = useState(false);
-  const [shareUserId, setShareUserId] = useState('');
+  const [sharePickIds, setSharePickIds] = useState<Set<string>>(() => new Set());
   const [sharePerm, setSharePerm] = useState<'view' | 'edit'>('view');
-  const [auditOpen, setAuditOpen] = useState(false);
   const [audits, setAudits] = useState<
     { id: string; action: string; actorName: string; createdAt: string }[]
   >([]);
+  const [editorMode, setEditorMode] = useState<'edit' | 'preview' | 'history'>(
+    'edit',
+  );
+  const [editorFs, setEditorFs] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [renameFolder, setRenameFolder] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [pending, startTransition] = useTransition();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastNoteSyncKey = useRef<string | null>(null);
   const notesRef = useRef(notes);
   const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const mdImportInputRef = useRef<HTMLInputElement>(null);
+  const editorPanelRef = useRef<HTMLDivElement>(null);
   notesRef.current = notes;
 
   useEffect(() => {
@@ -125,10 +177,53 @@ export function NotesClient(props: {
     setNotes(initialNotes);
   }, [initialNotes]);
 
+  useEffect(() => {
+    setEditorMode('edit');
+  }, [selectedId]);
+
+  useEffect(() => {
+    const onFs = () => {
+      setEditorFs(
+        Boolean(document.fullscreenElement === editorPanelRef.current),
+      );
+    };
+    document.addEventListener('fullscreenchange', onFs);
+    return () => document.removeEventListener('fullscreenchange', onFs);
+  }, []);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    const row = notesRef.current.find((n) => n.id === selectedId);
+    if (!row || row.access === 'owner') return;
+    const fd = new FormData();
+    fd.set('noteId', selectedId);
+    startTransition(() => {
+      void recordNoteViewedSharedAction(fd);
+    });
+  }, [selectedId]);
+
+  useEffect(() => {
+    if (editorMode !== 'history' || !selectedId) return;
+    const row = notesRef.current.find((n) => n.id === selectedId);
+    if (!row || row.access !== 'owner') return;
+    const fd = new FormData();
+    fd.set('noteId', selectedId);
+    startTransition(async () => {
+      const r = await listNoteAuditsFormAction(fd);
+      if (r.ok && r.data) setAudits(r.data.entries);
+    });
+  }, [editorMode, selectedId]);
+
   const selected = useMemo(
     () => notes.find((n) => n.id === selectedId) ?? null,
     [notes, selectedId],
   );
+
+  useEffect(() => {
+    if (!shareOpen || !selected || selected.access !== 'owner') return;
+    setSharePerm(selected.shareDefaultPermission);
+    setSharePickIds(new Set());
+  }, [shareOpen, selected]);
 
   useEffect(() => {
     if (!selectedId) {
@@ -201,7 +296,7 @@ export function NotesClient(props: {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return notes.filter((n) => {
+    const arr = notes.filter((n) => {
       if (folderListFilter === 'none') {
         if (n.folderId) return false;
       } else if (folderListFilter !== 'all') {
@@ -220,6 +315,13 @@ export function NotesClient(props: {
         .toLowerCase();
       return blob.includes(q);
     });
+    arr.sort((a, b) => {
+      if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+      return (
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      );
+    });
+    return arr;
   }, [notes, search, folderListFilter]);
 
   const listFilterActiveCount = useMemo(() => {
@@ -296,18 +398,33 @@ export function NotesClient(props: {
     });
   }
 
-  function onShare(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!selected || selected.access !== 'owner' || !shareUserId) return;
+  function onSharePermChange(next: 'view' | 'edit') {
+    setSharePerm(next);
+    if (!selected || selected.access !== 'owner') return;
+    if (selected.sharedWith.length === 0) return;
     const fd = new FormData();
     fd.set('noteId', selected.id);
-    fd.set('targetUserId', shareUserId);
-    fd.set('permission', sharePerm);
+    fd.set('permission', next);
     startTransition(async () => {
-      const r = await shareNoteAction(fd);
+      const r = await setAllNoteSharesPermissionAction(fd);
+      if (!r.ok) window.alert(r.error);
+      else router.refresh();
+    });
+  }
+
+  function onShareBatch(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!selected || selected.access !== 'owner' || sharePickIds.size === 0)
+      return;
+    const fd = new FormData();
+    fd.set('noteId', selected.id);
+    fd.set('permission', sharePerm);
+    fd.set('userIds', JSON.stringify(Array.from(sharePickIds)));
+    startTransition(async () => {
+      const r = await shareNoteBatchAction(fd);
       if (!r.ok) window.alert(r.error);
       else {
-        setShareUserId('');
+        setSharePickIds(new Set());
         router.refresh();
       }
     });
@@ -322,21 +439,6 @@ export function NotesClient(props: {
       const r = await unshareNoteAction(fd);
       if (!r.ok) window.alert(r.error);
       else router.refresh();
-    });
-  }
-
-  function loadAudits() {
-    if (!selected || selected.access !== 'owner') return;
-    startTransition(async () => {
-      const fd = new FormData();
-      fd.set('noteId', selected.id);
-      const r = await listNoteAuditsFormAction(fd);
-      if (!r.ok || !r.data) {
-        window.alert(r.ok ? 'Kosong.' : r.error);
-        return;
-      }
-      setAudits(r.data.entries);
-      setAuditOpen(true);
     });
   }
 
@@ -371,7 +473,159 @@ export function NotesClient(props: {
     });
   }
 
+  const ownedNotes = useMemo(
+    () => notes.filter((n) => n.access === 'owner'),
+    [notes],
+  );
+
+  const wordCharStats = useMemo(() => {
+    const t = localContent.trim();
+    const words = t ? t.split(/\s+/).filter((w) => w.length > 0).length : 0;
+    return { words, chars: localContent.length };
+  }, [localContent]);
+
+  function exportOwnedJson() {
+    const payload = {
+      exported_at: new Date().toISOString(),
+      app: 'simpro',
+      version: 1,
+      user_id: currentUserId,
+      folders: folders.map((f) => ({
+        id: f.id,
+        name: f.name,
+        sortOrder: f.sortOrder,
+      })),
+      notes: ownedNotes.map((n) => ({
+        id: n.id,
+        title: n.title,
+        content: n.content,
+        folderId: n.folderId,
+        folder_id: n.folderId,
+        pinned: n.pinned,
+        color: n.color,
+        tags: n.tags,
+        sharePermission: n.shareDefaultPermission,
+        createdAt: n.createdAt,
+        updatedAt: n.updatedAt,
+      })),
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: 'application/json;charset=utf-8',
+    });
+    const day = new Date().toISOString().slice(0, 10);
+    triggerDownload(`simpro-notes-${day}.json`, blob);
+  }
+
+  function exportOwnedMdBundle() {
+    const sorted = [...ownedNotes].sort(
+      (a, b) =>
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+    );
+    let md = '';
+    for (const n of sorted) {
+      const t = n.title?.trim() || 'Tanpa judul';
+      md += `# ${t}\n\n${n.content}\n\n---\n\n`;
+    }
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    triggerDownload(
+      `simpro-notes-${new Date().toISOString().slice(0, 10)}.md`,
+      blob,
+    );
+  }
+
+  function downloadSingleMd() {
+    if (!selected || selected.access !== 'owner') return;
+    const head = localTitle.trim() ? `# ${localTitle.trim()}\n\n` : '';
+    const blob = new Blob([head + localContent], {
+      type: 'text/markdown;charset=utf-8',
+    });
+    const safe = (localTitle.trim() || selected.id)
+      .replace(/[/\\?%*:|"<>]/g, '-')
+      .slice(0, 60);
+    triggerDownload(`${safe}.md`, blob);
+    const fd = new FormData();
+    fd.set('noteId', selected.id);
+    startTransition(async () => {
+      await recordNoteExportAuditAction(fd);
+    });
+  }
+
+  function onRenameFolderSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!renameFolder || !renameFolder.name.trim()) return;
+    const fd = new FormData();
+    fd.set('id', renameFolder.id);
+    fd.set('name', renameFolder.name.trim());
+    startTransition(async () => {
+      const r = await renameNoteFolderAction(fd);
+      if (!r.ok) window.alert(r.error);
+      else {
+        setRenameFolder(null);
+        router.refresh();
+      }
+    });
+  }
+
   const readOnly = selected?.access === 'shared_view';
+
+  function applyFormatKey(key: NoteFormatKey) {
+    const el = contentTextareaRef.current;
+    if (!el || readOnly || editorMode !== 'edit') return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const r = applyNoteFormat(key, localContent, start, end);
+    setLocalContent(r.value);
+    requestAnimationFrame(() => {
+      el.setSelectionRange(r.start, r.end);
+      el.focus();
+    });
+  }
+
+  function onContentKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (readOnly || editorMode !== 'edit') return;
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
+      e.preventDefault();
+      applyFormatKey('bold');
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'i' || e.key === 'I')) {
+      e.preventDefault();
+      applyFormatKey('italic');
+      return;
+    }
+    if (
+      (e.ctrlKey || e.metaKey) &&
+      e.shiftKey &&
+      (e.key === 'x' || e.key === 'X')
+    ) {
+      e.preventDefault();
+      applyFormatKey('strikethrough');
+    }
+  }
+
+  async function copyNoteMarkdown() {
+    if (!selected) return;
+    const head = localTitle.trim() ? `# ${localTitle.trim()}\n\n` : '';
+    try {
+      await navigator.clipboard.writeText(head + localContent);
+    } catch {
+      window.alert('Gagal menyalin ke papan klip.');
+    }
+  }
+
+  async function toggleEditorFullscreen() {
+    const el = editorPanelRef.current;
+    if (!el) return;
+    try {
+      if (!document.fullscreenElement) {
+        await el.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch {
+      /* abaikan */
+    }
+  }
 
   return (
     <div className="flex min-h-[calc(100vh-8rem)] flex-col gap-4 lg:flex-row lg:gap-0">
@@ -384,15 +638,96 @@ export function NotesClient(props: {
             Hanya Anda (dan yang dibagikan) yang melihat isi catatan.
           </p>
         </div>
-        <div className="mb-3 flex gap-2">
+        <div className="mb-3 flex flex-wrap gap-2">
           <Button
             type="button"
-            className="flex-1 gap-2"
+            className="min-w-0 flex-1 gap-2 sm:flex-initial"
             onClick={onCreate}
             disabled={pending}
           >
             <Plus className="h-4 w-4" />
             Catatan baru
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                className="gap-2"
+                disabled={pending || ownedNotes.length === 0}
+                title="Hanya catatan milik Anda"
+              >
+                <FileDown className="h-4 w-4" />
+                Ekspor
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              <DropdownMenuItem
+                className="gap-2"
+                onSelect={() => exportOwnedJson()}
+              >
+                <FileJson className="h-4 w-4" />
+                JSON (backup / impor ulang)
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="gap-2"
+                onSelect={() => exportOwnedMdBundle()}
+              >
+                <FileText className="h-4 w-4" />
+                Markdown gabungan
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-2"
+            onClick={() => setImportOpen(true)}
+            disabled={pending}
+          >
+            <Upload className="h-4 w-4" />
+            Impor JSON
+          </Button>
+          <input
+            ref={mdImportInputRef}
+            type="file"
+            accept=".md,.txt,text/markdown,text/plain"
+            className="hidden"
+            aria-hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              void (async () => {
+                const fd = new FormData();
+                fd.set('file', file);
+                const fdFolder =
+                  folderListFilter !== 'all' && folderListFilter !== 'none'
+                    ? folderListFilter
+                    : 'none';
+                fd.set('folderId', fdFolder);
+                const r = await importMarkdownNoteAction(fd);
+                if (!r.ok) {
+                  window.alert(r.error);
+                  e.target.value = '';
+                  return;
+                }
+                if (r.id) setSelectedId(r.id);
+                setEditorMode('edit');
+                router.refresh();
+                e.target.value = '';
+              })();
+            }}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-2"
+            onClick={() => mdImportInputRef.current?.click()}
+            disabled={pending}
+            title="Buat catatan baru dari berkas .md atau .txt"
+          >
+            <FileType className="h-4 w-4" />
+            Impor .md
           </Button>
         </div>
         <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -534,6 +869,19 @@ export function NotesClient(props: {
                     type="button"
                     variant="ghost"
                     size="icon"
+                    className="h-8 w-8 shrink-0 text-muted-foreground"
+                    aria-label={`Ganti nama folder ${f.name}`}
+                    onClick={() =>
+                      setRenameFolder({ id: f.id, name: f.name })
+                    }
+                    disabled={pending}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
                     className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
                     aria-label={`Hapus folder ${f.name}`}
                     onClick={() => onDeleteFolder(f.id, f.name)}
@@ -548,7 +896,13 @@ export function NotesClient(props: {
         </div>
       </aside>
 
-      <section className="flex min-h-[320px] flex-1 flex-col border-border lg:border-l lg:pl-4">
+      <section
+        ref={editorPanelRef}
+        className={cn(
+          'flex min-h-[320px] flex-1 flex-col border-border lg:border-l lg:pl-4',
+          editorFs && 'bg-background',
+        )}
+      >
         {!selected ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-card/30 py-16 text-center text-muted-foreground">
             <FileText className="h-10 w-10 opacity-40" />
@@ -563,7 +917,76 @@ export function NotesClient(props: {
               </div>
             ) : null}
 
+            {!readOnly ? (
+              <div
+                className="inline-flex rounded-lg border border-border bg-muted/30 p-0.5"
+                role="tablist"
+                aria-label="Mode editor"
+              >
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={editorMode === 'edit' ? 'default' : 'ghost'}
+                  className="h-8"
+                  aria-pressed={editorMode === 'edit'}
+                  onClick={() => setEditorMode('edit')}
+                >
+                  Edit
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={editorMode === 'preview' ? 'default' : 'ghost'}
+                  className="h-8 gap-1"
+                  aria-pressed={editorMode === 'preview'}
+                  onClick={() => setEditorMode('preview')}
+                >
+                  <BookOpen className="h-3.5 w-3.5" />
+                  Baca
+                </Button>
+                {selected.access === 'owner' ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={editorMode === 'history' ? 'default' : 'ghost'}
+                    className="h-8 gap-1"
+                    aria-pressed={editorMode === 'history'}
+                    onClick={() => setEditorMode('history')}
+                  >
+                    <History className="h-3.5 w-3.5" />
+                    Riwayat
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
+
             <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => void copyNoteMarkdown()}
+                title="Salin judul dan isi sebagai Markdown"
+              >
+                <Copy className="h-3.5 w-3.5" />
+                Salin MD
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => void toggleEditorFullscreen()}
+                title="Layar penuh panel editor"
+              >
+                {editorFs ? (
+                  <Minimize2 className="h-3.5 w-3.5" />
+                ) : (
+                  <Maximize2 className="h-3.5 w-3.5" />
+                )}
+                {editorFs ? 'Keluar' : 'Layar penuh'}
+              </Button>
               {selected.access === 'owner' ? (
                 <>
                   <Button
@@ -590,10 +1013,12 @@ export function NotesClient(props: {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={loadAudits}
+                    onClick={downloadSingleMd}
                     disabled={pending}
+                    title="Unduh catatan ini sebagai .md (tersimpan di riwayat)"
                   >
-                    Riwayat
+                    <FileDown className="mr-1.5 h-3.5 w-3.5" />
+                    Unduh .md
                   </Button>
                   <Button
                     type="button"
@@ -613,35 +1038,83 @@ export function NotesClient(props: {
                   ? 'Menyimpan…'
                   : saveState === 'saved'
                     ? 'Tersimpan'
-                    : readOnly
+                    : readOnly || editorMode === 'history'
                       ? ''
-                      : 'Otomatis simpan'}
+                      : editorMode === 'edit'
+                        ? 'Otomatis simpan'
+                        : ''}
               </span>
             </div>
 
-            <Input
-              value={localTitle}
-              onChange={(e) => setLocalTitle(e.target.value)}
-              placeholder="Judul (opsional)"
-              disabled={readOnly}
-              className="text-lg font-medium"
-            />
-            {!readOnly ? (
-              <NoteEditorToolbar
-                disabled={readOnly}
-                value={localContent}
-                onChange={setLocalContent}
-                textareaRef={contentTextareaRef}
+            {editorMode !== 'history' ? (
+              <Input
+                value={localTitle}
+                onChange={(e) => setLocalTitle(e.target.value)}
+                placeholder="Judul (opsional)"
+                disabled={readOnly || editorMode === 'preview'}
+                className="text-lg font-medium"
               />
             ) : null}
-            <Textarea
-              ref={contentTextareaRef}
-              value={localContent}
-              onChange={(e) => setLocalContent(e.target.value)}
-              placeholder="Tulis di sini… (Markdown: gunakan toolbar di atas)"
-              disabled={readOnly}
-              className="min-h-[240px] flex-1 resize-y font-mono text-sm lg:min-h-[360px]"
-            />
+            {editorMode === 'history' && selected.access === 'owner' ? (
+              <div className="max-h-[min(60vh,520px)] overflow-y-auto rounded-lg border border-border bg-card/40 p-3">
+                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Aktivitas (maks. 100 entri)
+                </p>
+                <ul className="space-y-2 text-sm">
+                  {audits.length === 0 ? (
+                    <li className="text-muted-foreground">
+                      Belum ada riwayat aktivitas.
+                    </li>
+                  ) : (
+                    audits.map((a) => (
+                      <li
+                        key={a.id}
+                        className="rounded-md border border-border px-2 py-1.5"
+                      >
+                        <span className="font-medium text-foreground">
+                          {a.actorName}
+                        </span>{' '}
+                        <span className="text-muted-foreground">
+                          — {NOTE_AUDIT_LABEL[a.action] ?? a.action}
+                        </span>
+                        <div className="text-xs text-muted-foreground">
+                          {fmtShort(a.createdAt)}{' '}
+                          {new Date(a.createdAt).toLocaleTimeString('id-ID', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </div>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              </div>
+            ) : readOnly || editorMode === 'preview' ? (
+              <NoteMarkdownPreview markdown={localContent} />
+            ) : (
+              <>
+                <NoteEditorToolbar
+                  disabled={readOnly}
+                  value={localContent}
+                  onChange={setLocalContent}
+                  textareaRef={contentTextareaRef}
+                />
+                <Textarea
+                  ref={contentTextareaRef}
+                  value={localContent}
+                  onChange={(e) => setLocalContent(e.target.value)}
+                  onKeyDown={onContentKeyDown}
+                  placeholder="Tulis di sini… (Markdown: gunakan toolbar di atas)"
+                  disabled={readOnly}
+                  className="min-h-[240px] flex-1 resize-y font-mono text-sm lg:min-h-[360px]"
+                />
+              </>
+            )}
+            {editorMode !== 'history' ? (
+              <p className="text-right font-mono text-[11px] text-muted-foreground">
+                {wordCharStats.words} kata · {wordCharStats.chars} karakter
+              </p>
+            ) : null}
 
             {selected.access === 'owner' ? (
               <form
@@ -717,41 +1190,80 @@ export function NotesClient(props: {
                   Undang anggota tim terlebih dahulu.
                 </p>
               ) : (
-                <form onSubmit={onShare} className="grid gap-3">
+                <form onSubmit={onShareBatch} className="grid gap-3">
                   <div className="grid gap-2">
-                    <Label htmlFor="share-user">Pengguna</Label>
-                    <SelectNative
-                      id="share-user"
-                      value={shareUserId}
-                      onChange={(e) => setShareUserId(e.target.value)}
-                      required
-                      className="w-full"
-                    >
-                      <option value="">— Pilih —</option>
-                      {shareTargets.map((u) => (
-                        <option key={u.id} value={u.id}>
-                          {u.name} ({u.username})
-                        </option>
-                      ))}
-                    </SelectNative>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="share-perm">Izin</Label>
+                    <Label htmlFor="share-perm">Izin untuk penerima</Label>
                     <SelectNative
                       id="share-perm"
                       value={sharePerm}
                       onChange={(e) =>
-                        setSharePerm(e.target.value as 'view' | 'edit')
+                        onSharePermChange(e.target.value as 'view' | 'edit')
                       }
                       className="w-full"
                     >
                       <option value="view">Hanya lihat</option>
                       <option value="edit">Lihat &amp; ubah</option>
                     </SelectNative>
+                    {selected.sharedWith.length > 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        Mengubah izin di sini menerapkan ke semua yang sudah
+                        punya akses.
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Tambahkan anggota</Label>
+                    <div className="max-h-48 space-y-2 overflow-y-auto rounded-md border border-border p-2">
+                      {shareTargets.filter(
+                        (u) =>
+                          !selected.sharedWith.some((s) => s.userId === u.id),
+                      ).length === 0 ? (
+                        <p className="text-xs text-muted-foreground">
+                          Semua anggota yang tersedia sudah punya akses.
+                        </p>
+                      ) : (
+                        shareTargets
+                          .filter(
+                            (u) =>
+                              !selected.sharedWith.some(
+                                (s) => s.userId === u.id,
+                              ),
+                          )
+                          .map((u) => (
+                            <label
+                              key={u.id}
+                              className="flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-sm hover:bg-muted/50"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={sharePickIds.has(u.id)}
+                                onChange={() => {
+                                  setSharePickIds((prev) => {
+                                    const n = new Set(prev);
+                                    if (n.has(u.id)) n.delete(u.id);
+                                    else n.add(u.id);
+                                    return n;
+                                  });
+                                }}
+                                className="rounded border-border"
+                              />
+                              <span>
+                                {u.name}{' '}
+                                <span className="text-muted-foreground">
+                                  ({u.username})
+                                </span>
+                              </span>
+                            </label>
+                          ))
+                      )}
+                    </div>
                   </div>
                   <DialogFooter>
-                    <Button type="submit" disabled={pending || !shareUserId}>
-                      Bagikan
+                    <Button
+                      type="submit"
+                      disabled={pending || sharePickIds.size === 0}
+                    >
+                      Tambahkan terpilih
                     </Button>
                   </DialogFooter>
                 </form>
@@ -791,40 +1303,98 @@ export function NotesClient(props: {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={auditOpen} onOpenChange={setAuditOpen}>
+      <Dialog open={importOpen} onOpenChange={setImportOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Riwayat catatan</DialogTitle>
+            <DialogTitle>Impor catatan (JSON)</DialogTitle>
             <DialogDescription>
-              Aktivitas tercatat untuk pemilik (maks. 100 entri terbaru).
+              Unggah berkas dari ekspor SIMPRO atau paket dengan kunci{' '}
+              <code className="rounded bg-muted px-1 text-xs">notes</code> dan{' '}
+              <code className="rounded bg-muted px-1 text-xs">folders</code>{' '}
+              (kompatibel dengan backup Trackly). ID catatan yang sudah ada di
+              basis data akan dilewati.
             </DialogDescription>
           </DialogHeader>
-          <ul className="max-h-[50vh] space-y-2 overflow-y-auto text-sm">
-            {audits.length === 0 ? (
-              <li className="text-muted-foreground">Belum ada riwayat.</li>
-            ) : (
-              audits.map((a) => (
-                <li
-                  key={a.id}
-                  className="rounded-md border border-border px-2 py-1.5"
+          <div className="grid gap-3">
+            <Label htmlFor="notes-import-file" className="sr-only">
+              Berkas JSON
+            </Label>
+            <Input
+              id="notes-import-file"
+              type="file"
+              accept=".json,application/json"
+              className="cursor-pointer text-sm"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                void (async () => {
+                  try {
+                    const text = await file.text();
+                    const fd = new FormData();
+                    fd.set('json', text);
+                    const r = await importNotesJsonAction(fd);
+                    if (!r.ok) {
+                      window.alert(r.error);
+                      return;
+                    }
+                    if (r.data) {
+                      window.alert(
+                        `Impor selesai.\n• ${r.data.imported} catatan baru\n• ${r.data.skipped} dilewati\n• ${r.data.foldersTouched} folder baru`,
+                      );
+                    }
+                    setImportOpen(false);
+                    router.refresh();
+                  } catch {
+                    window.alert('Gagal membaca berkas.');
+                  }
+                  e.target.value = '';
+                })();
+              }}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={renameFolder !== null}
+        onOpenChange={(v) => {
+          if (!v) setRenameFolder(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ganti nama folder</DialogTitle>
+          </DialogHeader>
+          {renameFolder ? (
+            <form onSubmit={onRenameFolderSubmit} className="grid gap-3">
+              <div className="grid gap-2">
+                <Label htmlFor="rename-folder-input">Nama</Label>
+                <Input
+                  id="rename-folder-input"
+                  value={renameFolder.name}
+                  onChange={(e) =>
+                    setRenameFolder((prev) =>
+                      prev ? { ...prev, name: e.target.value } : null,
+                    )
+                  }
+                  maxLength={80}
+                  autoFocus
+                />
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setRenameFolder(null)}
                 >
-                  <span className="font-medium text-foreground">
-                    {a.actorName}
-                  </span>{' '}
-                  <span className="text-muted-foreground">
-                    — {NOTE_AUDIT_LABEL[a.action] ?? a.action}
-                  </span>
-                  <div className="text-xs text-muted-foreground">
-                    {fmtShort(a.createdAt)}{' '}
-                    {new Date(a.createdAt).toLocaleTimeString('id-ID', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </div>
-                </li>
-              ))
-            )}
-          </ul>
+                  Batal
+                </Button>
+                <Button type="submit" disabled={pending}>
+                  Simpan
+                </Button>
+              </DialogFooter>
+            </form>
+          ) : null}
         </DialogContent>
       </Dialog>
     </div>

@@ -5,30 +5,43 @@ import { usePathname } from 'next/navigation';
 
 import { cn } from '@/lib/utils';
 
-const ITEMS: { suffix: string; label: string; reportsOnly?: boolean }[] = [
+type Item = {
+  suffix: string;
+  label: string;
+  maintenanceOnly?: boolean;
+  logOnly?: boolean;
+};
+
+const ITEMS: Item[] = [
   { suffix: '', label: 'Ringkasan' },
-  { suffix: '/backlog', label: 'Backlog' },
   { suffix: '/board', label: 'Board' },
+  { suffix: '/backlog', label: 'Backlog' },
   { suffix: '/sprint', label: 'Sprint' },
   { suffix: '/gantt', label: 'Gantt' },
-  { suffix: '/maintenance', label: 'Maintenance' },
-  { suffix: '/maintenance-report', label: 'Laporan maint.' },
-  { suffix: '/reports', label: 'Laporan', reportsOnly: true },
   { suffix: '/discussion', label: 'Diskusi' },
-  { suffix: '/log', label: 'Log' },
+  { suffix: '/maintenance', label: 'Maintenance', maintenanceOnly: true },
+  { suffix: '/reports', label: 'Laporan' },
+  { suffix: '/log', label: 'Log', logOnly: true },
 ];
 
 export function ProjectSubnav(props: {
   projectId: string;
-  showReportsLink?: boolean;
+  showMaintenance?: boolean;
+  showLog?: boolean;
 }) {
-  const { projectId, showReportsLink = false } = props;
+  const {
+    projectId,
+    showMaintenance = false,
+    showLog = false,
+  } = props;
   const pathname = usePathname() ?? '';
   const base = `/projects/${projectId}`;
 
-  const visible = ITEMS.filter(
-    (item) => !item.reportsOnly || showReportsLink,
-  );
+  const visible = ITEMS.filter((item) => {
+    if (item.maintenanceOnly && !showMaintenance) return false;
+    if (item.logOnly && !showLog) return false;
+    return true;
+  });
 
   return (
     <nav

@@ -7,6 +7,21 @@ import type {
 
 export type MaintenancePicRow = { userId: string; name: string };
 
+/** Baris untuk laporan maintenance (multi-proyek saat sertakan sub-proyek). */
+export type MaintenanceReportRow = {
+  id: string;
+  projectId: string;
+  projectName: string;
+  title: string;
+  type: MaintenanceType;
+  status: MaintenanceStatus;
+  priority: Priority;
+  severity: Severity | null;
+  reportedDate: string | null;
+  dueDate: string | null;
+  picClient: string | null;
+};
+
 export type MaintenanceRow = {
   id: string;
   title: string;

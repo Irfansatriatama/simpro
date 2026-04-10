@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SelectNative } from '@/components/ui/select-native';
 import { Textarea } from '@/components/ui/textarea';
+import { CloudinaryImageField } from '@/components/uploads/cloudinary-image-field';
 import {
   ASSET_CATEGORIES,
   ASSET_CATEGORY_LABEL,
@@ -90,7 +91,7 @@ export function AssetFormDialog(props: {
           </DialogTitle>
           <DialogDescription>
             Inventaris perusahaan; opsional taut ke proyek dan penanggung jawab.
-            Gambar memakai URL (opsional).
+            Foto aset diunggah ke Cloudinary (opsional).
           </DialogDescription>
         </DialogHeader>
 
@@ -214,16 +215,12 @@ export function AssetFormDialog(props: {
                 ))}
               </SelectNative>
             </div>
-            <div className="grid gap-2 sm:col-span-2">
-              <Label htmlFor="asset-image">URL gambar</Label>
-              <Input
-                id="asset-image"
-                name="image"
-                type="url"
-                defaultValue={a?.image ?? ''}
-                placeholder="https://…"
-              />
-            </div>
+            <CloudinaryImageField
+              className="sm:col-span-2"
+              name="image"
+              label="Foto aset"
+              defaultUrl={a?.image}
+            />
             <div className="grid gap-2 sm:col-span-2">
               <Label htmlFor="asset-desc">Deskripsi</Label>
               <Textarea

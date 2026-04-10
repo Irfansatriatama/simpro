@@ -1,14 +1,10 @@
-import Link from 'next/link';
-import { redirect, notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 
+import { ProjectDetailBannerClient } from '@/components/projects/project-detail-banner-client';
 import { ProjectSubnav } from '@/components/projects/project-subnav';
 import { auth } from '@/lib/auth';
-import { canManageProjects, projectViewWhere } from '@/lib/project-access';
-import {
-  PRIORITY_LABEL,
-  PROJECT_PHASE_LABEL,
-  PROJECT_STATUS_LABEL,
-} from '@/lib/project-labels';
+import { canManageProjects, projectListWhere, projectViewWhere } from '@/lib/project-access';
+import type { ProjectDetailPayload } from '@/lib/project-types';
 import { prisma } from '@/lib/prisma';
 import { getUserRole } from '@/lib/session-user';
 import { headers } from 'next/headers';
@@ -25,73 +21,90 @@ export default async function ProjectIdLayout({
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) redirect('/login');
 
+  const userId = session.user.id;
   const role = getUserRole(session);
-  const project = await prisma.project.findFirst({
-    where: projectViewWhere(session.user.id, role, params.id),
-    select: {
-      id: true,
-      code: true,
-      name: true,
-      description: true,
-      coverColor: true,
-      progress: true,
-      status: true,
-      phase: true,
-      priority: true,
+  const canManage = canManageProjects(role);
+
+  const row = await prisma.project.findFirst({
+    where: projectViewWhere(userId, role, params.id),
+    include: {
+      client: { select: { companyName: true, logo: true } },
+      parent: { select: { id: true, name: true, code: true } },
     },
   });
 
-  if (!project) notFound();
+  if (!row) notFound();
+
+  const subProjectCount = await prisma.project.count({
+    where: { parentId: row.id },
+  });
+
+  const [clients, parents] = canManage
+    ? await Promise.all([
+        prisma.client.findMany({
+          where: { status: 'active' },
+          select: { id: true, companyName: true },
+          orderBy: { companyName: 'asc' },
+        }),
+        prisma.project.findMany({
+          where: {
+            ...projectListWhere(userId, role),
+            id: { not: row.id },
+          },
+          select: { id: true, code: true, name: true },
+          orderBy: { code: 'asc' },
+        }),
+      ])
+    : [[], []];
+
+  const project: ProjectDetailPayload['project'] = {
+    id: row.id,
+    code: row.code,
+    name: row.name,
+    description: row.description,
+    status: row.status,
+    phase: row.phase,
+    priority: row.priority,
+    progress: row.progress,
+    coverColor: row.coverColor,
+    budget: row.budget,
+    actualCost: row.actualCost,
+    tags: row.tags,
+    clientId: row.clientId,
+    clientName: row.client?.companyName ?? null,
+    parentId: row.parentId,
+    parentCode: row.parent?.code ?? null,
+    startDate: row.startDate ? row.startDate.toISOString() : null,
+    endDate: row.endDate ? row.endDate.toISOString() : null,
+    actualEndDate: row.actualEndDate
+      ? row.actualEndDate.toISOString()
+      : null,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    subProjectCount,
+  };
+
+  const showMaintenance =
+    (row.phase != null && ['running', 'maintenance'].includes(row.phase)) ||
+    row.status === 'maintenance';
 
   return (
     <div className="space-y-4">
-      <Link
-        href="/projects"
-        className="inline-block text-sm text-muted-foreground hover:text-foreground"
-      >
-        ← Semua proyek
-      </Link>
-
-      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card">
-        <div
-          className="h-3 sm:h-4"
-          style={{ backgroundColor: project.coverColor }}
-        />
-        <div className="p-4 sm:p-5">
-          <p className="font-mono text-xs text-muted-foreground sm:text-sm">
-            {project.code}
-          </p>
-          <h1 className="mt-1 text-xl font-semibold text-foreground sm:text-2xl">
-            {project.name}
-          </h1>
-          {project.description ? (
-            <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
-              {project.description}
-            </p>
-          ) : null}
-          <div className="mt-4 flex flex-wrap gap-2">
-            <span className="rounded-md border border-border bg-surface/80 px-2.5 py-1 text-xs font-medium text-foreground">
-              {PROJECT_STATUS_LABEL[project.status]}
-            </span>
-            <span className="rounded-md border border-border bg-surface/80 px-2.5 py-1 text-xs font-medium text-muted-foreground">
-              {project.phase
-                ? PROJECT_PHASE_LABEL[project.phase]
-                : 'Tanpa fase'}
-            </span>
-            <span className="rounded-md border border-border bg-surface/80 px-2.5 py-1 text-xs font-medium text-muted-foreground">
-              {PRIORITY_LABEL[project.priority]}
-            </span>
-            <span className="rounded-md bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-              Progres {project.progress}%
-            </span>
-          </div>
-        </div>
-      </div>
+      <ProjectDetailBannerClient
+        project={project}
+        parentName={row.parent?.name ?? null}
+        parentId={row.parentId}
+        canManage={canManage}
+        clients={clients}
+        parents={parents}
+      />
 
       <ProjectSubnav
-        projectId={project.id}
-        showReportsLink={canManageProjects(role)}
+        projectId={row.id}
+        showMaintenance={showMaintenance}
+        showLog={canManage}
       />
+
       <div className="pb-8">{children}</div>
     </div>
   );

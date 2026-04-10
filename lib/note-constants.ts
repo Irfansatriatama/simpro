@@ -26,11 +26,17 @@ export function isNoteSharePerm(s: string): s is NoteSharePerm {
 /** Label audit untuk tampilan (aksi disimpan sebagai kunci pendek). */
 export const NOTE_AUDIT_LABEL: Record<string, string> = {
   created: 'Membuat catatan',
+  created_md: 'Membuat catatan dari unggahan Markdown',
   updated: 'Mengubah isi',
+  updated_shared: 'Mengubah isi (akses berbagi)',
   deleted: 'Menghapus catatan',
   pinned: 'Menyematkan',
   unpinned: 'Melepas sematan',
-  meta: 'Mengubah tag / warna',
+  meta: 'Mengubah tag / warna / folder',
   shared: 'Membagikan ke anggota',
   unshared: 'Mencabut akses berbagi',
+  permission_changed: 'Mengubah izin berbagi untuk semua penerima',
+  viewed_shared: 'Melihat catatan (dibagikan)',
+  exported: 'Mengekspor catatan (Markdown)',
+  imported: 'Impor catatan (paket JSON)',
 };

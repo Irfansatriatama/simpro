@@ -50,7 +50,40 @@ async function loadSprintInProject(sprintId: string, projectId: string) {
 function revalidateProjectSprintPaths(projectId: string) {
   revalidatePath(`/projects/${projectId}/sprint`);
   revalidatePath(`/projects/${projectId}/backlog`);
+  revalidatePath(`/projects/${projectId}/board`);
+  revalidatePath(`/projects/${projectId}/gantt`);
   revalidatePath(`/projects/${projectId}`);
+}
+
+export async function updateSprintRetroAction(
+  formData: FormData,
+): Promise<SprintActionResult> {
+  const projectId = trim(formData.get('projectId'));
+  const sprintId = trim(formData.get('sprintId'));
+  if (!projectId || !sprintId) {
+    return { ok: false, error: 'Data sprint tidak valid.' };
+  }
+
+  const ctx = await requireSprintAccess(projectId);
+  if (!ctx) return { ok: false, error: 'Tidak punya akses proyek.' };
+  if (!ctx.canEdit) return { ok: false, error: 'Anda tidak dapat mengubah sprint.' };
+
+  const existing = await prisma.sprint.findFirst({
+    where: { id: sprintId, projectId },
+    select: { id: true },
+  });
+  if (!existing) return { ok: false, error: 'Sprint tidak ditemukan.' };
+
+  try {
+    await prisma.sprint.update({
+      where: { id: sprintId },
+      data: { retro: trim(formData.get('retro')) || null },
+    });
+    revalidateProjectSprintPaths(projectId);
+    return { ok: true };
+  } catch {
+    return { ok: false, error: 'Gagal menyimpan catatan retro.' };
+  }
 }
 
 export async function createSprintAction(

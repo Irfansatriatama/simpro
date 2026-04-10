@@ -1,12 +1,16 @@
 import { auth } from '@/lib/auth';
-import { needsBootstrap } from '@/lib/bootstrap';
+import { getBootstrapState } from '@/lib/bootstrap';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
-  if (await needsBootstrap()) {
+  const boot = await getBootstrapState();
+  if (!boot.ok) {
+    redirect('/db-unavailable');
+  }
+  if (boot.needsSetup) {
     redirect('/setup');
   }
 

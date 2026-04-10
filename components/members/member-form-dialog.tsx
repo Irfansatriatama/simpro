@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SelectNative } from '@/components/ui/select-native';
 import { Textarea } from '@/components/ui/textarea';
+import { CloudinaryImageField } from '@/components/uploads/cloudinary-image-field';
 import type { MemberRow } from '@/lib/members-types';
 
 type Mode = 'create' | 'edit';
@@ -238,16 +239,12 @@ export function MemberFormDialog(props: {
             </div>
           </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="m-image">URL avatar (opsional)</Label>
-            <Input
-              id="m-image"
-              name="image"
-              type="url"
-              placeholder="https://…"
-              defaultValue={member?.image ?? ''}
-            />
-          </div>
+          <CloudinaryImageField
+            name="image"
+            label="Foto profil"
+            defaultUrl={member?.image}
+            description="Unggah avatar (Cloudinary)."
+          />
 
           <div className="grid gap-2">
             <Label htmlFor="m-bio">Bio</Label>

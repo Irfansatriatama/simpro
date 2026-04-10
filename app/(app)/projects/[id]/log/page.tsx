@@ -1,7 +1,8 @@
+import { ActivityLogAccessDenied } from '@/components/activity-log/activity-log-access-denied';
 import { ActivityLogClient } from '@/components/activity-log/activity-log-client';
 import { auth } from '@/lib/auth';
 import type { ActivityLogRow } from '@/lib/activity-log-types';
-import { projectViewWhere } from '@/lib/project-access';
+import { canManageProjects, projectViewWhere } from '@/lib/project-access';
 import { prisma } from '@/lib/prisma';
 import { getUserRole } from '@/lib/session-user';
 import { headers } from 'next/headers';
@@ -9,7 +10,7 @@ import { notFound, redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
-const PAGE_LIMIT = 400;
+const PAGE_LIMIT = 800;
 
 export default async function ActivityLogPage({
   params,
@@ -23,9 +24,13 @@ export default async function ActivityLogPage({
   const role = getUserRole(session);
   const projectId = params.id;
 
+  if (!canManageProjects(role)) {
+    return <ActivityLogAccessDenied />;
+  }
+
   const project = await prisma.project.findFirst({
     where: projectViewWhere(userId, role, projectId),
-    select: { id: true },
+    select: { id: true, name: true },
   });
   if (!project) notFound();
 
@@ -48,5 +53,7 @@ export default async function ActivityLogPage({
     createdAt: r.createdAt.toISOString(),
   }));
 
-  return <ActivityLogClient rows={rows} />;
+  return (
+    <ActivityLogClient rows={rows} projectName={project.name} />
+  );
 }

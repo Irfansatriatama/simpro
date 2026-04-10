@@ -4,7 +4,7 @@ export type NoteShareRow = {
   userId: string;
   userName: string;
   username: string;
-  permission: string;
+  permission: 'view' | 'edit';
 };
 
 export type NoteFolderRow = {
@@ -29,6 +29,8 @@ export type NoteClientRow = {
   access: NoteAccessRole;
   ownerName: string;
   ownerId: string;
+  /** Izin bawaan untuk berbagi baru; disinkronkan ke semua penerima saat diubah (pemilik). */
+  shareDefaultPermission: 'view' | 'edit';
   sharedWith: NoteShareRow[];
 };
 

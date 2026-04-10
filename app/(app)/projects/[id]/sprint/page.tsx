@@ -1,10 +1,13 @@
 import { SprintClient } from '@/components/sprints/sprint-client';
 import { auth } from '@/lib/auth';
+import type { SprintTaskRef } from '@/lib/sprint-planning-types';
 import type { SprintRow } from '@/lib/sprint-types';
 import { projectViewWhere } from '@/lib/project-access';
+import { getBoardColumnsForProject } from '@/lib/project-board-columns';
 import { prisma } from '@/lib/prisma';
 import { getUserRole } from '@/lib/session-user';
 import { canEditTasksInProject } from '@/lib/task-access';
+import { TaskType } from '@prisma/client';
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 
@@ -24,7 +27,7 @@ export default async function SprintPage({
 
   const project = await prisma.project.findFirst({
     where: projectViewWhere(userId, role, projectId),
-    select: { id: true },
+    select: { id: true, name: true, boardColumns: true },
   });
   if (!project) notFound();
 
@@ -33,11 +36,23 @@ export default async function SprintPage({
   });
   const canEdit = canEditTasksInProject(role, !!memberRecord);
 
-  const raw = await prisma.sprint.findMany({
-    where: { projectId },
-    orderBy: { createdAt: 'desc' },
-    include: { _count: { select: { tasks: true } } },
-  });
+  const [raw, tasksRaw] = await Promise.all([
+    prisma.sprint.findMany({
+      where: { projectId },
+      orderBy: { createdAt: 'desc' },
+      include: { _count: { select: { tasks: true } } },
+    }),
+    prisma.task.findMany({
+      where: { projectId, NOT: { type: TaskType.epic } },
+      orderBy: [{ updatedAt: 'desc' }],
+      include: {
+        assignees: {
+          include: { user: { select: { name: true } } },
+          take: 4,
+        },
+      },
+    }),
+  ]);
 
   const sprints: SprintRow[] = raw.map((s) => ({
     id: s.id,
@@ -53,7 +68,27 @@ export default async function SprintPage({
     taskCount: s._count.tasks,
   }));
 
+  const boardLayout = getBoardColumnsForProject(project.boardColumns);
+
+  const tasks: SprintTaskRef[] = tasksRaw.map((t) => ({
+    id: t.id,
+    title: t.title,
+    sprintId: t.sprintId,
+    status: t.status,
+    storyPoints: t.storyPoints,
+    priority: t.priority,
+    columnId: t.columnId,
+    assigneeNames: t.assignees.map((a) => a.user.name),
+  }));
+
   return (
-    <SprintClient projectId={projectId} sprints={sprints} canEdit={canEdit} />
+    <SprintClient
+      projectId={projectId}
+      projectName={project.name}
+      boardLayout={boardLayout}
+      sprints={sprints}
+      tasks={tasks}
+      canEdit={canEdit}
+    />
   );
 }

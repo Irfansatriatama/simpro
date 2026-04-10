@@ -15,7 +15,7 @@ export type ClientRow = {
   projectCount: number;
 };
 
-export const CLIENT_STATUSES = ['active', 'inactive'] as const;
+export const CLIENT_STATUSES = ['active', 'inactive', 'prospect'] as const;
 export type ClientStatusValue = (typeof CLIENT_STATUSES)[number];
 
 export function isClientStatus(s: string): s is ClientStatusValue {

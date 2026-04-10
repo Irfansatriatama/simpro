@@ -15,6 +15,10 @@ import {
   notifyUsers,
 } from '@/lib/notification-dispatch';
 import { boardColumnIdForStatus } from '@/lib/board-columns';
+import {
+  firstColumnIdForStatus,
+  getBoardColumnsForProject,
+} from '@/lib/project-board-columns';
 
 export type TaskActionResult = { ok: true } | { ok: false; error: string };
 
@@ -397,6 +401,165 @@ export async function updateTaskAction(
       return { ok: false, error: 'Dependensi ganda tidak diizinkan.' };
     }
     return { ok: false, error: 'Gagal memperbarui tugas.' };
+  }
+}
+
+export async function assignTaskToSprintAction(payload: {
+  projectId: string;
+  taskId: string;
+  sprintId: string | null;
+}): Promise<TaskActionResult> {
+  const { projectId, taskId, sprintId } = payload;
+  if (!projectId || !taskId) {
+    return { ok: false, error: 'Data tidak valid.' };
+  }
+
+  const ctx = await requireBacklogAccess(projectId);
+  if (!ctx) return { ok: false, error: 'Tidak punya akses proyek.' };
+  if (!ctx.canEdit) return { ok: false, error: 'Anda tidak dapat mengubah tugas.' };
+
+  if (sprintId) {
+    const sp = await prisma.sprint.findFirst({
+      where: { id: sprintId, projectId },
+      select: { id: true },
+    });
+    if (!sp) return { ok: false, error: 'Sprint tidak valid.' };
+  }
+
+  const task = await prisma.task.findFirst({
+    where: { id: taskId, projectId, NOT: { type: TaskType.epic } },
+    select: { id: true, title: true },
+  });
+  if (!task) return { ok: false, error: 'Tugas tidak ditemukan.' };
+
+  try {
+    await prisma.task.update({
+      where: { id: taskId },
+      data: { sprintId },
+    });
+    await recordActivityLog({
+      projectId,
+      entityType: ACTIVITY_ENTITY.task,
+      entityId: taskId,
+      entityName: task.title,
+      action: ACTIVITY_ACTION.updated,
+      actorId: ctx.userId,
+      metadata: { field: 'sprintId', sprintId },
+    });
+    revalidatePath(`/projects/${projectId}/backlog`);
+    revalidatePath(`/projects/${projectId}/board`);
+    revalidatePath(`/projects/${projectId}/sprint`);
+    revalidatePath(`/projects/${projectId}/gantt`);
+    revalidatePath(`/projects/${projectId}`);
+    return { ok: true };
+  } catch {
+    return { ok: false, error: 'Gagal memperbarui sprint tugas.' };
+  }
+}
+
+export async function bulkUpdateTasksAction(payload: {
+  projectId: string;
+  taskIds: string[];
+  status?: TaskStatus;
+  priority?: Priority;
+  sprintId?: string | null;
+}): Promise<TaskActionResult> {
+  const { projectId, taskIds } = payload;
+  if (!projectId || taskIds.length === 0) {
+    return { ok: false, error: 'Data tidak valid.' };
+  }
+
+  const ctx = await requireBacklogAccess(projectId);
+  if (!ctx) return { ok: false, error: 'Tidak punya akses proyek.' };
+  if (!ctx.canEdit) return { ok: false, error: 'Anda tidak dapat mengubah tugas.' };
+
+  const data: {
+    status?: TaskStatus;
+    columnId?: string;
+    completedAt?: Date | null;
+    priority?: Priority;
+    sprintId?: string | null;
+  } = {};
+
+  if (payload.status !== undefined) {
+    const proj = await prisma.project.findFirst({
+      where: { id: projectId },
+      select: { boardColumns: true },
+    });
+    const cols = getBoardColumnsForProject(proj?.boardColumns);
+    data.status = payload.status;
+    data.columnId = firstColumnIdForStatus(cols, payload.status);
+    data.completedAt =
+      payload.status === TaskStatus.done ? new Date() : null;
+  }
+  if (payload.priority !== undefined) data.priority = payload.priority;
+  if (payload.sprintId !== undefined) {
+    if (payload.sprintId) {
+      const sp = await prisma.sprint.findFirst({
+        where: { id: payload.sprintId, projectId },
+        select: { id: true },
+      });
+      if (!sp) return { ok: false, error: 'Sprint tidak valid.' };
+    }
+    data.sprintId = payload.sprintId;
+  }
+
+  if (
+    data.status === undefined &&
+    data.priority === undefined &&
+    data.sprintId === undefined
+  ) {
+    return { ok: false, error: 'Tidak ada perubahan.' };
+  }
+
+  try {
+    await prisma.task.updateMany({
+      where: {
+        projectId,
+        id: { in: taskIds },
+        NOT: { type: TaskType.epic },
+      },
+      data,
+    });
+    revalidatePath(`/projects/${projectId}/backlog`);
+    revalidatePath(`/projects/${projectId}/board`);
+    revalidatePath(`/projects/${projectId}/sprint`);
+    revalidatePath(`/projects/${projectId}/gantt`);
+    revalidatePath(`/projects/${projectId}`);
+    return { ok: true };
+  } catch {
+    return { ok: false, error: 'Gagal memperbarui tugas secara massal.' };
+  }
+}
+
+export async function bulkDeleteTasksAction(payload: {
+  projectId: string;
+  taskIds: string[];
+}): Promise<TaskActionResult> {
+  const { projectId, taskIds } = payload;
+  if (!projectId || taskIds.length === 0) {
+    return { ok: false, error: 'Data tidak valid.' };
+  }
+
+  const ctx = await requireBacklogAccess(projectId);
+  if (!ctx) return { ok: false, error: 'Tidak punya akses proyek.' };
+  if (!ctx.canEdit) return { ok: false, error: 'Anda tidak dapat menghapus tugas.' };
+
+  try {
+    await prisma.task.deleteMany({
+      where: {
+        projectId,
+        id: { in: taskIds },
+        NOT: { type: TaskType.epic },
+      },
+    });
+    revalidatePath(`/projects/${projectId}/backlog`);
+    revalidatePath(`/projects/${projectId}/board`);
+    revalidatePath(`/projects/${projectId}/gantt`);
+    revalidatePath(`/projects/${projectId}`);
+    return { ok: true };
+  } catch {
+    return { ok: false, error: 'Gagal menghapus tugas secara massal.' };
   }
 }
 

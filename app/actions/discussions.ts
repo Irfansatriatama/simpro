@@ -27,6 +27,15 @@ function trim(s: FormDataEntryValue | null): string {
   return String(s ?? '').trim();
 }
 
+function isValidHttpUrl(s: string): boolean {
+  try {
+    const u = new URL(s);
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 async function requireDiscussionContext(projectId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) return null;
@@ -463,5 +472,95 @@ export async function deleteDiscussionReplyAction(
     return { ok: true };
   } catch {
     return { ok: false, error: 'Gagal menghapus balasan.' };
+  }
+}
+
+export async function addDiscussionAttachmentAction(
+  formData: FormData,
+): Promise<DiscussionActionResult> {
+  const projectId = trim(formData.get('projectId'));
+  const discussionId = trim(formData.get('discussionId'));
+  const name = trim(formData.get('name'));
+  const url = trim(formData.get('url'));
+  if (!projectId || !discussionId) {
+    return { ok: false, error: 'Data tidak valid.' };
+  }
+  if (!name || name.length > 200) {
+    return { ok: false, error: 'Nama lampiran 1–200 karakter.' };
+  }
+  if (!url || !isValidHttpUrl(url)) {
+    return { ok: false, error: 'URL harus http atau https.' };
+  }
+
+  const ctx = await requireDiscussionContext(projectId);
+  if (!ctx) return { ok: false, error: 'Tidak punya akses proyek.' };
+  if (!ctx.canPost) {
+    return { ok: false, error: 'Anda tidak dapat menambah lampiran.' };
+  }
+
+  const thread = await prisma.discussion.findFirst({
+    where: { id: discussionId, projectId },
+    select: { id: true },
+  });
+  if (!thread) return { ok: false, error: 'Diskusi tidak ditemukan.' };
+
+  const sizeRaw = trim(formData.get('size'));
+  let size: number | null = null;
+  if (sizeRaw) {
+    const n = Math.round(Number(sizeRaw));
+    if (Number.isFinite(n) && n >= 0) size = n;
+  }
+  const mimeType = trim(formData.get('mimeType')) || null;
+
+  try {
+    await prisma.discussionAttachment.create({
+      data: {
+        discussionId,
+        name,
+        url,
+        size,
+        mimeType: mimeType && mimeType.length <= 120 ? mimeType : null,
+      },
+    });
+    revalidateDiscussion(projectId);
+    return { ok: true };
+  } catch {
+    return { ok: false, error: 'Gagal menambah lampiran.' };
+  }
+}
+
+export async function deleteDiscussionAttachmentAction(
+  formData: FormData,
+): Promise<DiscussionActionResult> {
+  const projectId = trim(formData.get('projectId'));
+  const discussionId = trim(formData.get('discussionId'));
+  const attachmentId = trim(formData.get('attachmentId'));
+  if (!projectId || !discussionId || !attachmentId) {
+    return { ok: false, error: 'Data tidak valid.' };
+  }
+
+  const ctx = await requireDiscussionContext(projectId);
+  if (!ctx) return { ok: false, error: 'Tidak punya akses proyek.' };
+
+  const thread = await prisma.discussion.findFirst({
+    where: { id: discussionId, projectId },
+    select: { authorId: true },
+  });
+  if (!thread) return { ok: false, error: 'Diskusi tidak ditemukan.' };
+  if (!canEditOthersContent(ctx, thread.authorId)) {
+    return { ok: false, error: 'Anda tidak dapat menghapus lampiran ini.' };
+  }
+
+  const row = await prisma.discussionAttachment.findFirst({
+    where: { id: attachmentId, discussionId },
+  });
+  if (!row) return { ok: false, error: 'Lampiran tidak ditemukan.' };
+
+  try {
+    await prisma.discussionAttachment.delete({ where: { id: attachmentId } });
+    revalidateDiscussion(projectId);
+    return { ok: true };
+  } catch {
+    return { ok: false, error: 'Gagal menghapus lampiran.' };
   }
 }

@@ -1,30 +1,47 @@
 'use client';
 
-import { MessageSquarePlus, Pin, PinOff, Pencil, Search, Trash2 } from 'lucide-react';
+import {
+  MessageSquarePlus,
+  Paperclip,
+  Pin,
+  PinOff,
+  Pencil,
+  Search,
+  Trash2,
+} from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 
 import {
+  addDiscussionAttachmentAction,
   createDiscussionReplyAction,
   deleteDiscussionAction,
+  deleteDiscussionAttachmentAction,
   deleteDiscussionReplyAction,
   toggleDiscussionPinAction,
   updateDiscussionReplyAction,
 } from '@/app/actions/discussions';
-import {
-  FilterField,
-  FilterPanelSheet,
-} from '@/components/filters/filter-panel-sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SelectNative } from '@/components/ui/select-native';
 import { Textarea } from '@/components/ui/textarea';
-import { discussionTypeLabel } from '@/lib/discussion-constants';
-import type { DiscussionReplyRow, DiscussionThreadRow } from '@/lib/discussion-types';
+import {
+  DISCUSSION_TYPES,
+  DISCUSSION_TYPE_LABEL,
+  discussionTypeLabel,
+} from '@/lib/discussion-constants';
+import { discussionListPath } from '@/lib/discussion-list-url';
+import type {
+  DiscussionAttachmentRow,
+  DiscussionReplyRow,
+  DiscussionThreadRow,
+} from '@/lib/discussion-types';
 import { cn } from '@/lib/utils';
 
 import { DiscussionFormDialog } from './discussion-form-dialog';
+import { DiscussionMarkdownBody } from './discussion-markdown-body';
 
 function fmtWhen(iso: string): string {
   try {
@@ -40,17 +57,152 @@ function fmtWhen(iso: string): string {
   }
 }
 
+function ThreadAttachmentsBlock(props: {
+  projectId: string;
+  thread: DiscussionThreadRow;
+  canPost: boolean;
+  canDelete: boolean;
+}) {
+  const { projectId, thread, canPost, canDelete } = props;
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [name, setName] = useState('');
+  const [url, setUrl] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  function addAttachment() {
+    setError(null);
+    const fd = new FormData();
+    fd.set('projectId', projectId);
+    fd.set('discussionId', thread.id);
+    fd.set('name', name);
+    fd.set('url', url);
+    startTransition(async () => {
+      const r = await addDiscussionAttachmentAction(fd);
+      if (!r.ok) {
+        setError(r.error);
+        return;
+      }
+      setName('');
+      setUrl('');
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="border-t border-border pt-3">
+      <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase text-muted-foreground">
+        <Paperclip className="h-3.5 w-3.5" aria-hidden />
+        Lampiran ({thread.attachments.length})
+      </h3>
+      {thread.attachments.length > 0 ? (
+        <ul className="mb-3 space-y-1.5 text-sm">
+          {thread.attachments.map((a: DiscussionAttachmentRow) => (
+            <li
+              key={a.id}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/80 bg-surface/30 px-2 py-1.5"
+            >
+              <a
+                href={a.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="min-w-0 flex-1 break-all text-primary underline-offset-4 hover:underline"
+              >
+                {a.name}
+              </a>
+              {canDelete ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 shrink-0 text-xs text-destructive"
+                  disabled={pending}
+                  onClick={() => {
+                    if (!window.confirm(`Hapus lampiran "${a.name}"?`)) return;
+                    const fd = new FormData();
+                    fd.set('projectId', projectId);
+                    fd.set('discussionId', thread.id);
+                    fd.set('attachmentId', a.id);
+                    startTransition(async () => {
+                      const r = await deleteDiscussionAttachmentAction(fd);
+                      if (!r.ok) window.alert(r.error);
+                      else router.refresh();
+                    });
+                  }}
+                >
+                  Hapus
+                </Button>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {canPost ? (
+        <div className="space-y-2 rounded-md border border-dashed border-border/80 p-2">
+          <p className="text-xs text-muted-foreground">
+            Tambah tautan (URL https) — sama seperti lampiran tugas.
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Nama berkas / label"
+              className="text-sm"
+              aria-label="Nama lampiran"
+            />
+            <Input
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://…"
+              className="text-sm"
+              aria-label="URL lampiran"
+            />
+          </div>
+          {error ? (
+            <p className="text-xs text-destructive" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            disabled={pending || !name.trim() || !url.trim()}
+            onClick={addAttachment}
+          >
+            {pending ? 'Menyimpan…' : 'Tambah lampiran'}
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function DiscussionClient(props: {
   projectId: string;
   threads: DiscussionThreadRow[];
+  totalThreads: number;
+  page: number;
+  pageSize: number;
+  query: string;
+  typeFilter: string;
   currentUserId: string;
   canPost: boolean;
   canModerate: boolean;
 }) {
-  const { projectId, threads, currentUserId, canPost, canModerate } = props;
+  const {
+    projectId,
+    threads,
+    totalThreads,
+    page,
+    pageSize,
+    query,
+    typeFilter,
+    currentUserId,
+    canPost,
+    canModerate,
+  } = props;
   const router = useRouter();
-  const [search, setSearch] = useState('');
-  const [typeF, setTypeF] = useState<string>('all');
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [editingThread, setEditingThread] = useState<DiscussionThreadRow | null>(
@@ -61,17 +213,8 @@ export function DiscussionClient(props: {
   );
   const [replyDraft, setReplyDraft] = useState<Record<string, string>>({});
 
-  const filterActiveCount = typeF === 'all' ? 0 : 1;
-
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return threads.filter((t) => {
-      const blob = [t.title ?? '', t.content].join(' ').toLowerCase();
-      const matchQ = !q || blob.includes(q);
-      const matchT = typeF === 'all' || t.type === typeF;
-      return matchQ && matchT;
-    });
-  }, [threads, search, typeF]);
+  const totalPages = Math.max(1, Math.ceil(totalThreads / pageSize));
+  const listBase = { q: query, type: typeFilter };
 
   function canEditEntity(authorId: string): boolean {
     return authorId === currentUserId || canModerate;
@@ -83,8 +226,9 @@ export function DiscussionClient(props: {
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Diskusi</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Topik dan balasan untuk tim proyek. Semua yang punya akses proyek
-            dapat membaca.
+            Topik dan balasan untuk tim proyek. Isi mendukung markdown ringan;
+            lampiran berupa tautan. Paginasi dan filter memakai pencarian di
+            server.
           </p>
         </div>
         {canPost ? (
@@ -102,45 +246,64 @@ export function DiscussionClient(props: {
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+      <form
+        method="get"
+        action={`/projects/${projectId}/discussion`}
+        className="flex flex-col gap-3 rounded-lg border border-border bg-card p-3 shadow-card sm:flex-row sm:flex-wrap sm:items-end"
+      >
         <div className="relative min-w-0 flex-1 sm:max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            name="q"
+            defaultValue={query}
             placeholder="Cari judul atau isi…"
             className="pl-9"
             aria-label="Cari diskusi"
           />
         </div>
-        <FilterPanelSheet
-          title="Filter diskusi"
-          activeCount={filterActiveCount}
-        >
-          <FilterField label="Tipe topik">
-            <SelectNative
-              value={typeF}
-              onChange={(e) => setTypeF(e.target.value)}
-              className="w-full"
-              aria-label="Filter tipe diskusi"
-            >
-              <option value="all">Semua tipe</option>
-              <option value="general">Umum</option>
-              <option value="announcement">Pengumuman</option>
-              <option value="question">Pertanyaan</option>
-              <option value="decision">Keputusan</option>
-            </SelectNative>
-          </FilterField>
-        </FilterPanelSheet>
-      </div>
+        <div className="w-full sm:w-48">
+          <Label htmlFor="disc-filter-type" className="sr-only">
+            Tipe topik
+          </Label>
+          <SelectNative
+            id="disc-filter-type"
+            name="type"
+            defaultValue={typeFilter}
+            className="w-full"
+            aria-label="Filter tipe diskusi"
+          >
+            <option value="all">Semua tipe</option>
+            {DISCUSSION_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {DISCUSSION_TYPE_LABEL[t]}
+              </option>
+            ))}
+          </SelectNative>
+        </div>
+        <div className="flex gap-2">
+          <Button type="submit" variant="secondary" size="sm">
+            Terapkan
+          </Button>
+          {(query || typeFilter !== 'all') && (
+            <Button type="button" variant="outline" size="sm" asChild>
+              <Link href={discussionListPath(projectId, {})}>Reset</Link>
+            </Button>
+          )}
+        </div>
+      </form>
+
+      <p className="text-xs text-muted-foreground">
+        Menampilkan {threads.length} dari {totalThreads} topik
+        {totalPages > 1 ? ` · Halaman ${page} / ${totalPages}` : ''}.
+      </p>
 
       <div className="space-y-4">
-        {filtered.length === 0 ? (
+        {threads.length === 0 ? (
           <p className="rounded-lg border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
             Belum ada diskusi yang cocok.
           </p>
         ) : (
-          filtered.map((t) => (
+          threads.map((t) => (
             <article
               key={t.id}
               className={cn(
@@ -195,10 +358,15 @@ export function DiscussionClient(props: {
                 </div>
               </header>
               <div className="py-3">
-                <p className="whitespace-pre-wrap text-sm text-foreground">
-                  {t.content}
-                </p>
+                <DiscussionMarkdownBody content={t.content} />
               </div>
+
+              <ThreadAttachmentsBlock
+                projectId={projectId}
+                thread={t}
+                canPost={canPost}
+                canDelete={canEditEntity(t.authorId)}
+              />
 
               <section className="border-t border-border pt-3">
                 <h3 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
@@ -222,9 +390,7 @@ export function DiscussionClient(props: {
                         />
                       ) : (
                         <>
-                          <p className="whitespace-pre-wrap text-sm text-foreground">
-                            {r.content}
-                          </p>
+                          <DiscussionMarkdownBody content={r.content} />
                           <p className="mt-1 text-xs text-muted-foreground">
                             {r.authorName} (@{r.authorUsername}) ·{' '}
                             {fmtWhen(r.createdAt)}
@@ -270,6 +436,46 @@ export function DiscussionClient(props: {
           ))
         )}
       </div>
+
+      {totalPages > 1 ? (
+        <div className="flex flex-wrap items-center justify-center gap-2 border-t border-border pt-4">
+          {page > 1 ? (
+            <Button variant="outline" size="sm" asChild>
+              <Link
+                href={discussionListPath(projectId, {
+                  ...listBase,
+                  page: page - 1,
+                })}
+              >
+                Sebelumnya
+              </Link>
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" disabled>
+              Sebelumnya
+            </Button>
+          )}
+          <span className="text-sm text-muted-foreground">
+            Halaman {page} / {totalPages}
+          </span>
+          {page < totalPages ? (
+            <Button variant="outline" size="sm" asChild>
+              <Link
+                href={discussionListPath(projectId, {
+                  ...listBase,
+                  page: page + 1,
+                })}
+              >
+                Berikutnya
+              </Link>
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" disabled>
+              Berikutnya
+            </Button>
+          )}
+        </div>
+      ) : null}
 
       <DiscussionFormDialog
         open={formOpen}
@@ -335,7 +541,11 @@ function DeleteThreadButton(props: {
       className="h-8 gap-1 text-destructive hover:text-destructive"
       disabled={pending}
       onClick={() => {
-        if (!window.confirm(`Hapus diskusi "${thread.title || 'tanpa judul'}" dan semua balasan?`))
+        if (
+          !window.confirm(
+            `Hapus diskusi "${thread.title || 'tanpa judul'}" dan semua balasan?`,
+          )
+        )
           return;
         startTransition(async () => {
           const fd = new FormData();
@@ -414,7 +624,7 @@ function ReplyComposer(props: {
   return (
     <div className="mt-3 space-y-2">
       <Label htmlFor={`reply-${discussionId}`} className="text-xs">
-        Balas
+        Balas (markdown ringan didukung)
       </Label>
       <Textarea
         id={`reply-${discussionId}`}

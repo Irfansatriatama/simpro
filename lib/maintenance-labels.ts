@@ -13,11 +13,14 @@ export const MAINTENANCE_TYPE_LABEL: Record<MaintenanceType, string> = {
 };
 
 export const MAINTENANCE_STATUS_LABEL: Record<MaintenanceStatus, string> = {
-  [MaintenanceStatus.open]: 'Terbuka',
+  [MaintenanceStatus.backlog]: 'Backlog',
   [MaintenanceStatus.in_progress]: 'Dikerjakan',
-  [MaintenanceStatus.resolved]: 'Terselesaikan',
-  [MaintenanceStatus.closed]: 'Ditutup',
-  [MaintenanceStatus.rejected]: 'Ditolak',
+  [MaintenanceStatus.awaiting_approval]: 'Menunggu persetujuan',
+  [MaintenanceStatus.on_check]: 'Pengecekan',
+  [MaintenanceStatus.need_revision]: 'Perlu revisi',
+  [MaintenanceStatus.completed]: 'Selesai',
+  [MaintenanceStatus.canceled]: 'Dibatalkan',
+  [MaintenanceStatus.on_hold]: 'Ditahan',
 };
 
 export const SEVERITY_LABEL: Record<Severity, string> = {

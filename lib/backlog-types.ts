@@ -17,6 +17,8 @@ export type BacklogTaskRow = {
   description: string | null;
   type: TaskType;
   status: TaskStatus;
+  /** Kolom board (layout proyek); dipakai tampilan board & sort status kolom */
+  columnId: string | null;
   priority: Priority;
   storyPoints: number | null;
   sprintId: string | null;

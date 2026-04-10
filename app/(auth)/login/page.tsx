@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { needsBootstrap } from '@/lib/bootstrap';
+import { getBootstrapState } from '@/lib/bootstrap';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { LoginForm } from './login-form';
@@ -9,7 +9,11 @@ export const dynamic = 'force-dynamic';
 type Props = { searchParams: { setup?: string } };
 
 export default async function LoginPage({ searchParams }: Props) {
-  if (await needsBootstrap()) {
+  const boot = await getBootstrapState();
+  if (!boot.ok) {
+    redirect('/db-unavailable');
+  }
+  if (boot.needsSetup) {
     redirect('/setup');
   }
 

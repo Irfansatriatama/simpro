@@ -89,11 +89,12 @@ export default async function NotesPage() {
     access: 'owner',
     ownerName: s.name,
     ownerId: n.userId,
+    shareDefaultPermission: n.sharePermission === 'edit' ? 'edit' : 'view',
     sharedWith: n.sharedWith.map((sh) => ({
       userId: sh.userId,
       userName: sh.user.name ?? sh.user.username,
       username: sh.user.username,
-      permission: sh.permission,
+      permission: sh.permission === 'edit' ? 'edit' : 'view',
     })),
   }));
 
@@ -116,6 +117,7 @@ export default async function NotesPage() {
       access,
       ownerName: n.owner.name ?? 'Pengguna',
       ownerId: n.owner.id,
+      shareDefaultPermission: 'view',
       sharedWith: [],
     };
   });
@@ -131,6 +133,7 @@ export default async function NotesPage() {
       notes={merged}
       shareTargets={shareTargets}
       folders={folders}
+      currentUserId={s.userId}
     />
   );
 }

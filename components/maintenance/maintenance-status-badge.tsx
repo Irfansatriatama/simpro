@@ -2,23 +2,29 @@ import { MaintenanceStatus } from '@prisma/client';
 import { MAINTENANCE_STATUS_LABEL } from '@/lib/maintenance-labels';
 import { cn } from '@/lib/utils';
 
-const META: Record<
-  MaintenanceStatus,
-  { className: string }
-> = {
-  [MaintenanceStatus.open]: {
+const META: Record<MaintenanceStatus, { className: string }> = {
+  [MaintenanceStatus.backlog]: {
     className: 'bg-border text-muted-foreground',
   },
   [MaintenanceStatus.in_progress]: {
     className: 'bg-primary/15 text-primary',
   },
-  [MaintenanceStatus.resolved]: {
+  [MaintenanceStatus.awaiting_approval]: {
+    className: 'bg-amber-500/15 text-amber-800 dark:text-amber-200',
+  },
+  [MaintenanceStatus.on_check]: {
+    className: 'bg-sky-500/15 text-sky-800 dark:text-sky-200',
+  },
+  [MaintenanceStatus.need_revision]: {
+    className: 'bg-orange-500/15 text-orange-800 dark:text-orange-200',
+  },
+  [MaintenanceStatus.completed]: {
     className: 'bg-success/15 text-success',
   },
-  [MaintenanceStatus.closed]: {
+  [MaintenanceStatus.canceled]: {
     className: 'bg-muted text-muted-foreground',
   },
-  [MaintenanceStatus.rejected]: {
+  [MaintenanceStatus.on_hold]: {
     className: 'bg-danger/15 text-danger',
   },
 };

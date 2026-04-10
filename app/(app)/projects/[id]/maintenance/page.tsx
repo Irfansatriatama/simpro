@@ -2,7 +2,10 @@ import { MaintenanceClient } from '@/components/maintenance/maintenance-client';
 import { auth } from '@/lib/auth';
 import type { ProjectMemberPick } from '@/lib/backlog-types';
 import type { MaintenanceRow } from '@/lib/maintenance-types';
-import { projectViewWhere } from '@/lib/project-access';
+import {
+  canManageProjects,
+  projectViewWhere,
+} from '@/lib/project-access';
 import { prisma } from '@/lib/prisma';
 import { getUserRole } from '@/lib/session-user';
 import { canEditTasksInProject } from '@/lib/task-access';
@@ -33,8 +36,9 @@ export default async function MaintenancePage({
     where: { projectId_userId: { projectId, userId } },
   });
   const canEdit = canEditTasksInProject(role, !!memberRecord);
+  const canViewReport = canManageProjects(role);
 
-  const [memberRows, maintenanceRaw] = await Promise.all([
+  const [memberRows, maintenanceRawAll] = await Promise.all([
     prisma.projectMember.findMany({
       where: { projectId },
       include: {
@@ -56,6 +60,15 @@ export default async function MaintenancePage({
       },
     }),
   ]);
+
+  const maintenanceRaw =
+    role === 'developer'
+      ? maintenanceRawAll.filter(
+          (m) =>
+            m.picDevs.length === 0 ||
+            m.picDevs.some((p) => p.userId === userId),
+        )
+      : maintenanceRawAll;
 
   const members: ProjectMemberPick[] = memberRows.map((m) => ({
     id: m.user.id,
@@ -96,6 +109,9 @@ export default async function MaintenancePage({
       rows={rows}
       members={members}
       canEdit={canEdit}
+      canViewReport={canViewReport}
+      currentUserId={userId}
+      userRole={role}
     />
   );
 }

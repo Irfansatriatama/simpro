@@ -7,6 +7,7 @@ import type {
   SprintPick,
 } from '@/lib/backlog-types';
 import { projectViewWhere } from '@/lib/project-access';
+import { getBoardColumnsForProject } from '@/lib/project-board-columns';
 import { prisma } from '@/lib/prisma';
 import { getUserRole } from '@/lib/session-user';
 import { canEditTasksInProject } from '@/lib/task-access';
@@ -14,6 +15,7 @@ import { TASK_TYPE_LABEL } from '@/lib/task-labels';
 import { TaskType } from '@prisma/client';
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
+import { Suspense } from 'react';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,7 +33,7 @@ export default async function BacklogPage({
 
   const project = await prisma.project.findFirst({
     where: projectViewWhere(userId, role, projectId),
-    select: { id: true },
+    select: { id: true, boardColumns: true },
   });
   if (!project) notFound();
 
@@ -135,12 +137,15 @@ export default async function BacklogPage({
     epicTitleRows.map((e) => [e.id, e.title]),
   );
 
+  const boardLayout = getBoardColumnsForProject(project.boardColumns);
+
   const tasks: BacklogTaskRow[] = rawTasks.map((t) => ({
     id: t.id,
     title: t.title,
     description: t.description,
     type: t.type,
     status: t.status,
+    columnId: t.columnId,
     priority: t.priority,
     storyPoints: t.storyPoints,
     sprintId: t.sprintId,
@@ -176,17 +181,26 @@ export default async function BacklogPage({
   }));
 
   return (
-    <BacklogClient
-      projectId={projectId}
-      tasks={tasks}
-      assigneeMembers={assigneeMembers}
-      reporterMembers={reporterMembers}
-      sprints={sprints}
-      epics={epics}
-      dependencyOptions={dependencyOptions}
-      canEdit={canEdit}
-      currentUserId={userId}
-      canModerateComments={role === 'admin' || role === 'pm'}
-    />
+    <Suspense
+      fallback={
+        <p className="py-8 text-center text-sm text-muted-foreground">
+          Memuat backlog…
+        </p>
+      }
+    >
+      <BacklogClient
+        projectId={projectId}
+        boardLayout={boardLayout}
+        tasks={tasks}
+        assigneeMembers={assigneeMembers}
+        reporterMembers={reporterMembers}
+        sprints={sprints}
+        epics={epics}
+        dependencyOptions={dependencyOptions}
+        canEdit={canEdit}
+        currentUserId={userId}
+        canModerateComments={role === 'admin' || role === 'pm'}
+      />
+    </Suspense>
   );
 }

@@ -20,6 +20,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SelectNative } from '@/components/ui/select-native';
 import { Textarea } from '@/components/ui/textarea';
+import { CloudinaryImageField } from '@/components/uploads/cloudinary-image-field';
+import { CLIENT_INDUSTRY_OPTIONS } from '@/lib/client-industries';
 import type { ClientRow } from '@/lib/client-types';
 
 type Mode = 'create' | 'edit';
@@ -68,7 +70,7 @@ export function ClientFormDialog(props: {
             {mode === 'create' ? 'Tambah klien' : 'Edit klien'}
           </DialogTitle>
           <DialogDescription>
-            Data perusahaan dan kontak utama. Logo memakai URL gambar (opsional).
+            Data perusahaan dan kontak utama. Logo diunggah ke Cloudinary (opsional).
           </DialogDescription>
         </DialogHeader>
 
@@ -87,12 +89,26 @@ export function ClientFormDialog(props: {
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
             <div className="grid gap-2">
               <Label htmlFor="c-industry">Industri</Label>
-              <Input
+              <SelectNative
                 id="c-industry"
                 name="industry"
-                placeholder="Mis. Fintech"
                 defaultValue={client?.industry ?? ''}
-              />
+              >
+                <option value="">— Pilih atau kosongkan —</option>
+                {client?.industry &&
+                !(CLIENT_INDUSTRY_OPTIONS as readonly string[]).includes(
+                  client.industry,
+                ) ? (
+                  <option value={client.industry}>
+                    {client.industry} (kustom)
+                  </option>
+                ) : null}
+                {CLIENT_INDUSTRY_OPTIONS.map((ind) => (
+                  <option key={ind} value={ind}>
+                    {ind}
+                  </option>
+                ))}
+              </SelectNative>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="c-status">Status</Label>
@@ -104,6 +120,7 @@ export function ClientFormDialog(props: {
               >
                 <option value="active">Aktif</option>
                 <option value="inactive">Nonaktif</option>
+                <option value="prospect">Prospek</option>
               </SelectNative>
             </div>
           </div>
@@ -147,28 +164,23 @@ export function ClientFormDialog(props: {
             />
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
-            <div className="grid gap-2">
-              <Label htmlFor="c-web">Website</Label>
-              <Input
-                id="c-web"
-                name="website"
-                type="url"
-                placeholder="https://"
-                defaultValue={client?.website ?? ''}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="c-logo">URL logo</Label>
-              <Input
-                id="c-logo"
-                name="logo"
-                type="url"
-                placeholder="https://"
-                defaultValue={client?.logo ?? ''}
-              />
-            </div>
+          <div className="grid gap-2">
+            <Label htmlFor="c-web">Website</Label>
+            <Input
+              id="c-web"
+              name="website"
+              type="url"
+              placeholder="https://"
+              defaultValue={client?.website ?? ''}
+            />
           </div>
+
+          <CloudinaryImageField
+            name="logo"
+            label="Logo perusahaan"
+            defaultUrl={client?.logo}
+            description="Unggah gambar logo (disimpan sebagai URL Cloudinary)."
+          />
 
           <div className="grid gap-2">
             <Label htmlFor="c-notes">Catatan</Label>

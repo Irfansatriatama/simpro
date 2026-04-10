@@ -21,6 +21,10 @@ import { Label } from '@/components/ui/label';
 import { SelectNative } from '@/components/ui/select-native';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  MAIN_PIPELINE_MAINTENANCE_STATUSES,
+  PARKING_LOT_MAINTENANCE_STATUSES,
+} from '@/lib/maintenance-board';
+import {
   MAINTENANCE_STATUS_LABEL,
   MAINTENANCE_TYPE_LABEL,
   SEVERITY_LABEL,
@@ -155,13 +159,22 @@ export function MaintenanceFormDialog(props: {
               <SelectNative
                 id="m-status"
                 name="status"
-                defaultValue={row?.status ?? MaintenanceStatus.open}
+                defaultValue={row?.status ?? MaintenanceStatus.backlog}
               >
-                {Object.values(MaintenanceStatus).map((s) => (
-                  <option key={s} value={s}>
-                    {MAINTENANCE_STATUS_LABEL[s]}
-                  </option>
-                ))}
+                <optgroup label="Saluran utama">
+                  {MAIN_PIPELINE_MAINTENANCE_STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {MAINTENANCE_STATUS_LABEL[s]}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Parkir">
+                  {PARKING_LOT_MAINTENANCE_STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {MAINTENANCE_STATUS_LABEL[s]}
+                    </option>
+                  ))}
+                </optgroup>
               </SelectNative>
             </div>
             <div className="grid gap-2">

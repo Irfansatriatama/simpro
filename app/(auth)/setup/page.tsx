@@ -1,11 +1,15 @@
-import { needsBootstrap } from '@/lib/bootstrap';
+import { getBootstrapState } from '@/lib/bootstrap';
 import { redirect } from 'next/navigation';
 import { SetupForm } from './setup-form';
 
 export const dynamic = 'force-dynamic';
 
 export default async function SetupPage() {
-  if (!(await needsBootstrap())) {
+  const boot = await getBootstrapState();
+  if (!boot.ok) {
+    redirect('/db-unavailable');
+  }
+  if (!boot.needsSetup) {
     redirect('/login');
   }
 

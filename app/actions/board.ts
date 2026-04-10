@@ -3,10 +3,14 @@
 import { revalidatePath } from 'next/cache';
 import { TaskType } from '@prisma/client';
 import { headers } from 'next/headers';
+
 import { auth } from '@/lib/auth';
 import { ACTIVITY_ACTION, ACTIVITY_ENTITY } from '@/lib/activity-log-constants';
 import { recordActivityLog } from '@/lib/activity-log-record';
-import { boardColumnById } from '@/lib/board-columns';
+import {
+  findBoardColumn,
+  getBoardColumnsForProject,
+} from '@/lib/project-board-columns';
 import { projectViewWhere } from '@/lib/project-access';
 import { prisma } from '@/lib/prisma';
 import { getUserRole } from '@/lib/session-user';
@@ -41,7 +45,14 @@ export async function moveTaskOnBoardAction(payload: {
   if (!ctx) return { ok: false, error: 'Tidak punya akses proyek.' };
   if (!ctx.canEdit) return { ok: false, error: 'Anda tidak dapat mengubah board.' };
 
-  const col = boardColumnById(columnId);
+  const project = await prisma.project.findFirst({
+    where: { id: projectId },
+    select: { boardColumns: true },
+  });
+  if (!project) return { ok: false, error: 'Proyek tidak ditemukan.' };
+
+  const columns = getBoardColumnsForProject(project.boardColumns);
+  const col = findBoardColumn(columns, columnId);
   if (!col) return { ok: false, error: 'Kolom tidak valid.' };
 
   const task = await prisma.task.findFirst({

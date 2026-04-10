@@ -1,5 +1,9 @@
 import { MeetingDetailClient } from '@/components/meetings/meeting-detail-client';
-import { requireManagementSession } from '@/lib/management-auth';
+import {
+  canViewMeeting,
+  requireMeetingsSession,
+} from '@/lib/meeting-access';
+import { meetingDateKeyFromIso } from '@/lib/meeting-date';
 import type {
   MeetingDetail,
   MeetingProjectPick,
@@ -16,9 +20,11 @@ export default async function MeetingDetailPage({
 }: {
   params: { id: string };
 }) {
-  if (!(await requireManagementSession())) {
-    redirect('/dashboard');
-  }
+  const ctx = await requireMeetingsSession();
+  if (!ctx) redirect('/login');
+
+  const allowed = await canViewMeeting(params.id, ctx.userId, ctx.role);
+  if (!allowed) redirect('/meetings');
 
   const [meetingRaw, projectsRaw, usersRaw] = await Promise.all([
     prisma.meeting.findUnique({
@@ -33,11 +39,19 @@ export default async function MeetingDetailPage({
         attendees: {
           include: {
             user: {
-              select: { id: true, name: true, username: true, email: true },
+              select: {
+                id: true,
+                name: true,
+                username: true,
+                email: true,
+                image: true,
+              },
             },
           },
         },
         agendaItems: { orderBy: { order: 'asc' } },
+        attachments: { orderBy: { createdAt: 'asc' } },
+        actionItems: { orderBy: { id: 'asc' } },
       },
     }),
     prisma.project.findMany({
@@ -47,18 +61,21 @@ export default async function MeetingDetailPage({
     prisma.user.findMany({
       where: { status: UserStatus.active },
       orderBy: { name: 'asc' },
-      select: { id: true, name: true, username: true, email: true },
+      select: { id: true, name: true, username: true, email: true, image: true },
     }),
   ]);
 
   if (!meetingRaw) notFound();
+
+  const iso = meetingRaw.date.toISOString();
 
   const meeting: MeetingDetail = {
     id: meetingRaw.id,
     title: meetingRaw.title,
     description: meetingRaw.description,
     type: meetingRaw.type,
-    date: meetingRaw.date.toISOString(),
+    date: iso,
+    dateKey: meetingDateKeyFromIso(iso),
     startTime: meetingRaw.startTime,
     endTime: meetingRaw.endTime,
     location: meetingRaw.location,
@@ -74,13 +91,33 @@ export default async function MeetingDetailPage({
       done: a.done,
       order: a.order,
     })),
+    attachments: meetingRaw.attachments.map((a) => ({
+      id: a.id,
+      name: a.name,
+      url: a.url,
+      size: a.size,
+      mimeType: a.mimeType,
+    })),
+    actionItems: meetingRaw.actionItems.map((a) => ({
+      id: a.id,
+      text: a.text,
+      assigneeId: a.assigneeId,
+      dueDate: a.dueDate ? a.dueDate.toISOString() : null,
+      taskId: a.taskId,
+    })),
   };
 
   const projectLinks: MeetingProjectPick[] = meetingRaw.projects.map(
     (mp) => mp.project,
   );
   const attendeeUsers: MeetingUserPick[] = meetingRaw.attendees.map(
-    (a) => a.user,
+    (a) => ({
+      id: a.user.id,
+      name: a.user.name,
+      username: a.user.username,
+      email: a.user.email,
+      image: a.user.image,
+    }),
   );
 
   return (
@@ -90,6 +127,8 @@ export default async function MeetingDetailPage({
       attendeeUsers={attendeeUsers}
       projects={projectsRaw}
       users={usersRaw}
+      canManage={ctx.isManagement}
+      currentUserId={ctx.userId}
     />
   );
 }

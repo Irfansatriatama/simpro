@@ -1,25 +1,17 @@
-import { ProjectDetailToolbar } from '@/components/projects/project-detail-toolbar';
 import { ProjectMembersPanel } from '@/components/projects/project-members-panel';
 import { auth } from '@/lib/auth';
-import {
-  canManageProjects,
-  projectListWhere,
-  projectViewWhere,
-} from '@/lib/project-access';
-import {
-  PRIORITY_LABEL,
-  PROJECT_PHASE_LABEL,
-  PROJECT_STATUS_LABEL,
-} from '@/lib/project-labels';
-import type {
-  ProjectDetailPayload,
-  ProjectMemberRow,
-  UserPickRow,
-} from '@/lib/project-types';
+import { canManageProjects, projectViewWhere } from '@/lib/project-access';
+import type { ProjectMemberRow, UserPickRow } from '@/lib/project-types';
 import { prisma } from '@/lib/prisma';
 import { getUserRole } from '@/lib/session-user';
-import { headers } from 'next/headers';
+import {
+  Banknote,
+  CheckCircle2,
+  TrendingUp,
+  Users,
+} from 'lucide-react';
 import Link from 'next/link';
+import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
@@ -37,12 +29,35 @@ function fmtDate(iso: string | null) {
   }
 }
 
+function fmtCurrency(n: number) {
+  return n.toLocaleString('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    maximumFractionDigits: 0,
+  });
+}
+
+function isOverdueProject(
+  endDate: Date | null,
+  status: string,
+): boolean {
+  if (!endDate) return false;
+  if (status === 'completed' || status === 'cancelled') return false;
+  const end = new Date(endDate);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+  return end < today;
+}
+
 export default async function ProjectOverviewPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
   if (!session?.user?.id) redirect('/login');
 
   const userId = session.user.id;
@@ -52,7 +67,7 @@ export default async function ProjectOverviewPage({
   const row = await prisma.project.findFirst({
     where: projectViewWhere(userId, role, params.id),
     include: {
-      client: { select: { companyName: true } },
+      client: { select: { companyName: true, logo: true } },
       parent: { select: { code: true } },
       members: {
         include: {
@@ -72,6 +87,13 @@ export default async function ProjectOverviewPage({
   });
 
   if (!row) notFound();
+
+  const [taskTotal, taskDone] = await Promise.all([
+    prisma.task.count({ where: { projectId: row.id } }),
+    prisma.task.count({
+      where: { projectId: row.id, status: 'done' },
+    }),
+  ]);
 
   const subProjectCount = await prisma.project.count({
     where: { parentId: row.id },
@@ -100,52 +122,6 @@ export default async function ProjectOverviewPage({
     ...u,
   }));
 
-  const clients = canManage
-    ? await prisma.client.findMany({
-        where: { status: 'active' },
-        select: { id: true, companyName: true },
-        orderBy: { companyName: 'asc' },
-      })
-    : [];
-
-  const parents = canManage
-    ? await prisma.project.findMany({
-        where: {
-          ...projectListWhere(userId, role),
-          id: { not: row.id },
-        },
-        select: { id: true, code: true, name: true },
-        orderBy: { code: 'asc' },
-      })
-    : [];
-
-  const project: ProjectDetailPayload['project'] = {
-    id: row.id,
-    code: row.code,
-    name: row.name,
-    description: row.description,
-    status: row.status,
-    phase: row.phase,
-    priority: row.priority,
-    progress: row.progress,
-    coverColor: row.coverColor,
-    budget: row.budget,
-    actualCost: row.actualCost,
-    tags: row.tags,
-    clientId: row.clientId,
-    clientName: row.client?.companyName ?? null,
-    parentId: row.parentId,
-    parentCode: row.parent?.code ?? null,
-    startDate: row.startDate ? row.startDate.toISOString() : null,
-    endDate: row.endDate ? row.endDate.toISOString() : null,
-    actualEndDate: row.actualEndDate
-      ? row.actualEndDate.toISOString()
-      : null,
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
-    subProjectCount,
-  };
-
   const members: ProjectMemberRow[] = row.members.map((m) => ({
     id: m.id,
     userId: m.userId,
@@ -156,144 +132,274 @@ export default async function ProjectOverviewPage({
     image: m.user.image,
   }));
 
+  const taskProgress =
+    taskTotal > 0
+      ? Math.round((taskDone / taskTotal) * 100)
+      : row.progress;
+
+  const budget = row.budget;
+  const actualCost = row.actualCost;
+  const budgetUsed =
+    budget > 0 ? Math.min(100, Math.round((actualCost / budget) * 100)) : 0;
+  const isOverBudget = budget > 0 && actualCost > budget;
+  const overdueMeta = isOverdueProject(row.endDate, row.status);
+
   return (
     <div className="space-y-6">
-      {canManage ? (
-        <div className="flex justify-end">
-          <ProjectDetailToolbar
-            project={project}
-            clients={clients}
-            parents={parents}
-          />
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="flex gap-3 rounded-lg border border-border bg-card p-4 shadow-card">
+          <div
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg"
+            style={{
+              color: row.coverColor,
+              backgroundColor: `${row.coverColor}22`,
+            }}
+          >
+            <CheckCircle2 className="h-5 w-5" aria-hidden />
+          </div>
+          <div className="min-w-0">
+            <p className="text-lg font-semibold tabular-nums text-foreground">
+              {taskDone} / {taskTotal}
+            </p>
+            <p className="text-xs text-muted-foreground">Tugas selesai</p>
+          </div>
         </div>
-      ) : null}
+        <div className="flex gap-3 rounded-lg border border-border bg-card p-4 shadow-card">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400">
+            <TrendingUp className="h-5 w-5" aria-hidden />
+          </div>
+          <div className="min-w-0">
+            <p className="text-lg font-semibold tabular-nums text-foreground">
+              {taskProgress}%
+            </p>
+            <p className="text-xs text-muted-foreground">Progres</p>
+          </div>
+        </div>
+        <div className="flex gap-3 rounded-lg border border-border bg-card p-4 shadow-card">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-400">
+            <Users className="h-5 w-5" aria-hidden />
+          </div>
+          <div className="min-w-0">
+            <p className="text-lg font-semibold tabular-nums text-foreground">
+              {members.length}
+            </p>
+            <p className="text-xs text-muted-foreground">Anggota tim</p>
+          </div>
+        </div>
+        <div className="flex gap-3 rounded-lg border border-border bg-card p-4 shadow-card">
+          <div
+            className={cnIconWrap(isOverBudget)}
+            style={
+              !isOverBudget
+                ? { color: '#0369a1', backgroundColor: '#e0f2fe' }
+                : undefined
+            }
+          >
+            <Banknote className="h-5 w-5" aria-hidden />
+          </div>
+          <div className="min-w-0">
+            <p className="text-lg font-semibold tabular-nums text-foreground">
+              {budget > 0 ? `${budgetUsed}%` : '—'}
+            </p>
+            <p className="text-xs text-muted-foreground">Anggaran terpakai</p>
+          </div>
+        </div>
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
-          <section className="rounded-lg border border-border bg-card p-4 shadow-card">
-            <h2 className="text-sm font-semibold text-foreground">Ringkasan</h2>
-            <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
-              <div>
-                <dt className="text-muted-foreground">Status</dt>
-                <dd className="font-medium text-foreground">
-                  {PROJECT_STATUS_LABEL[project.status]}
-                </dd>
+          <section className="rounded-lg border border-border bg-card p-4 shadow-card sm:p-5">
+            <h2 className="text-sm font-semibold text-foreground">
+              Progres keseluruhan
+            </h2>
+            <div className="mt-3 h-3 w-full overflow-hidden rounded-full bg-border/80">
+              <div
+                className="h-full rounded-full transition-[width]"
+                style={{
+                  width: `${Math.min(100, Math.max(0, taskProgress))}%`,
+                  backgroundColor: row.coverColor,
+                }}
+              />
+            </div>
+            <div className="mt-2 flex justify-between text-xs text-muted-foreground">
+              <span>
+                {taskDone} tugas selesai
+              </span>
+              <span>{taskProgress}%</span>
+            </div>
+          </section>
+
+          {budget > 0 ? (
+            <section className="rounded-lg border border-border bg-card p-4 shadow-card sm:p-5">
+              <h2 className="text-sm font-semibold text-foreground">
+                Ringkasan anggaran
+              </h2>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Perkiraan</p>
+                  <p className="mt-0.5 font-medium tabular-nums">
+                    {fmtCurrency(budget)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Biaya aktual</p>
+                  <p
+                    className={
+                      isOverBudget
+                        ? 'mt-0.5 font-medium tabular-nums text-destructive'
+                        : 'mt-0.5 font-medium tabular-nums'
+                    }
+                  >
+                    {fmtCurrency(actualCost)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Sisa</p>
+                  <p
+                    className={
+                      isOverBudget
+                        ? 'mt-0.5 font-medium tabular-nums text-destructive'
+                        : 'mt-0.5 font-medium tabular-nums text-emerald-600 dark:text-emerald-400'
+                    }
+                  >
+                    {fmtCurrency(budget - actualCost)}
+                  </p>
+                </div>
               </div>
-              <div>
-                <dt className="text-muted-foreground">Fase</dt>
-                <dd className="font-medium text-foreground">
-                  {project.phase
-                    ? PROJECT_PHASE_LABEL[project.phase]
-                    : '—'}
-                </dd>
+              <div className="mt-4 h-3 w-full overflow-hidden rounded-full bg-border/80">
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${Math.min(100, budgetUsed)}%`,
+                    backgroundColor: isOverBudget
+                      ? 'var(--destructive)'
+                      : row.coverColor,
+                  }}
+                />
               </div>
-              <div>
-                <dt className="text-muted-foreground">Prioritas</dt>
-                <dd className="font-medium text-foreground">
-                  {PRIORITY_LABEL[project.priority]}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Progres</dt>
-                <dd className="font-medium text-foreground">
-                  {project.progress}%
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Klien</dt>
-                <dd className="font-medium text-foreground">
-                  {project.clientId && project.clientName ? (
-                    <Link
-                      href={`/clients/${project.clientId}`}
-                      className="text-primary hover:underline"
-                    >
-                      {project.clientName}
-                    </Link>
-                  ) : (
-                    '—'
-                  )}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Proyek induk</dt>
-                <dd className="font-medium text-foreground">
-                  {project.parentId && project.parentCode ? (
-                    <Link
-                      href={`/projects/${project.parentId}`}
-                      className="text-primary hover:underline"
-                    >
-                      {project.parentCode}
-                    </Link>
-                  ) : (
-                    '—'
-                  )}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Sub-proyek</dt>
-                <dd className="font-medium text-foreground">
-                  {project.subProjectCount} anak
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Mulai</dt>
-                <dd>{fmtDate(project.startDate)}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Selesai (rencana)</dt>
-                <dd>{fmtDate(project.endDate)}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Selesai (aktual)</dt>
-                <dd>{fmtDate(project.actualEndDate)}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Anggaran</dt>
-                <dd>
-                  {project.budget.toLocaleString('id-ID', {
-                    style: 'currency',
-                    currency: 'IDR',
-                    maximumFractionDigits: 0,
-                  })}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Biaya aktual</dt>
-                <dd>
-                  {project.actualCost.toLocaleString('id-ID', {
-                    style: 'currency',
-                    currency: 'IDR',
-                    maximumFractionDigits: 0,
-                  })}
-                </dd>
-              </div>
-            </dl>
-            {project.description ? (
-              <div className="mt-4 border-t border-border pt-4">
-                <h3 className="text-xs font-semibold uppercase text-muted-foreground">
-                  Deskripsi
-                </h3>
-                <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">
-                  {project.description}
-                </p>
-              </div>
-            ) : null}
-            {project.tags.length > 0 ? (
-              <div className="mt-4 flex flex-wrap gap-1.5">
-                {project.tags.map((t) => (
+              <p className="mt-2 text-xs text-muted-foreground">
+                {budgetUsed}% anggaran terpakai
+                {isOverBudget ? ' — Melebihi anggaran!' : ''}
+              </p>
+            </section>
+          ) : null}
+
+          {row.tags.length > 0 ? (
+            <section className="rounded-lg border border-border bg-card p-4 shadow-card sm:p-5">
+              <h2 className="text-sm font-semibold text-foreground">Tag</h2>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {row.tags.map((t) => (
                   <span
                     key={t}
-                    className="rounded-md bg-border/60 px-2 py-0.5 text-xs"
+                    className="rounded-md border border-border bg-muted/50 px-2 py-0.5 text-xs"
                   >
                     {t}
                   </span>
                 ))}
               </div>
-            ) : null}
-          </section>
+            </section>
+          ) : null}
         </div>
 
-        <div className="lg:col-span-1">
+        <div className="space-y-4 lg:col-span-1">
+          <section className="rounded-lg border border-border bg-card p-4 shadow-card sm:p-5">
+            <h2 className="text-sm font-semibold text-foreground">
+              Detail proyek
+            </h2>
+            <dl className="mt-4 space-y-3 text-sm">
+              <div>
+                <dt className="text-xs text-muted-foreground">ID</dt>
+                <dd className="mt-0.5 font-mono text-foreground">{row.id}</dd>
+              </div>
+              {row.clientId && row.client ? (
+                <div>
+                  <dt className="text-xs text-muted-foreground">Klien</dt>
+                  <dd className="mt-0.5">
+                    <Link
+                      href={`/clients/${row.clientId}`}
+                      className="inline-flex max-w-full items-center gap-2 font-medium text-primary hover:underline"
+                    >
+                      {row.client.logo ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={row.client.logo}
+                          alt=""
+                          className="h-8 w-8 rounded-md border border-border object-cover"
+                        />
+                      ) : null}
+                      <span className="truncate">
+                        {row.client.companyName}
+                      </span>
+                    </Link>
+                  </dd>
+                </div>
+              ) : null}
+              <div>
+                <dt className="text-xs text-muted-foreground">Mulai</dt>
+                <dd className="mt-0.5">
+                  {fmtDate(
+                    row.startDate ? row.startDate.toISOString() : null,
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">
+                  Target selesai
+                </dt>
+                <dd
+                  className={
+                    overdueMeta
+                      ? 'mt-0.5 text-destructive'
+                      : 'mt-0.5 text-foreground'
+                  }
+                >
+                  {fmtDate(row.endDate ? row.endDate.toISOString() : null)}
+                </dd>
+              </div>
+              {row.actualEndDate ? (
+                <div>
+                  <dt className="text-xs text-muted-foreground">
+                    Selesai aktual
+                  </dt>
+                  <dd className="mt-0.5">
+                    {fmtDate(row.actualEndDate.toISOString())}
+                  </dd>
+                </div>
+              ) : null}
+              <div>
+                <dt className="text-xs text-muted-foreground">Dibuat</dt>
+                <dd className="mt-0.5">
+                  {fmtDate(row.createdAt.toISOString())}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Diperbarui</dt>
+                <dd className="mt-0.5">
+                  {fmtDate(row.updatedAt.toISOString())}
+                </dd>
+              </div>
+              {row.parentId ? (
+                <div>
+                  <dt className="text-xs text-muted-foreground">
+                    Proyek induk
+                  </dt>
+                  <dd className="mt-0.5">
+                    <Link
+                      href={`/projects/${row.parentId}`}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      {row.parent?.code ?? row.parentId}
+                    </Link>
+                  </dd>
+                </div>
+              ) : null}
+              <div>
+                <dt className="text-xs text-muted-foreground">Sub-proyek</dt>
+                <dd className="mt-0.5 tabular-nums">{subProjectCount}</dd>
+              </div>
+            </dl>
+          </section>
+
           <ProjectMembersPanel
             projectId={row.id}
             members={members}
@@ -304,4 +410,10 @@ export default async function ProjectOverviewPage({
       </div>
     </div>
   );
+}
+
+function cnIconWrap(isOverBudget: boolean) {
+  return isOverBudget
+    ? 'flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400'
+    : 'flex h-11 w-11 shrink-0 items-center justify-center rounded-lg';
 }
